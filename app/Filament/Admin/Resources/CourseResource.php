@@ -1,0 +1,167 @@
+<?php
+declare(strict_types=1);
+
+namespace App\Filament\Admin\Resources;
+
+use App\Filament\Admin\Resources\CourseResource\Pages;
+use App\Models\Course;
+use App\Enums\CourseStatus;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
+
+class CourseResource extends Resource
+{
+    protected static ?string $model = Course::class;
+    protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
+    protected static ?string $navigationGroup = 'Gestión Académica';
+    protected static ?int $navigationSort = 1;
+    protected static ?string $modelLabel = 'Curso';
+    protected static ?string $modelLabelPlural = 'Cursos';
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Wizard::make([
+                    Forms\Components\Wizard\Step::make('Datos Generales')
+                        ->schema([
+                            Forms\Components\TextInput::make('nombre')
+                                ->required()
+                                ->maxLength(255),
+                            Forms\Components\Textarea::make('contenido')
+                                ->rows(4),
+                            Forms\Components\Select::make('carga_horaria')
+                                ->options([
+                                    '20' => '20 horas',
+                                    '30' => '30 horas',
+                                ])
+                                ->required()
+                                ->reactive()
+                                ->afterStateUpdated(function ($set, $state) {
+                                    $prices = match($state) {
+                                        '20' => ['umss' => 80, 'externo' => 100, 'auxiliar' => 40],
+                                        '30' => ['umss' => 120, 'externo' => 150, 'auxiliar' => 60],
+                                        default => [],
+                                    };
+                                    $set('precio_umss', $prices['umss'] ?? 0);
+                                    $set('precio_externo', $prices['externo'] ?? 0);
+                                    $set('precio_auxiliar', $prices['auxiliar'] ?? 0);
+                                }),
+                            Forms\Components\TextInput::make('nivel'),
+                            Forms\Components\TextInput::make('periodo'),
+                            Forms\Components\Select::make('instructor_id')
+                                ->relationship('instructor', 'name')
+                                ->searchable()
+                                ->required(),
+                        ]),
+                    Forms\Components\Wizard\Step::make('Precios')
+                        ->schema([
+                            Forms\Components\TextInput::make('precio_umss')
+                                ->numeric()
+                                ->prefix('Bs.')
+                                ->required(),
+                            Forms\Components\TextInput::make('precio_externo')
+                                ->numeric()
+                                ->prefix('Bs.')
+                                ->required(),
+                            Forms\Components\TextInput::make('precio_auxiliar')
+                                ->numeric()
+                                ->prefix('Bs.')
+                                ->required(),
+                        ]),
+                ])->columnSpanFull(),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('nombre')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('carga_horaria')
+                    ->badge(),
+                Tables\Columns\TextColumn::make('nivel'),
+                Tables\Columns\TextColumn::make('periodo'),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge(fn (CourseStatus $state) => match ($state) {
+                        CourseStatus::EN_PREPARACION => 'warning',
+                        CourseStatus::PUBLICADO => 'success',
+                        CourseStatus::PREINSCRIPCION_CERRADA => 'gray',
+                        CourseStatus::EN_CURSO => 'info',
+                        CourseStatus::FINALIZADO => 'success',
+                        CourseStatus::CANCELADO => 'danger',
+                    }),
+                Tables\Columns\TextColumn::make('instructor.name'),
+                Tables\Columns\TextColumn::make('precio_umss')
+                    ->numeric()
+                    ->prefix('Bs.'),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable(),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->options(CourseStatus::class),
+                Tables\Filters\SelectFilter::make('carga_horaria')
+                    ->options(['20' => '20h', '30' => '30h']),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Infolists\Components\TextEntry::make('nombre'),
+                Infolists\Components\TextEntry::make('contenido'),
+                Infolists\Components\TextEntry::make('carga_horaria')
+                    ->suffix(' horas'),
+                Infolists\Components\TextEntry::make('nivel'),
+                Infolists\Components\TextEntry::make('periodo'),
+                Infolists\Components\TextEntry::make('status')
+                    ->badge(),
+                Infolists\Components\TextEntry::make('instructor.name'),
+                Infolists\Components\TextEntry::make('precio_umss')
+                    ->numeric()
+                    ->prefix('Bs.'),
+                Infolists\Components\TextEntry::make('precio_externo')
+                    ->numeric()
+                    ->prefix('Bs.'),
+                Infolists\Components\TextEntry::make('precio_auxiliar')
+                    ->numeric()
+                    ->prefix('Bs.'),
+            ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            CourseResource\RelationManagers\GroupsRelationManager::class,
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListCourses::route('/'),
+            'create' => Pages\CreateCourse::route('/create'),
+            'view' => Pages\ViewCourse::route('/{record}'),
+            'edit' => Pages\EditCourse::route('/{record}/edit'),
+        ];
+    }
+}
