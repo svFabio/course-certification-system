@@ -1,8 +1,8 @@
 <?php
 
 use App\Livewire\CatalogComponent;
-use App\Livewire\PreinscriptionComponent;
 use App\Livewire\CertificateVerificationComponent;
+use App\Livewire\PreinscriptionComponent;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', CatalogComponent::class)->name('home');

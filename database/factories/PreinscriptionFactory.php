@@ -25,7 +25,7 @@ class PreinscriptionFactory extends Factory
             'nombres' => fake()->firstName(),
             'apellido_paterno' => fake()->lastName(),
             'apellido_materno' => fake()->lastName(),
-            'celular' => '7' . fake()->numerify('#######'),
+            'celular' => '7'.fake()->numerify('#######'),
             'email' => fake()->safeEmail(),
             'tipo_participante' => fake()->randomElement([
                 TipoParticipante::UMSS->value,

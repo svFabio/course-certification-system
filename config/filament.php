@@ -1,5 +1,8 @@
 <?php
 
+use App\Filament\Admin\Resources\CourseResource;
+use Filament\Pages\Dashboard;
+
 return [
 
     /*
@@ -127,7 +130,7 @@ return [
         'namespace' => 'App\\Filament\\Resources',
         'base_path' => app_path('Filament/Resources'),
         'register' => [
-            App\Filament\Admin\Resources\CourseResource::class,
+            CourseResource::class,
         ],
     ],
 
@@ -141,7 +144,7 @@ return [
         'namespace' => 'App\\Filament\\Pages',
         'base_path' => app_path('Filament/Pages'),
         'register' => [
-            \Filament\Pages\Dashboard::class,
+            Dashboard::class,
         ],
     ],
 

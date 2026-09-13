@@ -1,9 +1,9 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\CourseResource\RelationManagers;
 
-use App\Models\Group;
 use App\Enums\GroupStatus;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -14,6 +14,7 @@ use Filament\Tables\Table;
 class GroupsRelationManager extends RelationManager
 {
     protected static string $relationship = 'groups';
+
     protected static ?string $title = 'Grupos';
 
     public function form(Form $form): Form

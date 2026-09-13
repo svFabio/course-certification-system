@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Enums\AttendanceStatus;
-use App\Models\Attendance;
 use App\Models\Group;
 use App\Models\Preinscription;
 use App\Models\Session;

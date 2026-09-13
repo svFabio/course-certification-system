@@ -9,9 +9,7 @@ use App\Models\Preinscription;
 
 class CertificateService
 {
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     // TODO: Implement generate — create certificate with unique code and QR
     public function generate(Preinscription $preinscription): Certificate

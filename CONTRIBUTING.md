@@ -1,13 +1,13 @@
-# Contribuir — Plataforma de Formación Continua
+# Contribuir — Plataforma de Formacion Continua
 
-## Convención de Ramas
+## Convencion de Ramas
 
 - **Feature**: `feature/EP-XX-nombre-corto`
 - **Fix**: `fix/EP-XX-nombre-corto`
 - **Hotfix**: `hotfix/EP-XX-nombre-corto`
 - **Refactor**: `refactor/EP-XX-nombre-corto`
 
-## Convención de Commits (Conventional Commits)
+## Convencion de Commits (Conventional Commits)
 
 ```
 <type>(<scope>): <description>
@@ -20,11 +20,11 @@
 ### Tipos
 
 - `feat`: Nueva funcionalidad
-- `fix`: Corrección de bug
+- `fix`: Correccion de bug
 - `chore`: Tareas de mantenimiento
-- `docs`: Documentación
-- `style`: Formato de código
-- `refactor`: Refactorización sin cambio de funcionalidad
+- `docs`: Documentacion
+- `style`: Formato de codigo
+- `refactor`: Refactorizacion sin cambio de funcionalidad
 - `test`: Agregar o corregir tests
 - `perf`: Mejora de rendimiento
 
@@ -39,38 +39,38 @@ docs(business-rules): update pricing table
 
 ## Reglas de Negocio
 
-**IMPORTANTE**: Las reglas de negocio SIEMPRE se definen primero en:
+Las reglas de negocio se definen siempre en:
 
-1. `BUSINESS_RULES.md` — Documentación
-2. `app/Support/BusinessRules.php` — Implementación
+1. `BUSINESS_RULES.md` — Documentacion
+2. `app/Support/BusinessRules.php` — Implementacion
 
-**NUNCA** hardcodear reglas de negocio en controladores o modelos.
+Nunca hardcodear reglas de negocio en controladores o modelos.
 
-## Estilo de Código
+## Estilo de Codigo
 
 - **Formatter**: Laravel Pint
 - **Ejecutar**: `./vendor/bin/pint`
 - **Verificar**: `./vendor/bin/pint --test`
 
-## Guías de PR
+## Guias de PR
 
-1. **Título claro**: Describir el cambio en una línea
-2. **Descripción**: Explicar QUÉ y POR QUÉ (no CÓMO)
+1. **Titulo claro**: Describir el cambio en una linea
+2. **Descripcion**: Explicar que y por que (no como)
 3. **Tests**: Incluir tests para nuevas funcionalidades
-4. **Documentación**: Actualizar `BUSINESS_RULES.md` si aplica
-5. **Commits limpios**: Usar convención de commits
+4. **Documentacion**: Actualizar `BUSINESS_RULES.md` si aplica
+5. **Commits limpios**: Usar convencion de commits
 
 ## Testing
 
 ```bash
 # Ejecutar todos los tests
-./vendor/bin/pest
+docker compose exec app ./vendor/bin/pest
 
-# Ejecutar tests específicos
-./vendor/bin/pest tests/Feature/CourseTest.php
+# Ejecutar tests especificos
+docker compose exec app ./vendor/bin/pest tests/Feature/CourseTest.php
 
 # Cobertura
-./vendor/bin/pest --coverage
+docker compose exec app ./vendor/bin/pest --coverage
 ```
 
 ## Estructura del Proyecto
@@ -78,18 +78,18 @@ docs(business-rules): update pricing table
 ```
 app/
 ├── Enums/                    # Estados y enumeraciones
-├── Filament/Admin/          # Panel de administración
-├── Filament/Instructor/     # Panel de instructor
-├── Http/Controllers/        # Controladores
-├── Livewire/                # Componentes Livewire
-├── Models/                  # Modelos Eloquent
-├── Services/                # Servicios de negocio
-└── Support/                 # Utilidades y reglas de negocio
+├── Filament/Admin/           # Panel de administracion
+├── Filament/Instructor/      # Panel de instructor
+├── Http/Controllers/         # Controladores
+├── Livewire/                 # Componentes Livewire
+├── Models/                   # Modelos Eloquent
+├── Services/                 # Servicios de negocio
+└── Support/                  # Utilidades y reglas de negocio
 ```
 
 ## Requisitos
 
-- PHP 8.2+
+- PHP 8.3+
 - Laravel 11
-- Node.js 18+
+- Node.js 20+
 - Docker (recomendado)

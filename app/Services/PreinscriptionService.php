@@ -9,9 +9,7 @@ use App\Models\Preinscription;
 
 class PreinscriptionService
 {
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     // TODO: Implement register — create preinscription, validate capacity
     public function register(array $data): Preinscription

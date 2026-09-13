@@ -36,13 +36,7 @@ return [
     ],
 
     'links' => [
-
-        'public' => [
-            'driver' => 'local',
-            'url' => env('APP_URL').'/storage',
-            'visibility' => 'public',
-        ],
-
+        public_path('storage') => storage_path('app/public'),
     ],
 
 ];

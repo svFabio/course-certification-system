@@ -1,26 +1,32 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\CourseStatus;
 use App\Filament\Admin\Resources\CourseResource\Pages;
 use App\Models\Course;
-use App\Enums\CourseStatus;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Infolists;
-use Filament\Infolists\Infolist;
 
 class CourseResource extends Resource
 {
     protected static ?string $model = Course::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
+
     protected static ?string $navigationGroup = 'Gestión Académica';
+
     protected static ?int $navigationSort = 1;
+
     protected static ?string $modelLabel = 'Curso';
+
     protected static ?string $modelLabelPlural = 'Cursos';
 
     public static function form(Form $form): Form
@@ -43,7 +49,7 @@ class CourseResource extends Resource
                                 ->required()
                                 ->reactive()
                                 ->afterStateUpdated(function ($set, $state) {
-                                    $prices = match($state) {
+                                    $prices = match ($state) {
                                         '20' => ['umss' => 80, 'externo' => 100, 'auxiliar' => 40],
                                         '30' => ['umss' => 120, 'externo' => 150, 'auxiliar' => 60],
                                         default => [],

@@ -13,12 +13,18 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Inter', ...defaultTheme.fontFamily.sans],
+                sans: ['Montserrat', 'Arial', ...defaultTheme.fontFamily.sans],
             },
             colors: {
                 umss: {
-                    blue: '#003087',
-                    green: '#007A3D',
+                    navy: '#0E2E5F',
+                    'navy-dark': '#0A2247',
+                    red: '#E01D2E',
+                    'red-dark': '#8B0000',
+                    white: '#FFFFFF',
+                    'gray-100': '#F5F5F5',
+                    'gray-700': '#4A4A4A',
+                    black: '#121212',
                 },
             },
         },

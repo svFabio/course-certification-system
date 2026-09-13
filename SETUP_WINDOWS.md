@@ -1,36 +1,34 @@
-# Guía de Instalación y Desarrollo en Windows Nativo (Sin Docker / Sin WSL)
+# Guia de Instalacion en Windows Nativo (Sin Docker)
 
-Esta guía detalla los pasos exactos para configurar y levantar la **Plataforma de Formación Continua (UMSS)** en Windows de forma nativa.
+Esta guia detalla como configurar la Plataforma de Formacion Continua (UMSS) en Windows sin usar Docker ni WSL.
 
 ---
 
-## 1. Requisitos Previos (Herramientas a Instalar)
+## 1. Requisitos Previos
 
-### A. PHP 8.3 (64-bit Thread Safe)
-1. Descarga el paquete ZIP **VS16 x64 Thread Safe** de PHP 8.3 desde:  
-   👉 [https://windows.php.net/download/](https://windows.php.net/download/)
-2. Extrae el contenido en una carpeta como: `C:\php83`.
-3. Agrega `C:\php83` a la variable de entorno **PATH** de tu sistema:
+### PHP 8.3 (64-bit Thread Safe)
+
+1. Descarga el paquete ZIP **VS16 x64 Thread Safe** de PHP 8.3 desde:
+   https://windows.php.net/download/
+2. Extrae el contenido en `C:\php83`.
+3. Agrega `C:\php83` a la variable de entorno **PATH**:
    - Presiona `Win + R`, escribe `sysdm.cpl` y Enter.
-   - Pestaña **Opciones avanzadas** → **Variables de entorno**.
-   - En **Variables del sistema**, selecciona `Path` → **Editar** → **Nuevo** → ingresa `C:\php83` y guarda.
-4. Abre PowerShell y verifica con:
+   - Pestana **Opciones avanzadas** → **Variables de entorno**.
+   - En **Variables del sistema**, selecciona `Path` → **Editar** → **Nuevo** → ingresa `C:\php83`.
+4. Verifica en PowerShell:
    ```powershell
    php -v
    ```
 
-### B. Configurar `php.ini` (¡Paso crítico!)
-1. Ve a `C:\php83`, haz una copia de `php.ini-development` y renómbrala como `php.ini`.
-2. Abre `php.ini` en tu editor (VS Code, Notepad, etc.).
-3. Busca la línea:
-   ```ini
-   ;extension_dir = "ext"
-   ```
-   Quita el punto y coma (`;`) para descomentarla:
+### Configurar php.ini
+
+1. Ve a `C:\php83`, copia `php.ini-development` y renombrala como `php.ini`.
+2. Abre `php.ini` en tu editor.
+3. Busca y descomenta (quita el `;`):
    ```ini
    extension_dir = "ext"
    ```
-4. Busca las siguientes extensiones y quítales el punto y coma (`;`) al inicio para habilitarlas:
+4. Habilita las siguientes extensiones quitando el `;` al inicio de cada linea:
    ```ini
    extension=bcmath
    extension=curl
@@ -43,39 +41,42 @@ Esta guía detalla los pasos exactos para configurar y levantar la **Plataforma 
    extension=pgsql
    extension=zip
    ```
-5. Guarda los cambios. Verifica en PowerShell que no haya errores de carga:
+5. Verifica en PowerShell:
    ```powershell
    php -m
    ```
 
 ---
 
-### C. PostgreSQL para Windows
-1. Descarga el instalador oficial de PostgreSQL (versión 15 o 16):  
-   👉 [https://www.enterprisedb.com/downloads/postgres-postgresql-downloads](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
-2. Instálalo recordando la contraseña que le asignas al usuario `postgres`.
-3. Abre **pgAdmin** o la consola **SQL Shell (psql)** y crea la base de datos:
+### PostgreSQL
+
+1. Descarga el instalador oficial de PostgreSQL 16 desde:
+   https://www.enterprisedb.com/downloads/postgres-postgresql-downloads
+2. Instala recordando la contrasena del usuario `postgres`.
+3. Crea la base de datos con psql o DBeaver:
    ```sql
    CREATE DATABASE plataforma_formacion;
    ```
 
 ---
 
-### D. Composer
-1. Descarga y ejecuta el instalador oficial:  
-   👉 [https://getcomposer.org/Composer-Setup.exe](https://getcomposer.org/Composer-Setup.exe)
-2. El instalador detectará automáticamente `C:\php83\php.exe`.
-3. Verifica en PowerShell:
+### Composer
+
+1. Descarga y ejecuta el instalador oficial:
+   https://getcomposer.org/Composer-Setup.exe
+2. El instalador detectara automaticamente `C:\php83\php.exe`.
+3. Verifica:
    ```powershell
    composer --version
    ```
 
 ---
 
-### E. Node.js (LTS)
-1. Descarga el instalador LTS de Node.js (v20 o superior):  
-   👉 [https://nodejs.org/](https://nodejs.org/)
-2. Verifica en PowerShell:
+### Node.js 20 LTS
+
+1. Descarga el instalador LTS desde:
+   https://nodejs.org/
+2. Verifica:
    ```powershell
    node -v
    npm -v
@@ -83,87 +84,75 @@ Esta guía detalla los pasos exactos para configurar y levantar la **Plataforma 
 
 ---
 
-## 2. Configuración del Proyecto
+## 2. Configuracion del Proyecto
 
-Abre PowerShell en la carpeta raíz del proyecto (`03-course-certification-system`):
+Abre PowerShell en la carpeta raiz del proyecto:
 
-### Paso 1: Copiar el archivo de entorno
 ```powershell
 copy .env.example .env
 ```
 
-### Paso 2: Configurar la conexión a PostgreSQL en `.env`
-Abre el archivo `.env` y ajusta las siguientes variables con tus credenciales locales:
+Edita `.env` con tus credenciales de PostgreSQL:
+
 ```env
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_DATABASE=plataforma_formacion
 DB_USERNAME=postgres
-DB_PASSWORD=tu_password_de_postgres
+DB_PASSWORD=tu_contrasena_de_postgres
 ```
 
-### Paso 3: Instalar dependencias
+Instala dependencias y configura:
+
 ```powershell
 composer install
-npm install
-```
-
-### Paso 4: Generar clave y enlaces de almacenamiento
-```powershell
 php artisan key:generate
 php artisan storage:link
-```
-> **Nota para Windows:** Si `php artisan storage:link` da error de privilegios, activa el **Modo de desarrollador** en la configuración de Windows (*Privacidad y seguridad → Para programadores → Modo de desarrollador*) o abre PowerShell como Administrador.
-
-### Paso 5: Ejecutar migraciones y datos de prueba
-```powershell
 php artisan migrate --seed
+npm install
+npm run build
 ```
+
+> **Nota:** Si `php artisan storage:link` da error de privilegios, activa el Modo de desarrollador en Windows (Configuracion → Privacidad y seguridad → Para programadores) o ejecuta PowerShell como Administrador.
 
 ---
 
-## 3. Ejecución en Desarrollo
+## 3. Ejecucion en Desarrollo
 
-Recomendamos usar **Windows Terminal** con 3 pestañas abiertas en la raíz del proyecto:
+Abre tres terminales en la raiz del proyecto:
 
-### Pestaña 1: Servidor Web (Laravel)
+**Terminal 1 — Servidor web:**
 ```powershell
 php artisan serve
 ```
-- Aplicación pública: [http://127.0.0.1:8000](http://127.0.0.1:8000)
-- Panel Administrador (Filament): [http://127.0.0.1:8000/admin](http://127.0.0.1:8000/admin)
-- Panel Instructor (Filament): [http://127.0.0.1:8000/instructor](http://127.0.0.1:8000/instructor)
 
-### Pestaña 2: Bundler de Frontend (Vite)
+**Terminal 2 — Frontend con recarga automatica:**
 ```powershell
 npm run dev
 ```
 
-### Pestaña 3: Cola de Tareas en Segundo Plano (Notificaciones / Mails)
+**Terminal 3 — Cola de tareas:**
 ```powershell
 php artisan queue:work
 ```
 
----
-
-## 4. Credenciales de Prueba (Seeders)
-
-| Rol | Correo | Contraseña |
-|---|---|---|
-| **Administrador** | `admin@umss.edu.bo` | `password` |
-| **Instructor** | `instructor@umss.edu.bo` | `password` |
-| **Estudiante** | `student@umss.edu.bo` | `password` |
+La aplicacion estara disponible en http://127.0.0.1:8000
 
 ---
 
-## 5. Ejecutar Pruebas Automatizadas (Pest)
+## 4. Credenciales de Prueba
 
-Para correr la suite de pruebas:
+| Rol | Correo | Contrasena |
+|-----|--------|------------|
+| Administrador | admin@umss.edu.bo | password |
+| Instructor | instructor@umss.edu.bo | password |
+| Estudiante | student@umss.edu.bo | password |
+
+---
+
+## 5. Ejecutar Tests
+
 ```powershell
 ./vendor/bin/pest
-```
-O con el comando de Artisan:
-```powershell
-php artisan test
 ```

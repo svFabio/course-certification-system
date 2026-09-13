@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('grades', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('evaluation_criteria_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('evaluation_criteria_id')->constrained('evaluation_criteria')->cascadeOnDelete();
             $table->foreignId('preinscription_id')->constrained()->cascadeOnDelete();
             $table->decimal('nota', 5, 2);
             $table->timestamps();

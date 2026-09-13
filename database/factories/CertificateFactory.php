@@ -25,8 +25,8 @@ class CertificateFactory extends Factory
             'preinscription_id' => Preinscription::factory(),
             'course_id' => Course::factory(),
             'tipo' => CertificateType::APROBACION,
-            'codigo_unico' => 'CERT-' . strtoupper(Str::random(8)),
-            'pdf_path' => 'certificates/' . fake()->uuid() . '.pdf',
+            'codigo_unico' => 'CERT-'.strtoupper(Str::random(8)),
+            'pdf_path' => 'certificates/'.fake()->uuid().'.pdf',
             'signature_status' => SignatureStatus::PENDIENTE,
             'emitido_en' => now(),
         ];

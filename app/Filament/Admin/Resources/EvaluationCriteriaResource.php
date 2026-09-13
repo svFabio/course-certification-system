@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
@@ -14,10 +15,15 @@ use Filament\Tables\Table;
 class EvaluationCriteriaResource extends Resource
 {
     protected static ?string $model = EvaluationCriteria::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-star';
+
     protected static ?string $navigationGroup = 'Evaluación';
+
     protected static ?int $navigationSort = 1;
+
     protected static ?string $modelLabel = 'Criterio de Evaluación';
+
     protected static ?string $modelLabelPlural = 'Criterios de Evaluación';
 
     public static function form(Form $form): Form

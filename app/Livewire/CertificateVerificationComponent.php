@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Livewire;
@@ -8,7 +9,9 @@ use Livewire\Component;
 class CertificateVerificationComponent extends Component
 {
     public ?string $codigo = null;
+
     public ?array $certificate = null;
+
     public bool $searched = false;
 
     public function verify(): void
