@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
@@ -14,10 +15,15 @@ use Filament\Tables\Table;
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-users';
+
     protected static ?string $navigationGroup = 'Gestión Académica';
+
     protected static ?int $navigationSort = 5;
+
     protected static ?string $modelLabel = 'Usuario';
+
     protected static ?string $modelLabelPlural = 'Usuarios';
 
     public static function form(Form $form): Form

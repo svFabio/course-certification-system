@@ -111,5 +111,5 @@
 
 - **Precisión requerida**: `enableHighAccuracy: true`
 - **Timeout**: 10 segundos
-- **Fórmula**: Haversine para calcular distancia entre两点
+- **Formula**: Haversine para calcular distancia entre dos puntos
 - **Implementación**: `App\Support\BusinessRules::haversineDistance()`

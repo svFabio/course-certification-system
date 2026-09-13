@@ -9,9 +9,7 @@ use App\Models\Preinscription;
 
 class EvaluationService
 {
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     // TODO: Implement setCriteria — create evaluation criteria for a course
     public function setCriteria(Course $course, array $criteria): void

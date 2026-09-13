@@ -1,9 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
 use App\Filament\Admin\Resources;
+use App\Filament\Pages\Auth\Login;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -12,7 +14,7 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -29,10 +31,14 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(Login::class)
             ->brandName('UMSS - Formación Continua')
+            ->font('Montserrat')
+            ->darkMode(false)
+            ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.custom-styles'))
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#0E2E5F'),
+                'danger' => Color::hex('#E01D2E'),
                 'gray' => Color::Gray,
             ])
             ->navigationGroups([

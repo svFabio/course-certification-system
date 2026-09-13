@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Support;
@@ -11,6 +12,7 @@ class BusinessRules
     ];
 
     public const MINIMUM_PASSING_GRADE = 70;
+
     public const MAX_ATTENDANCE_DISTANCE_METERS = 100;
 
     public static function calculatePrice(int $hours, string $participantType): float

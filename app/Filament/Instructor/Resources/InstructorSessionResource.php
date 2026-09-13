@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Filament\Instructor\Resources;
@@ -14,10 +15,15 @@ use Filament\Tables\Table;
 class InstructorSessionResource extends Resource
 {
     protected static ?string $model = Session::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-calendar';
+
     protected static ?string $navigationGroup = 'Mis Cursos';
+
     protected static ?int $navigationSort = 2;
+
     protected static ?string $modelLabel = 'Sesión';
+
     protected static ?string $modelLabelPlural = 'Sesiones';
 
     public static function form(Form $form): Form

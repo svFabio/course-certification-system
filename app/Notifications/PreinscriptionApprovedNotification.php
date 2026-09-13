@@ -13,9 +13,7 @@ class PreinscriptionApprovedNotification extends Notification implements ShouldQ
 {
     use Queueable;
 
-    public function __construct(private readonly array $preinscriptionData)
-    {
-    }
+    public function __construct(private readonly array $preinscriptionData) {}
 
     public function via(object $notifiable): array
     {
@@ -27,8 +25,8 @@ class PreinscriptionApprovedNotification extends Notification implements ShouldQ
         return (new MailMessage)
             ->subject('Preinscripción aprobada')
             ->line('Su preinscripción ha sido aprobada.')
-            ->line('Curso: ' . $this->preinscriptionData['curso_nombre'])
-            ->line('Grupo: ' . $this->preinscriptionData['grupo_nombre'])
+            ->line('Curso: '.$this->preinscriptionData['curso_nombre'])
+            ->line('Grupo: '.$this->preinscriptionData['grupo_nombre'])
             ->action('Realizar pago', route('payments.create', $this->preinscriptionData['preinscription_id']));
     }
 }

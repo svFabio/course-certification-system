@@ -13,9 +13,7 @@ class PaymentConfirmedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(private readonly array $paymentData)
-    {
-    }
+    public function __construct(private readonly array $paymentData) {}
 
     public function via(object $notifiable): array
     {
@@ -27,7 +25,7 @@ class PaymentConfirmedNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('Pago confirmado')
             ->line('Su pago ha sido confirmado. Ya está inscrito al curso.')
-            ->line('Monto: Bs. ' . number_format($this->paymentData['monto'], 2))
+            ->line('Monto: Bs. '.number_format($this->paymentData['monto'], 2))
             ->action('Ver mi inscripción', route('preinscriptions.show', $this->paymentData['preinscription_id']));
     }
 }

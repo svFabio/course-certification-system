@@ -1,5 +1,9 @@
 <?php
 
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Team;
+
 return [
 
     /*
@@ -8,7 +12,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'permission_model' => Spatie\Permission\Models\Permission::class,
+    'permission_model' => Permission::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -16,7 +20,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'role_model' => Spatie\Permission\Models\Role::class,
+    'role_model' => Role::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -48,7 +52,7 @@ return [
 
     'teams' => false,
 
-    'team_class' => Spatie\Permission\Models\Team::class,
+    'team_class' => Team::class,
 
     /*
     |--------------------------------------------------------------------------

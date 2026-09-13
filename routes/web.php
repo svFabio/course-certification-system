@@ -2,6 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 
-require __DIR__.'/admin.php';
-require __DIR__.'/instructor.php';
+Route::redirect('/login', '/admin/login')->name('login');
+
 require __DIR__.'/public.php';

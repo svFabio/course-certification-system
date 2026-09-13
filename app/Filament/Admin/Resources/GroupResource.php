@@ -1,11 +1,12 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\GroupStatus;
 use App\Filament\Admin\Resources\GroupResource\Pages;
 use App\Models\Group;
-use App\Enums\GroupStatus;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -15,10 +16,15 @@ use Filament\Tables\Table;
 class GroupResource extends Resource
 {
     protected static ?string $model = Group::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
+
     protected static ?string $navigationGroup = 'Gestión Académica';
+
     protected static ?int $navigationSort = 2;
+
     protected static ?string $modelLabel = 'Grupo';
+
     protected static ?string $modelLabelPlural = 'Grupos';
 
     public static function form(Form $form): Form

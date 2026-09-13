@@ -1,6 +1,7 @@
-FROM php:8.3-fpm
+FROM php:8.3-apache
 
-# Install system dependencies
+RUN a2enmod rewrite
+
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -11,39 +12,33 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libicu-dev \
     zip \
-    unzip \
-    nodejs \
-    npm
+    unzip
 
-# Install PHP extensions
 RUN docker-php-ext-install pdo_pgsql mbstring exif bcmath gd zip intl
 
-# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
-WORKDIR /var/www
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# Copy existing application directory contents
-COPY . /var/www
+WORKDIR /var/www/html
 
-# Install PHP dependencies
-RUN composer install --no-interaction --optimize-autoloader --no-scripts
+RUN mkdir -p \
+    storage/app/public \
+    storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/testing \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache
 
-# Install NPM dependencies
-RUN npm install --no-audit
+# Copy compiled frontend assets (built separately with npm run build)
+COPY public/build ./public/build
 
-# Set permissions
-RUN mkdir -p /var/www/storage/app/public \
-    /var/www/storage/framework/cache/data \
-    /var/www/storage/framework/sessions \
-    /var/www/storage/framework/testing \
-    /var/www/storage/framework/views \
-    /var/www/storage/logs \
-    /var/www/bootstrap/cache \
-    && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
-    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-EXPOSE 9000
-CMD ["php-fpm"]
-
+EXPOSE 80
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["apache2-foreground"]

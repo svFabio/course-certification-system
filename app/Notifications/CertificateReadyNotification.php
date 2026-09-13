@@ -13,9 +13,7 @@ class CertificateReadyNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(private readonly array $certificateData)
-    {
-    }
+    public function __construct(private readonly array $certificateData) {}
 
     public function via(object $notifiable): array
     {

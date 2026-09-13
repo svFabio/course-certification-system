@@ -10,18 +10,20 @@ return new class extends Migration
     {
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
-            $table->string('guard_name')->unique();
+            $table->string('name');
+            $table->string('guard_name');
             $table->string('description')->nullable();
             $table->timestamps();
+            $table->unique(['name', 'guard_name']);
         });
 
         Schema::create('permissions', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
-            $table->string('guard_name')->unique();
+            $table->string('name');
+            $table->string('guard_name');
             $table->string('description')->nullable();
             $table->timestamps();
+            $table->unique(['name', 'guard_name']);
         });
 
         Schema::create('model_has_roles', function (Blueprint $table) {

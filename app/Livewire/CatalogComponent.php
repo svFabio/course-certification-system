@@ -1,14 +1,16 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Livewire;
 
-use Livewire\Component;
 use App\Models\Course;
+use Livewire\Component;
 
 class CatalogComponent extends Component
 {
     public ?string $search = null;
+
     public ?string $periodo = null;
 
     public function render()

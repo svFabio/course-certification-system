@@ -23,7 +23,7 @@ class PaymentFactory extends Factory
             'preinscription_id' => Preinscription::factory(),
             'monto' => 80.00,
             'metodo' => fake()->randomElement([PaymentMethod::EFECTIVO, PaymentMethod::QR]),
-            'numero_comprobante' => 'COMP-' . fake()->unique()->numerify('#####'),
+            'numero_comprobante' => 'COMP-'.fake()->unique()->numerify('#####'),
             'verificado_por' => User::factory(),
             'verificado_en' => now(),
         ];

@@ -11,9 +11,7 @@ use App\Support\BusinessRules;
 
 class AttendanceService
 {
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     // TODO: Implement registerManual — instructor marks attendance manually
     public function registerManual(Session $session, int $preinscriptionId, string $status): Attendance

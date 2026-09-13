@@ -8,9 +8,7 @@ use App\Models\Course;
 
 class CourseService
 {
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     // TODO: Implement publish logic — change status to PUBLICADO
     public function publish(Course $course): Course

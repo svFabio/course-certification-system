@@ -62,7 +62,7 @@ class Preinscription extends Model
 
     public function getFullNameAttribute(): string
     {
-        return trim($this->nombres . ' ' . $this->apellido_paterno . ' ' . ($this->apellido_materno ?? ''));
+        return trim($this->nombres.' '.$this->apellido_paterno.' '.($this->apellido_materno ?? ''));
     }
 
     public function getPriceAttribute(): float

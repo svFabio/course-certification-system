@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Course;
 use App\Models\Group;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -12,7 +13,7 @@ class CoursesSeeder extends Seeder
     {
         $instructor = User::where('email', 'instructor@umss.edu.bo')->first();
 
-        $course = \App\Models\Course::create([
+        $course = Course::create([
             'nombre' => 'Introducción a la Programación Web',
             'contenido' => 'Curso introductorio a HTML, CSS, JavaScript y PHP.',
             'carga_horaria' => '20',

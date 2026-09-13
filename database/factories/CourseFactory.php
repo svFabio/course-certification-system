@@ -27,7 +27,7 @@ class CourseFactory extends Factory
             'contenido' => fake()->paragraphs(2, true),
             'carga_horaria' => $cargaHoraria,
             'nivel' => fake()->randomElement(['Básico', 'Intermedio', 'Avanzado']),
-            'periodo' => '2024-' . fake()->randomElement(['I', 'II']),
+            'periodo' => '2024-'.fake()->randomElement(['I', 'II']),
             'status' => CourseStatus::PUBLICADO,
             'precio_umss' => BusinessRules::calculatePrice($hours, 'umss'),
             'precio_externo' => BusinessRules::calculatePrice($hours, 'externo'),

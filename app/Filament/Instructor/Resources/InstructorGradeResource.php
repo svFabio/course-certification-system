@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Filament\Instructor\Resources;
@@ -14,10 +15,15 @@ use Filament\Tables\Table;
 class InstructorGradeResource extends Resource
 {
     protected static ?string $model = Grade::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
+
     protected static ?string $navigationGroup = 'Mis Cursos';
+
     protected static ?int $navigationSort = 4;
+
     protected static ?string $modelLabel = 'Calificación';
+
     protected static ?string $modelLabelPlural = 'Calificaciones';
 
     public static function form(Form $form): Form
