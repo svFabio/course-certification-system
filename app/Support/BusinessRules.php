@@ -4,16 +4,74 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-class BusinessRules
+final class BusinessRules
 {
+    /*
+    |--------------------------------------------------------------------------
+    | Pricing (Bs.)
+    |--------------------------------------------------------------------------
+    */
     public const PRICING = [
         '20' => ['umss' => 80, 'externo' => 100, 'auxiliar' => 40],
         '30' => ['umss' => 120, 'externo' => 150, 'auxiliar' => 60],
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | Grade rules
+    |--------------------------------------------------------------------------
+    */
     public const MINIMUM_PASSING_GRADE = 70;
+    public const GRADE_MIN = 0;
+    public const GRADE_MAX = 100;
 
-    public const MAX_ATTENDANCE_DISTANCE_METERS = 100;
+    /*
+    |--------------------------------------------------------------------------
+    | Attendance / Geolocation
+    |--------------------------------------------------------------------------
+    */
+    public const DEFAULT_LAB_LAT = -17.7833;
+    public const DEFAULT_LAB_LNG = -66.1500;
+    public const ATTENDANCE_RADIUS_METERS = 100;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Group constraints
+    |--------------------------------------------------------------------------
+    */
+    public const MIN_GROUP_CAPACITY = 15;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Evaluation
+    |--------------------------------------------------------------------------
+    */
+    public const EVALUATION_TOTAL_PERCENT = 100;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Course hours
+    |--------------------------------------------------------------------------
+    */
+    public const VALID_HOURS = ['20', '30'];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session duration by course hours
+    |--------------------------------------------------------------------------
+    */
+    public const SESSION_DURATION_HOURS = [
+        '20' => 1.5,
+        '30' => 2.5,
+    ];
+
+    public const SESSIONS_PER_COURSE = 10;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Methods
+    |--------------------------------------------------------------------------
+    */
 
     public static function calculatePrice(int $hours, string $participantType): float
     {
@@ -39,7 +97,7 @@ class BusinessRules
 
     public static function haversineDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
     {
-        $earthRadius = 6371000; // meters
+        $earthRadius = 6371000;
 
         $latFrom = deg2rad($lat1);
         $latTo = deg2rad($lat2);
@@ -53,5 +111,24 @@ class BusinessRules
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
         return $earthRadius * $c;
+    }
+
+    /**
+     * Get pricing for a given course hours and participant type.
+     * Returns the full pricing array if no participant type given.
+     */
+    public static function getPricing(?string $participantType = null): float|array
+    {
+        if ($participantType === null) {
+            return self::PRICING;
+        }
+
+        // Return pricing for all hour types for this participant
+        $result = [];
+        foreach (self::PRICING as $hours => $prices) {
+            $result[$hours] = $prices[$participantType] ?? 0;
+        }
+
+        return $result;
     }
 }

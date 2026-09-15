@@ -12,6 +12,7 @@ use App\Services\AttendanceService;
 use App\Support\BusinessRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 
 class AttendanceController extends Controller
 {
@@ -55,20 +56,7 @@ class AttendanceController extends Controller
             ], 404);
         }
 
-        $preinscription = null;
-        if ($request->filled('preinscription_id')) {
-            $preinscription = Preinscription::where('group_id', $group->id)
-                ->where('id', $request->input('preinscription_id'))
-                ->first();
-        } elseif ($request->filled('ci')) {
-            $preinscription = Preinscription::where('group_id', $group->id)
-                ->where('ci', $request->input('ci'))
-                ->first();
-        } elseif ($request->user()) {
-            $preinscription = Preinscription::where('group_id', $group->id)
-                ->where('email', $request->user()->email)
-                ->first();
-        }
+        $preinscription = $this->findPreinscription($request, $group);
 
         if (! $preinscription) {
             return response()->json([
@@ -76,38 +64,47 @@ class AttendanceController extends Controller
             ], 422);
         }
 
-        $lat = (float) $validated['lat'];
-        $lng = (float) $validated['lng'];
-        $labLat = (float) env('LAB_LAT', -17.7833);
-        $labLng = (float) env('LAB_LNG', -66.1500);
-        $maxRadius = (float) env('ATTENDANCE_RADIUS_METERS', BusinessRules::MAX_ATTENDANCE_DISTANCE_METERS);
-
-        $distance = BusinessRules::haversineDistance($lat, $lng, $labLat, $labLng);
-        $isWithinRadius = $distance <= $maxRadius;
-
-        $dbStatus = $isWithinRadius ? AttendanceStatus::PRESENTE : AttendanceStatus::AUSENTE;
-        $responseStatus = $isWithinRadius ? 'presente' : 'para_revision';
-
-        $attendance = Attendance::updateOrCreate(
-            [
-                'session_id' => $session->id,
-                'preinscription_id' => $preinscription->id,
-            ],
-            [
-                'status' => $dbStatus,
-                'lat' => $lat,
-                'lng' => $lng,
-                'distancia_metros' => round($distance, 2),
-            ]
+        $attendance = $this->attendanceService->registerFromQR(
+            $session,
+            $preinscription->id,
+            (float) $validated['lat'],
+            (float) $validated['lng'],
         );
 
+        $isWithinRadius = $attendance->status === AttendanceStatus::PRESENTE;
+
         return response()->json([
-            'message' => $isWithinRadius ? 'Asistencia registrada correctamente.' : 'Fuera de rango. Su registro será enviado para revisión.',
-            'status' => $responseStatus,
-            'attendance_status' => $dbStatus->value,
-            'distance_metros' => round($distance, 2),
-            'max_distance' => $maxRadius,
+            'message' => $isWithinRadius
+                ? 'Asistencia registrada correctamente.'
+                : 'Fuera de rango. Su registro será enviado para revisión.',
+            'status' => $isWithinRadius ? 'presente' : 'para_revision',
+            'attendance_status' => $attendance->status->value,
+            'distance_metros' => $attendance->distancia_metros,
+            'max_distance' => Config::get('attendance.radius_meters'),
             'attendance' => $attendance,
         ]);
+    }
+
+    private function findPreinscription(Request $request, $group): ?Preinscription
+    {
+        if ($request->filled('preinscription_id')) {
+            return Preinscription::where('group_id', $group->id)
+                ->where('id', $request->input('preinscription_id'))
+                ->first();
+        }
+
+        if ($request->filled('ci')) {
+            return Preinscription::where('group_id', $group->id)
+                ->where('ci', $request->input('ci'))
+                ->first();
+        }
+
+        if ($request->user()) {
+            return Preinscription::where('group_id', $group->id)
+                ->where('email', $request->user()->email)
+                ->first();
+        }
+
+        return null;
     }
 }

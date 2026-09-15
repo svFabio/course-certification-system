@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Resources;
 use App\Enums\GroupStatus;
 use App\Filament\Admin\Resources\GroupResource\Pages;
 use App\Models\Group;
+use App\Support\BusinessRules;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -31,7 +32,10 @@ class GroupResource extends Resource
     {
         return $form
             ->schema([
-                // TODO: Add form fields for nombre, hora_inicio, hora_fin, cupo_minimo, cupo_maximo, status
+                Forms\Components\Select::make('course_id')
+                    ->relationship('course', 'nombre')
+                    ->searchable()
+                    ->required(),
                 Forms\Components\TextInput::make('nombre')
                     ->required()
                     ->maxLength(255),
@@ -41,7 +45,7 @@ class GroupResource extends Resource
                     ->required(),
                 Forms\Components\TextInput::make('cupo_minimo')
                     ->numeric()
-                    ->default(15),
+                    ->default(BusinessRules::MIN_GROUP_CAPACITY),
                 Forms\Components\TextInput::make('cupo_maximo')
                     ->numeric()
                     ->required(),
@@ -55,7 +59,9 @@ class GroupResource extends Resource
     {
         return $table
             ->columns([
-                // TODO: Add table columns
+                Tables\Columns\TextColumn::make('course.nombre')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('nombre')
                     ->searchable()
                     ->sortable(),

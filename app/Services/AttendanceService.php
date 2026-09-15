@@ -8,12 +8,10 @@ use App\Enums\AttendanceStatus;
 use App\Models\Attendance;
 use App\Models\Session;
 use App\Support\BusinessRules;
+use Illuminate\Support\Facades\Config;
 
 class AttendanceService
 {
-    public function __construct() {}
-
-    // TODO: Implement registerManual — instructor marks attendance manually
     public function registerManual(Session $session, int $preinscriptionId, string $status): Attendance
     {
         return Attendance::updateOrCreate(
@@ -27,15 +25,16 @@ class AttendanceService
         );
     }
 
-    // Student scans QR, validate geo location
     public function registerFromQR(Session $session, int $preinscriptionId, float $lat, float $lng): Attendance
     {
-        $labLat = (float) env('LAB_LAT', -17.7833);
-        $labLng = (float) env('LAB_LNG', -66.1500);
-        $maxRadius = (float) env('ATTENDANCE_RADIUS_METERS', BusinessRules::MAX_ATTENDANCE_DISTANCE_METERS);
+        $labLat = Config::float('attendance.lab_lat');
+        $labLng = Config::float('attendance.lab_lng');
+        $maxRadius = Config::float('attendance.radius_meters');
 
-        $distance = $this->calculateDistance($lat, $lng, $labLat, $labLng);
-        $status = $distance <= $maxRadius ? AttendanceStatus::PRESENTE : AttendanceStatus::AUSENTE;
+        $distance = BusinessRules::haversineDistance($lat, $lng, $labLat, $labLng);
+        $status = $distance <= $maxRadius
+            ? AttendanceStatus::PRESENTE
+            : AttendanceStatus::AUSENTE;
 
         return Attendance::updateOrCreate(
             [
@@ -51,13 +50,11 @@ class AttendanceService
         );
     }
 
-    // Calculate distance using BusinessRules::haversineDistance
     public function calculateDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
     {
         return BusinessRules::haversineDistance($lat1, $lng1, $lat2, $lng2);
     }
 
-    // Return attendance stats for a session
     public function getAttendanceStats(Session $session): array
     {
         $total = $session->attendances()->count();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\PaymentMethod;
 use App\Filament\Admin\Resources\PaymentResource\Pages;
 use App\Models\Payment;
 use Filament\Forms;
@@ -39,16 +40,14 @@ class PaymentResource extends Resource
                     ->prefix('Bs.')
                     ->required(),
                 Forms\Components\Select::make('metodo')
-                    ->options([
-                        'efectivo' => 'Efectivo',
-                        'transferencia' => 'Transferencia',
-                        'qr' => 'QR',
-                    ])
+                    ->options(PaymentMethod::class)
                     ->required(),
                 Forms\Components\TextInput::make('numero_comprobante')
                     ->maxLength(100),
-                Forms\Components\TextInput::make('verificado_por')
-                    ->maxLength(255),
+                Forms\Components\Select::make('verificado_por')
+                    ->relationship('verifier', 'name')
+                    ->searchable()
+                    ->nullable(),
                 Forms\Components\DateTimePicker::make('verificado_en'),
             ]);
     }

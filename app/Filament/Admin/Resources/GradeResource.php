@@ -6,6 +6,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\GradeResource\Pages;
 use App\Models\Grade;
+use App\Support\BusinessRules;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -41,7 +42,7 @@ class GradeResource extends Resource
                 Forms\Components\TextInput::make('nota')
                     ->numeric()
                     ->minValue(0)
-                    ->maxValue(100)
+                    ->maxValue(BusinessRules::GRADE_MAX)
                     ->required(),
             ]);
     }
