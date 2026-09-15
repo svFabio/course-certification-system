@@ -14,7 +14,7 @@ class AttendancePolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function view(User $user, Attendance $attendance): bool
@@ -28,7 +28,7 @@ class AttendancePolicy
         }
 
         if ($user->hasRole('student')) {
-            return $user->id === $attendance->preinscription->user_id;
+            return $user->email === $attendance->preinscription->email;
         }
 
         return false;
@@ -54,16 +54,16 @@ class AttendancePolicy
 
     public function delete(User $user, Attendance $attendance): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function restore(User $user, Attendance $attendance): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function forceDelete(User $user, Attendance $attendance): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 }

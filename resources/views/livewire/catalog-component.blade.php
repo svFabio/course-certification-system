@@ -9,9 +9,9 @@
             <div class="w-full sm:w-56">
                 <select wire:model.live="periodo" class="input-umss">
                     <option value="">Todos los períodos</option>
-                    <option value="2024-I">2024-I</option>
-                    <option value="2024-II">2024-II</option>
-                    <option value="2025-I">2025-I</option>
+                    @foreach ($periods as $p)
+                        <option value="{{ $p }}">{{ $p }}</option>
+                    @endforeach
                 </select>
             </div>
         </div>
@@ -58,10 +58,16 @@
                     </div>
 
                     <div class="p-4 bg-[#F5F5F5] border-t border-[#E5E5E5]">
-                        <a href="{{ route('preinscripcion', ['group' => $course->groups->first()?->id]) }}"
-                            class="btn-primary w-full text-center">
-                            Preinscribirse
-                        </a>
+                        @if ($course->groups->isNotEmpty())
+                            <a href="{{ route('preinscripcion', ['group' => $course->groups->first()->id]) }}"
+                                class="btn-primary w-full text-center">
+                                Pre-register
+                            </a>
+                        @else
+                            <span class="btn-primary w-full text-center opacity-50 cursor-not-allowed">
+                                No groups available
+                            </span>
+                        @endif
                     </div>
                 </div>
             @endforeach

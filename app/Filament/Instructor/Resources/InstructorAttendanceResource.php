@@ -60,7 +60,7 @@ class InstructorAttendanceResource extends Resource
                     ->dateTime()
                     ->sortable(),
             ])
-            ->modifyQueryUsing(fn ($query) => $query->whereHas('session.group', fn ($q) => $q->where('instructor_id', auth()->id())))
+            ->modifyQueryUsing(fn ($query) => $query->whereHas('session.group.course', fn ($q) => $q->where('instructor_id', auth()->id())))
             ->filters([
                 //
             ])

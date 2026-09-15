@@ -1,13 +1,4 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
-Route::group([
-    'prefix' => 'admin',
-    'middleware' => ['auth', 'web', 'filament.admin.auth'],
-    'name' => 'admin.',
-], function () {
-    Route::get('/', function () {
-        return redirect()->route('filament.admin.pages.dashboard');
-    })->name('dashboard');
-});
+// Admin routing is handled entirely by Filament AdminPanelProvider.
+// Do not define custom /admin routes here to avoid middleware conflicts.

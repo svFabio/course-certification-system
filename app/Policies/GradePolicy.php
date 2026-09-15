@@ -14,7 +14,7 @@ class GradePolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function view(User $user, Grade $grade): bool
@@ -28,7 +28,7 @@ class GradePolicy
         }
 
         if ($user->hasRole('student')) {
-            return $user->id === $grade->preinscription->user_id;
+            return $user->email === $grade->preinscription->email;
         }
 
         return false;
@@ -54,16 +54,16 @@ class GradePolicy
 
     public function delete(User $user, Grade $grade): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function restore(User $user, Grade $grade): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function forceDelete(User $user, Grade $grade): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 }

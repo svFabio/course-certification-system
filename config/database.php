@@ -40,7 +40,7 @@ return [
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'plataforma_formacion'),
             'username' => env('DB_USERNAME', 'plataforma'),
-            'password' => env('DB_PASSWORD', 'plataforma_secret'),
+            'password' => env('DB_PASSWORD', ''),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,

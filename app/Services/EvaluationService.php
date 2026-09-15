@@ -5,33 +5,84 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Course;
+use App\Models\EvaluationCriteria;
+use App\Models\Grade;
 use App\Models\Preinscription;
+use App\Support\BusinessRules;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class EvaluationService
 {
-    public function __construct() {}
-
-    // TODO: Implement setCriteria — create evaluation criteria for a course
     public function setCriteria(Course $course, array $criteria): void
     {
-        throw new \RuntimeException('TODO: Implement setCriteria');
+        $totalWeight = array_sum(array_column($criteria, 'porcentaje'));
+
+        if ($totalWeight !== BusinessRules::EVALUATION_TOTAL_PERCENT) {
+            throw ValidationException::withMessages([
+                'criteria' => "Criteria weights must sum to 100%. Current sum: {$totalWeight}%.",
+            ]);
+        }
+
+        DB::transaction(function () use ($course, $criteria) {
+            $course->evaluationCriteria()->delete();
+
+            foreach ($criteria as $item) {
+                EvaluationCriteria::create([
+                    'course_id' => $course->id,
+                    'nombre' => $item['nombre'],
+                    'porcentaje' => $item['porcentaje'],
+                ]);
+            }
+        });
     }
 
-    // TODO: Implement recordGrades — record grades for a preinscription
     public function recordGrades(Preinscription $preinscription, array $grades): void
     {
-        throw new \RuntimeException('TODO: Implement recordGrades');
+        DB::transaction(function () use ($preinscription, $grades) {
+            foreach ($grades as $criteriaId => $score) {
+                Grade::updateOrCreate(
+                    [
+                        'preinscription_id' => $preinscription->id,
+                        'evaluation_criteria_id' => $criteriaId,
+                    ],
+                    ['nota' => $score]
+                );
+            }
+        });
     }
 
-    // TODO: Implement calculateFinalGrade — weighted average based on criteria percentages
     public function calculateFinalGrade(Preinscription $preinscription): float
     {
-        throw new \RuntimeException('TODO: Implement calculateFinalGrade');
+        $grades = $preinscription->grades()->with('evaluationCriteria')->get();
+
+        if ($grades->isEmpty()) {
+            return 0.0;
+        }
+
+        $weighted = $grades->sum(
+            fn ($grade) => ($grade->nota * $grade->evaluationCriteria->porcentaje) / 100
+        );
+
+        return round($weighted, 2);
     }
 
-    // TODO: Implement getGradeReport — return full grade report for a preinscription
     public function getGradeReport(Preinscription $preinscription): array
     {
-        throw new \RuntimeException('TODO: Implement getGradeReport');
+        $grades = $preinscription->grades()->with('evaluationCriteria')->get();
+        $finalGrade = $this->calculateFinalGrade($preinscription);
+
+        return [
+            'preinscription_id' => $preinscription->id,
+            'full_name' => $preinscription->full_name,
+            'final_grade' => $finalGrade,
+            'passed' => $finalGrade >= BusinessRules::MINIMUM_PASSING_GRADE,
+            'criteria' => $grades->map(fn ($g) => [
+                'name' => $g->evaluationCriteria->nombre,
+                'weight' => $g->evaluationCriteria->porcentaje,
+                'score' => $g->nota,
+                'weighted' => round(($g->nota * $g->evaluationCriteria->porcentaje) / 100, 2),
+            ])->toArray(),
+        ];
     }
 }
