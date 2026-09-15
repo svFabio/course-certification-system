@@ -14,7 +14,7 @@ class SessionPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function view(User $user, Session $session): bool
@@ -32,7 +32,7 @@ class SessionPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function update(User $user, Session $session): bool
@@ -50,16 +50,16 @@ class SessionPolicy
 
     public function delete(User $user, Session $session): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function restore(User $user, Session $session): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function forceDelete(User $user, Session $session): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 }

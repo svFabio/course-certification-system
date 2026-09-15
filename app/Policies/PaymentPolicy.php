@@ -14,7 +14,7 @@ class PaymentPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function view(User $user, Payment $payment): bool
@@ -28,7 +28,8 @@ class PaymentPolicy
         }
 
         if ($user->hasRole('student')) {
-            return $user->id === $payment->preinscription->user_id;
+            // preinscriptions are identified by email, not user_id
+            return $user->email === $payment->preinscription->email;
         }
 
         return false;
@@ -36,7 +37,7 @@ class PaymentPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasRole('student');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function update(User $user, Payment $payment): bool
@@ -54,16 +55,16 @@ class PaymentPolicy
 
     public function delete(User $user, Payment $payment): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function restore(User $user, Payment $payment): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function forceDelete(User $user, Payment $payment): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 }

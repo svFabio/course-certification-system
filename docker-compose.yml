@@ -6,11 +6,11 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: plataforma_formacion
-      POSTGRES_USER: plataforma
-      POSTGRES_PASSWORD: plataforma_secret
+      POSTGRES_DB: ${DB_DATABASE:-plataforma_formacion}
+      POSTGRES_USER: ${DB_USERNAME:-plataforma}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U plataforma -d plataforma_formacion"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-plataforma} -d ${DB_DATABASE:-plataforma_formacion}"]
       interval: 5s
       retries: 5
 
@@ -30,9 +30,9 @@ services:
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_DATABASE: plataforma_formacion
-      DB_USERNAME: plataforma
-      DB_PASSWORD: plataforma_secret
+      DB_DATABASE: ${DB_DATABASE:-plataforma_formacion}
+      DB_USERNAME: ${DB_USERNAME:-plataforma}
+      DB_PASSWORD: ${DB_PASSWORD}
 
 volumes:
   pgdata:

@@ -62,7 +62,7 @@ class InstructorSessionResource extends Resource
                     ->dateTime()
                     ->sortable(),
             ])
-            ->modifyQueryUsing(fn ($query) => $query->whereHas('group', fn ($q) => $q->where('instructor_id', auth()->id())))
+            ->modifyQueryUsing(fn ($query) => $query->whereHas('group.course', fn ($q) => $q->where('instructor_id', auth()->id())))
             ->filters([
                 //
             ])

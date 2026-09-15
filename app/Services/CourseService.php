@@ -4,33 +4,40 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\CourseStatus;
 use App\Models\Course;
+use Illuminate\Database\Eloquent\Collection;
 
 class CourseService
 {
-    public function __construct() {}
-
-    // TODO: Implement publish logic — change status to PUBLICADO
     public function publish(Course $course): Course
     {
-        throw new \RuntimeException('TODO: Implement publish');
+        $course->update(['status' => CourseStatus::PUBLICADO]);
+
+        return $course->fresh();
     }
 
-    // TODO: Implement unpublish logic — change status back to EN_PREPARACION
     public function unpublish(Course $course): Course
     {
-        throw new \RuntimeException('TODO: Implement unpublish');
+        $course->update(['status' => CourseStatus::EN_PREPARACION]);
+
+        return $course->fresh();
     }
 
-    // TODO: Implement calculatePrice — delegate to BusinessRules
     public function calculatePrice(Course $course, string $participantType): float
     {
-        throw new \RuntimeException('TODO: Implement calculatePrice');
+        return match ($participantType) {
+            'umss' => (float) $course->precio_umss,
+            'externo' => (float) $course->precio_externo,
+            'auxiliar' => (float) $course->precio_auxiliar,
+            default => throw new \InvalidArgumentException("Invalid participant type: {$participantType}"),
+        };
     }
 
-    // TODO: Implement getPublishedCourses — return courses with status PUBLICADO
-    public function getPublishedCourses()
+    public function getPublishedCourses(): Collection
     {
-        throw new \RuntimeException('TODO: Implement getPublishedCourses');
+        return Course::where('status', CourseStatus::PUBLICADO)
+            ->with(['instructor', 'groups'])
+            ->get();
     }
 }

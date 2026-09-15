@@ -14,7 +14,7 @@ class PreinscriptionPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function view(User $user, Preinscription $preinscription): bool
@@ -28,7 +28,7 @@ class PreinscriptionPolicy
         }
 
         if ($user->hasRole('student')) {
-            return $user->id === $preinscription->user_id;
+            return $user->email === $preinscription->email;
         }
 
         return false;
@@ -36,7 +36,7 @@ class PreinscriptionPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasRole('student');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function update(User $user, Preinscription $preinscription): bool
@@ -54,16 +54,16 @@ class PreinscriptionPolicy
 
     public function delete(User $user, Preinscription $preinscription): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function restore(User $user, Preinscription $preinscription): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 
     public function forceDelete(User $user, Preinscription $preinscription): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('instructor');
     }
 }

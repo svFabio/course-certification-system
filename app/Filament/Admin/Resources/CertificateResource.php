@@ -9,6 +9,8 @@ use App\Models\Certificate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use App\Enums\SignatureStatus;
+use App\Enums\CertificateType;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -39,10 +41,7 @@ class CertificateResource extends Resource
                     ->searchable()
                     ->required(),
                 Forms\Components\Select::make('tipo')
-                    ->options([
-                        'aprobacion' => 'Aprobación',
-                        'asistencia' => 'Asistencia',
-                    ])
+                    ->options(CertificateType::class)
                     ->required(),
                 Forms\Components\TextInput::make('codigo_unico')
                     ->required()
@@ -51,12 +50,9 @@ class CertificateResource extends Resource
                 Forms\Components\TextInput::make('pdf_path')
                     ->maxLength(500),
                 Forms\Components\Select::make('signature_status')
-                    ->options([
-                        'pendiente' => 'Pendiente',
-                        'firmado' => 'Firmado',
-                        'rechazado' => 'Rechazado',
-                    ])
-                    ->default('pendiente'),
+                    ->options(SignatureStatus::class)
+                    ->default(SignatureStatus::PENDIENTE)
+                    ->required(),
                 Forms\Components\DateTimePicker::make('emitido_en'),
             ]);
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\GroupStatus;
+use App\Enums\PreinscriptionStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -57,7 +58,7 @@ class Group extends Model
         }
 
         $inscritos = $this->preinscriptions()
-            ->where('status', 'inscrito')
+            ->where('status', PreinscriptionStatus::INSCRITO)
             ->count();
 
         return round(($inscritos / $this->cupo_maximo) * 100, 2);

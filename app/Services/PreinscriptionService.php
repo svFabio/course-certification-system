@@ -4,34 +4,71 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\PreinscriptionStatus;
 use App\Models\Group;
 use App\Models\Preinscription;
+use App\Support\BusinessRules;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Validation\ValidationException;
 
 class PreinscriptionService
 {
-    public function __construct() {}
-
-    // TODO: Implement register — create preinscription, validate capacity
     public function register(array $data): Preinscription
     {
-        throw new \RuntimeException('TODO: Implement register');
+        $group = Group::findOrFail($data['group_id']);
+
+        if (!$this->hasAvailableCapacity($group)) {
+            throw ValidationException::withMessages([
+                'group_id' => 'The selected group has reached its maximum capacity.',
+            ]);
+        }
+
+        return Preinscription::create([
+            'group_id' => $group->id,
+            'ci' => $data['ci'],
+            'nombres' => $data['nombres'],
+            'apellido_paterno' => $data['apellido_paterno'],
+            'apellido_materno' => $data['apellido_materno'] ?? null,
+            'celular' => $data['celular'] ?? null,
+            'email' => $data['email'],
+            'tipo_participante' => $data['tipo_participante'],
+            'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+        ]);
     }
 
-    // TODO: Implement evaluateCupoMinimo — check if group meets MIN_GROUP_CAPACITY
     public function evaluateCupoMinimo(Group $group): bool
     {
-        throw new \RuntimeException('TODO: Implement evaluateCupoMinimo');
+        $confirmed = $group->preinscriptions()
+            ->where('status', PreinscriptionStatus::INSCRITO)
+            ->count();
+
+        return $confirmed >= BusinessRules::MIN_GROUP_CAPACITY;
     }
 
-    // TODO: Implement getAvailableGroups — return groups with available capacity
-    public function getAvailableGroups(int $courseId)
+    public function hasAvailableCapacity(Group $group): bool
     {
-        throw new \RuntimeException('TODO: Implement getAvailableGroups');
+        $confirmed = $group->preinscriptions()
+            ->whereIn('status', [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO])
+            ->count();
+
+        return $confirmed < $group->cupo_maximo;
     }
 
-    // TODO: Implement processPaymentConfirmation — confirm payment, update status
+    public function getAvailableGroups(int $courseId): Collection
+    {
+        return Group::where('course_id', $courseId)
+            ->where('status', 'habilitado')
+            ->withCount(['preinscriptions as confirmed_count' => fn ($q) =>
+                $q->whereIn('status', [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO])
+            ])
+            ->get()
+            ->filter(fn ($group) => $group->confirmed_count < $group->cupo_maximo);
+    }
+
     public function processPaymentConfirmation(Preinscription $preinscription): Preinscription
     {
-        throw new \RuntimeException('TODO: Implement processPaymentConfirmation');
+        $preinscription->update(['status' => PreinscriptionStatus::INSCRITO]);
+
+        return $preinscription->fresh();
     }
 }

@@ -43,15 +43,16 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Course::class, 'instructor_id');
     }
 
-    public function preinscriptions(): HasMany
+        /**
+     * Preinscriptions cannot be directly related to users via user_id
+     * because the table identifies participants by CI and email, not by user FK.
+     * Use Preinscription::where('email', $user->email) to look up a user's records.
+     */
+    public function preinscriptionsByEmail(): \Illuminate\Database\Eloquent\Builder
     {
-        return $this->hasMany(Preinscription::class);
+        return \App\Models\Preinscription::where('email', $this->email);
     }
 
-    public function certificates(): HasMany
-    {
-        return $this->hasMany(Certificate::class);
-    }
 
     public function verifiedPayments(): HasMany
     {
