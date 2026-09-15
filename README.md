@@ -31,13 +31,7 @@ El primer arranque tarda mas porque Docker compila el frontend y ejecuta las mig
 | `http://localhost:8000/verificar-certificado` | Verificacion de certificados |
 | `http://localhost:8000/asistencia` | Registro de asistencia (QR + GPS) |
 
-## Credenciales de Prueba
 
-| Usuario | Contrasena | Rol |
-|---------|------------|-----|
-| admin@umss.edu.bo | password | Administrador |
-| instructor@umss.edu.bo | password | Instructor |
-| student@umss.edu.bo | password | Estudiante |
 
 ## Conexion a la Base de Datos
 
