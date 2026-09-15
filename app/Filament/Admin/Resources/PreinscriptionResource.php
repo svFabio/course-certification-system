@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\PreinscriptionStatus;
 use App\Filament\Admin\Resources\PreinscriptionResource\Pages;
 use App\Models\Preinscription;
 use Filament\Forms;
@@ -60,12 +61,8 @@ class PreinscriptionResource extends Resource
                     ])
                     ->required(),
                 Forms\Components\Select::make('status')
-                    ->options([
-                        'pendiente' => 'Pendiente',
-                        'confirmada' => 'Confirmada',
-                        'cancelada' => 'Cancelada',
-                    ])
-                    ->default('pendiente'),
+                    ->options(PreinscriptionStatus::class)
+                    ->default(PreinscriptionStatus::PENDIENTE_PAGO),
             ]);
     }
 

@@ -3,11 +3,11 @@
         <h1 class="text-4xl font-bold mb-4">Formación Continua con Certificación Digital Verificable</h1>
         <p class="text-xl text-blue-100 mb-8">Fortalece tus competencias con cursos certificados por la UMSS.</p>
         <div class="flex gap-4">
-            <a href="{{ route('catalogo') }}"
+            <a href="{{ route('home') }}"
                 class="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-blue-50 transition">
                 Ver Catálogo
             </a>
-            <a href="{{ route('verificar-certificado') }}"
+            <a href="{{ route('certificado.verificar') }}"
                 class="border border-white text-white px-6 py-3 rounded-lg font-medium hover:bg-white/10 transition">
                 Verificar Certificado
             </a>

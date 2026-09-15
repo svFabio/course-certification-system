@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Instructor\Resources;
 
+use App\Enums\AttendanceStatus;
 use App\Filament\Instructor\Resources\InstructorAttendanceResource\Pages;
 use App\Models\Attendance;
 use Filament\Forms;
@@ -39,12 +40,7 @@ class InstructorAttendanceResource extends Resource
                     ->searchable()
                     ->required(),
                 Forms\Components\Select::make('status')
-                    ->options([
-                        'presente' => 'Presente',
-                        'ausente' => 'Ausente',
-                        'justificado' => 'Justificado',
-                        'para_revision' => 'Para Revisión',
-                    ])
+                    ->options(AttendanceStatus::class)
                     ->required(),
             ]);
     }

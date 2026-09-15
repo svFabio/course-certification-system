@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Resources;
 use App\Enums\CourseStatus;
 use App\Filament\Admin\Resources\CourseResource\Pages;
 use App\Models\Course;
+use App\Support\BusinessRules;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists;
@@ -42,18 +43,14 @@ class CourseResource extends Resource
                             Forms\Components\Textarea::make('contenido')
                                 ->rows(4),
                             Forms\Components\Select::make('carga_horaria')
-                                ->options([
-                                    '20' => '20 horas',
-                                    '30' => '30 horas',
-                                ])
+                                ->options(array_combine(
+                                    BusinessRules::VALID_HOURS,
+                                    array_map(fn ($h) => "{$h} horas", BusinessRules::VALID_HOURS),
+                                ))
                                 ->required()
                                 ->reactive()
                                 ->afterStateUpdated(function ($set, $state) {
-                                    $prices = match ($state) {
-                                        '20' => ['umss' => 80, 'externo' => 100, 'auxiliar' => 40],
-                                        '30' => ['umss' => 120, 'externo' => 150, 'auxiliar' => 60],
-                                        default => [],
-                                    };
+                                    $prices = BusinessRules::PRICING[$state] ?? [];
                                     $set('precio_umss', $prices['umss'] ?? 0);
                                     $set('precio_externo', $prices['externo'] ?? 0);
                                     $set('precio_auxiliar', $prices['auxiliar'] ?? 0);
@@ -116,7 +113,10 @@ class CourseResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options(CourseStatus::class),
                 Tables\Filters\SelectFilter::make('carga_horaria')
-                    ->options(['20' => '20h', '30' => '30h']),
+                    ->options(array_combine(
+                        BusinessRules::VALID_HOURS,
+                        array_map(fn ($h) => "{$h}h", BusinessRules::VALID_HOURS),
+                    )),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

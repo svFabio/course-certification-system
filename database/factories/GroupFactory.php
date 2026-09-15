@@ -7,6 +7,7 @@ namespace Database\Factories;
 use App\Enums\GroupStatus;
 use App\Models\Course;
 use App\Models\Group;
+use App\Support\BusinessRules;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -23,7 +24,7 @@ class GroupFactory extends Factory
             'nombre' => 'Grupo '.fake()->unique()->numberBetween(1, 999),
             'hora_inicio' => '08:00',
             'hora_fin' => '10:00',
-            'cupo_minimo' => 15,
+            'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
             'cupo_maximo' => 30,
             'status' => GroupStatus::HABILITADO,
         ];
