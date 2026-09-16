@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Livewire;
 
 use App\Models\Group;
+use App\Models\Preinscription;
 use App\Services\PreinscriptionService;
+use App\Support\BusinessRules;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -28,12 +30,60 @@ class PreinscriptionComponent extends Component
 
     public ?string $tipoParticipante = null;
 
+    public bool $stepConfirmation = false;
+
     public ?Group $group = null;
+
+    public $availableGroups = [];
 
     public function mount(int $group): void
     {
         $this->groupId = $group;
         $this->group = Group::with('course')->findOrFail($group);
+        $this->availableGroups = PreinscriptionService::getAvailableGroups($this->group->course_id);
+    }
+
+    public function getPrecioCalculadoProperty(): ?float
+    {
+        if (! $this->tipoParticipante || ! $this->group) {
+            return null;
+        }
+
+        return BusinessRules::calculatePrice(
+            (int) $this->group->course->carga_horaria,
+            $this->tipoParticipante
+        );
+    }
+
+    public function goToConfirmation(): void
+    {
+        $this->validate([
+            'groupId' => 'required|integer|exists:groups,id',
+            'ci' => 'required|string|max:20',
+            'nombres' => 'required|string|max:100',
+            'apellidoPaterno' => 'required|string|max:100',
+            'apellidoMaterno' => 'nullable|string|max:100',
+            'celular' => 'nullable|string|max:20',
+            'email' => 'required|email|max:150',
+            'tipoParticipante' => 'required|in:umss,externo,auxiliar',
+        ]);
+
+        $exists = Preinscription::where('ci', $this->ci)
+            ->where('group_id', $this->groupId)
+            ->exists();
+
+        if ($exists) {
+            $this->addError('ci', 'Ya cuentas con una preinscripcion activa para este curso.');
+
+            return;
+        }
+
+        $this->stepConfirmation = true;
+    }
+
+    public function backToEdit(): void
+    {
+        $this->stepConfirmation = false;
     }
 
     public function submit(PreinscriptionService $service): void
@@ -49,7 +99,7 @@ class PreinscriptionComponent extends Component
             'tipoParticipante' => 'required|in:umss,externo,auxiliar',
         ]);
 
-        $preinscription = $service->register([
+        $service->register([
             'group_id' => $validated['groupId'],
             'ci' => $validated['ci'],
             'nombres' => $validated['nombres'],
@@ -60,15 +110,16 @@ class PreinscriptionComponent extends Component
             'tipo_participante' => $validated['tipoParticipante'],
         ]);
 
-        session()->flash('success', 'Your pre-registration has been submitted successfully. Check your email for payment instructions.');
+        session()->flash('success', 'Preinscripcion registrada correctamente. Siga las instrucciones de pago en caja facultativa.');
 
-        $this->reset(['ci', 'nombres', 'apellidoPaterno', 'apellidoMaterno', 'celular', 'email', 'tipoParticipante']);
+        $this->reset(['ci', 'nombres', 'apellidoPaterno', 'apellidoMaterno', 'celular', 'email', 'tipoParticipante', 'stepConfirmation']);
     }
 
     public function render()
     {
         return view('livewire.preinscription-component', [
             'group' => $this->group,
+            'availableGroups' => $this->availableGroups,
         ]);
     }
 }

@@ -39,7 +39,8 @@ class CourseResource extends Resource
                         ->schema([
                             Forms\Components\TextInput::make('nombre')
                                 ->required()
-                                ->maxLength(255),
+                                ->maxLength(255)
+                                ->unique(ignoreRecord: true),
                             Forms\Components\Textarea::make('contenido')
                                 ->rows(4),
                             Forms\Components\Select::make('carga_horaria')

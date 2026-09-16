@@ -18,12 +18,26 @@ class CatalogComponent extends Component
 
     public ?string $periodo = null;
 
+    public ?string $nivel = null;
+
+    public ?string $cargaHoraria = null;
+
     public function updatingSearch(): void
     {
         $this->resetPage();
     }
 
     public function updatingPeriodo(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingNivel(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingCargaHoraria(): void
     {
         $this->resetPage();
     }
@@ -39,6 +53,8 @@ class CatalogComponent extends Component
             ->where('status', CourseStatus::PUBLICADO)
             ->when($this->search, fn ($q) => $q->where('nombre', 'like', "%{$this->search}%"))
             ->when($this->periodo, fn ($q) => $q->where('periodo', $this->periodo))
+            ->when($this->nivel, fn ($q) => $q->where('nivel', $this->nivel))
+            ->when($this->cargaHoraria, fn ($q) => $q->where('carga_horaria', $this->cargaHoraria))
             ->with([
                 'instructor',
                 'groups' => fn ($g) => $g->where('status', GroupStatus::HABILITADO),

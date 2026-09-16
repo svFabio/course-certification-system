@@ -24,9 +24,26 @@ class GroupsRelationManager extends RelationManager
                 ->required()
                 ->maxLength(255),
             Forms\Components\TimePicker::make('hora_inicio')
-                ->required(),
+                ->required()
+                ->reactive()
+                ->afterStateUpdated(function ($set, $state) {
+                    $course = $this->getRecord()?->course;
+                    if ($course) {
+                        $duration = \App\Support\BusinessRules::SESSION_DURATION_HOURS[$course->carga_horaria] ?? 1.5;
+                        $inicio = \Carbon\Carbon::parse($state);
+                        $set('hora_fin', $inicio->copy()->addMinutes($duration * 60)->format('H:i'));
+                    }
+                }),
             Forms\Components\TimePicker::make('hora_fin')
-                ->required(),
+                ->required()
+                ->rules(function ($get) {
+                    return function ($attribute, $value, $fail) use ($get) {
+                        $horaInicio = $get('hora_inicio');
+                        if ($horaInicio && $value && $value <= $horaInicio) {
+                            $fail('La hora de fin debe ser posterior a la hora de inicio.');
+                        }
+                    };
+                }),
             Forms\Components\TextInput::make('cupo_minimo')
                 ->numeric()
                 ->default(15),

@@ -40,9 +40,30 @@ class GroupResource extends Resource
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TimePicker::make('hora_inicio')
-                    ->required(),
+                    ->required()
+                    ->reactive()
+                    ->afterStateUpdated(function ($set, $state) {
+                        // Load the course to get carga_horaria
+                        $courseId = request()->input('data.steps.0.course_id') ?? request()->record?->course_id;
+                        if ($courseId) {
+                            $course = \App\Models\Course::find($courseId);
+                            if ($course) {
+                                $duration = \App\Support\BusinessRules::SESSION_DURATION_HOURS[$course->carga_horaria] ?? 1.5;
+                                $inicio = \Carbon\Carbon::parse($state);
+                                $set('hora_fin', $inicio->copy()->addMinutes($duration * 60)->format('H:i'));
+                            }
+                        }
+                    }),
                 Forms\Components\TimePicker::make('hora_fin')
-                    ->required(),
+                    ->required()
+                    ->rules(function ($get) {
+                        return function ($attribute, $value, $fail) use ($get) {
+                            $horaInicio = $get('hora_inicio');
+                            if ($horaInicio && $value && $value <= $horaInicio) {
+                                $fail('La hora de fin debe ser posterior a la hora de inicio.');
+                            }
+                        };
+                    }),
                 Forms\Components\TextInput::make('cupo_minimo')
                     ->numeric()
                     ->default(BusinessRules::MIN_GROUP_CAPACITY),
@@ -71,7 +92,14 @@ class GroupResource extends Resource
                     ->time(),
                 Tables\Columns\TextColumn::make('cupo_maximo'),
                 Tables\Columns\TextColumn::make('status')
-                    ->badge(),
+                    ->badge(fn (GroupStatus $state) => match ($state) {
+                        GroupStatus::HABILITADO => 'success',
+                        GroupStatus::NO_HABILITADO => 'warning',
+                        GroupStatus::COMPLETO => 'info',
+                        GroupStatus::EN_CURSO => 'primary',
+                        GroupStatus::FINALIZADO => 'gray',
+                        GroupStatus::CERRADO => 'danger',
+                    }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable(),

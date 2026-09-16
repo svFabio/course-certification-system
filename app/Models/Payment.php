@@ -17,6 +17,7 @@ class Payment extends Model
         'preinscription_id',
         'monto',
         'metodo',
+        'estado',
         'numero_comprobante',
         'verificado_por',
         'verificado_en',
