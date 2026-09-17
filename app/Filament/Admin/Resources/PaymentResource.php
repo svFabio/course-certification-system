@@ -152,6 +152,7 @@ class PaymentResource extends Resource
                     ->action(function (Payment $record, array $data) {
                         $record->update([
                             'estado' => 'rechazado',
+                            'motivo_rechazo' => $data['motivo_rechazo'],
                         ]);
                     }),
                 Tables\Actions\EditAction::make(),

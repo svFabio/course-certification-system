@@ -1,6 +1,6 @@
 <div>
     <div class="card-umss p-6 mb-8">
-        <h1 class="text-2xl font-semibold text-[#0E2E5F] mb-4">Catálogo de Cursos</h1>
+        <h1 class="text-2xl font-semibold text-[#0E2E5F] mb-4">Catalogo de Cursos</h1>
         <div class="flex flex-col sm:flex-row gap-4">
             <div class="flex-1">
                 <input type="text" wire:model.live="search" placeholder="Buscar cursos por nombre..."
@@ -8,7 +8,7 @@
             </div>
             <div class="w-full sm:w-44">
                 <select wire:model.live="periodo" class="input-umss">
-                    <option value="">Todos los períodos</option>
+                    <option value="">Todos los periodos</option>
                     @foreach ($periods as $p)
                         <option value="{{ $p }}">{{ $p }}</option>
                     @endforeach
@@ -17,9 +17,9 @@
             <div class="w-full sm:w-44">
                 <select wire:model.live="nivel" class="input-umss">
                     <option value="">Todos los niveles</option>
-                    <option value="basico">Básico</option>
-                    <option value="intermedio">Intermedio</option>
-                    <option value="avanzado">Avanzado</option>
+                    <option value="Basico">Basico</option>
+                    <option value="Intermedio">Intermedio</option>
+                    <option value="Avanzado">Avanzado</option>
                 </select>
             </div>
             <div class="w-full sm:w-44">
@@ -79,15 +79,13 @@
                         @else
                             @foreach ($course->groups as $group)
                                 @php
-                                    $inscritos = $group->preinscriptions()
-                                        ->whereIn('status', ['pendiente_pago', 'inscrito'])
-                                        ->count();
+                                    $inscritos = $group->inscritos_count ?? 0;
                                     $full = $inscritos >= $group->cupo_maximo;
                                 @endphp
                                 <div class="flex justify-between items-center text-xs">
                                     <div>
                                         <span class="font-medium text-[#121212]">{{ $group->nombre }}</span>
-                                        <span class="text-[#4A4A4A] ml-1">{{ substr($group->hora_inicio, 0, 5) }} - {{ substr($group->hora_fin, 0, 5) }}</span>
+                                        <span class="text-[#4A4A4A] ml-1">{{ $group->hora_inicio instanceof \Carbon\Carbon ? $group->hora_inicio->format('H:i') : $group->hora_inicio }} - {{ $group->hora_fin instanceof \Carbon\Carbon ? $group->hora_fin->format('H:i') : $group->hora_fin }}</span>
                                         <span class="text-[#4A4A4A] ml-1">({{ $inscritos }}/{{ $group->cupo_maximo }})</span>
                                     </div>
                                     @if ($full)

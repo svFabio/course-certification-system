@@ -6,6 +6,7 @@ namespace App\Livewire;
 
 use App\Enums\CourseStatus;
 use App\Enums\GroupStatus;
+use App\Enums\PreinscriptionStatus;
 use App\Models\Course;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -57,7 +58,12 @@ class CatalogComponent extends Component
             ->when($this->cargaHoraria, fn ($q) => $q->where('carga_horaria', $this->cargaHoraria))
             ->with([
                 'instructor',
-                'groups' => fn ($g) => $g->where('status', GroupStatus::HABILITADO),
+                'groups' => function ($g) {
+                    $g->where('status', GroupStatus::HABILITADO)
+                        ->withCount(['preinscriptions as inscritos_count' => fn ($q) =>
+                            $q->whereIn('status', [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO])
+                        ]);
+                },
             ])
             ->paginate(12);
 

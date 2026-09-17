@@ -42,15 +42,14 @@ class GroupResource extends Resource
                 Forms\Components\TimePicker::make('hora_inicio')
                     ->required()
                     ->reactive()
-                    ->afterStateUpdated(function ($set, $state) {
-                        // Load the course to get carga_horaria
-                        $courseId = request()->input('data.steps.0.course_id') ?? request()->record?->course_id;
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, $state) {
+                        $courseId = $get('course_id');
                         if ($courseId) {
                             $course = \App\Models\Course::find($courseId);
                             if ($course) {
                                 $duration = \App\Support\BusinessRules::SESSION_DURATION_HOURS[$course->carga_horaria] ?? 1.5;
                                 $inicio = \Carbon\Carbon::parse($state);
-                                $set('hora_fin', $inicio->copy()->addMinutes($duration * 60)->format('H:i'));
+                                $set('hora_fin', $inicio->copy()->addMinutes((int) ($duration * 60))->format('H:i'));
                             }
                         }
                     }),

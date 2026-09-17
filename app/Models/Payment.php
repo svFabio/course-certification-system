@@ -18,6 +18,7 @@ class Payment extends Model
         'monto',
         'metodo',
         'estado',
+        'motivo_rechazo',
         'numero_comprobante',
         'verificado_por',
         'verificado_en',

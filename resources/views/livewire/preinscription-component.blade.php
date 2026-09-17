@@ -8,11 +8,11 @@
             <form wire:submit="goToConfirmation" class="space-y-5">
                 <div>
                     <label class="block text-xs font-medium text-[#4A4A4A] mb-1.5 uppercase tracking-wide">Grupo</label>
-                    <select wire:model="groupId" class="input-umss" required>
+                    <select wire:model.live="groupId" class="input-umss" required>
                         <option value="">Seleccione un grupo</option>
                         @foreach($availableGroups as $g)
                             <option value="{{ $g->id }}">
-                                {{ $g->nombre }} — {{ substr($g->hora_inicio, 0, 5) }}-{{ substr($g->hora_fin, 0, 5) }}
+                                {{ $g->nombre }} — {{ $g->hora_inicio instanceof \Carbon\Carbon ? $g->hora_inicio->format('H:i') : $g->hora_inicio }}-{{ $g->hora_fin instanceof \Carbon\Carbon ? $g->hora_fin->format('H:i') : $g->hora_fin }}
                                 ({{ $g->cupo_maximo - ($g->confirmed_count ?? 0) }} cupos)
                             </option>
                         @endforeach
@@ -55,7 +55,7 @@
 
                 <div>
                     <label class="block text-xs font-medium text-[#4A4A4A] mb-1.5 uppercase tracking-wide">Tipo de Participante</label>
-                    <select wire:model="tipoParticipante" class="input-umss" required>
+                    <select wire:model.live="tipoParticipante" class="input-umss" required>
                         <option value="">Seleccione su categoria</option>
                         <option value="umss">Comunidad UMSS (Estudiante / Docente)</option>
                         <option value="externo">Participante Externo</option>
@@ -107,7 +107,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-xs text-[#4A4A4A] uppercase">Grupo</span>
-                        <span class="text-sm font-medium text-[#121212]">{{ $group->nombre }} ({{ substr($group->hora_inicio, 0, 5) }} - {{ substr($group->hora_fin, 0, 5) }})</span>
+                        <span class="text-sm font-medium text-[#121212]">{{ $group->nombre }} ({{ $group->hora_inicio instanceof \Carbon\Carbon ? $group->hora_inicio->format('H:i') : $group->hora_inicio }} - {{ $group->hora_fin instanceof \Carbon\Carbon ? $group->hora_fin->format('H:i') : $group->hora_fin }})</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-xs text-[#4A4A4A] uppercase">Tipo participante</span>

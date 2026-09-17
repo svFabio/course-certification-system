@@ -43,6 +43,13 @@ class PreinscriptionComponent extends Component
         $this->availableGroups = PreinscriptionService::getAvailableGroups($this->group->course_id);
     }
 
+    public function updatedGroupId(): void
+    {
+        if ($this->groupId) {
+            $this->group = Group::with('course')->find($this->groupId);
+        }
+    }
+
     public function getPrecioCalculadoProperty(): ?float
     {
         if (! $this->tipoParticipante || ! $this->group) {

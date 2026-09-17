@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
+use App\Enums\PreinscriptionStatus;
 use App\Mail\PaymentConfirmedNotification;
 use App\Models\Payment;
 use App\Services\PreinscriptionService;
@@ -17,11 +18,30 @@ class PaymentObserver
 
     public function updated(Payment $payment): void
     {
-        if ($payment->wasChanged('verificado_por') && $payment->verificado_por) {
-            $this->preinscriptionService->processPaymentConfirmation($payment->preinscription);
+        if ($payment->wasChanged('estado')) {
+            match ($payment->estado) {
+                'verificado' => $this->handleVerified($payment),
+                'rechazado' => $this->handleRejected($payment),
+                default => null,
+            };
+        }
+    }
 
-            Mail::to($payment->preinscription->email)
-                ->send(new PaymentConfirmedNotification($payment));
+    protected function handleVerified(Payment $payment): void
+    {
+        $preinscription = $payment->preinscription;
+
+        $preinscription->update(['status' => PreinscriptionStatus::INSCRITO]);
+
+        Mail::queue(new PaymentConfirmedNotification($payment));
+    }
+
+    protected function handleRejected(Payment $payment): void
+    {
+        $preinscription = $payment->preinscription;
+
+        if ($preinscription->status === PreinscriptionStatus::PENDIENTE_PAGO) {
+            $preinscription->update(['status' => PreinscriptionStatus::RECHAZADO]);
         }
     }
 }

@@ -26,12 +26,12 @@ class GroupsRelationManager extends RelationManager
             Forms\Components\TimePicker::make('hora_inicio')
                 ->required()
                 ->reactive()
-                ->afterStateUpdated(function ($set, $state) {
-                    $course = $this->getRecord()?->course;
+                ->afterStateUpdated(function (Forms\Set $set, $state) {
+                    $course = $this->getOwnerRecord();
                     if ($course) {
                         $duration = \App\Support\BusinessRules::SESSION_DURATION_HOURS[$course->carga_horaria] ?? 1.5;
                         $inicio = \Carbon\Carbon::parse($state);
-                        $set('hora_fin', $inicio->copy()->addMinutes($duration * 60)->format('H:i'));
+                        $set('hora_fin', $inicio->copy()->addMinutes((int) ($duration * 60))->format('H:i'));
                     }
                 }),
             Forms\Components\TimePicker::make('hora_fin')
