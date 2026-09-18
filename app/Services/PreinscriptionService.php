@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\GroupStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Models\Group;
 use App\Models\Preinscription;
@@ -17,9 +18,9 @@ class PreinscriptionService
     {
         $group = Group::findOrFail($data['group_id']);
 
-        if (!$this->hasAvailableCapacity($group)) {
+        if (! $this->hasAvailableCapacity($group)) {
             throw ValidationException::withMessages([
-                'group_id' => 'The selected group has reached its maximum capacity.',
+                'group_id' => 'El grupo seleccionado ha alcanzado su capacidad máxima.',
             ]);
         }
 
@@ -57,9 +58,8 @@ class PreinscriptionService
     public static function getAvailableGroups(int $courseId): Collection
     {
         return Group::where('course_id', $courseId)
-            ->where('status', 'habilitado')
-            ->withCount(['preinscriptions as confirmed_count' => fn ($q) =>
-                $q->whereIn('status', [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO])
+            ->where('status', GroupStatus::HABILITADO)
+            ->withCount(['preinscriptions as confirmed_count' => fn ($q) => $q->whereIn('status', [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO]),
             ])
             ->get()
             ->filter(fn ($group) => $group->confirmed_count < $group->cupo_maximo);

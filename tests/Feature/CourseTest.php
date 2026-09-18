@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\CertificateType;
 use App\Models\Course;
 use App\Models\EvaluationCriteria;
 use App\Models\Group;
@@ -51,10 +52,10 @@ it('calculates correct pricing via BusinessRules', function () {
 });
 
 it('determines certificate type based on grade', function () {
-    expect(BusinessRules::determineCertificateType(70))->toBe('aprobacion');
-    expect(BusinessRules::determineCertificateType(69.99))->toBe('asistencia');
-    expect(BusinessRules::determineCertificateType(100))->toBe('aprobacion');
-    expect(BusinessRules::determineCertificateType(0))->toBe('asistencia');
+    expect(BusinessRules::determineCertificateType(70))->toBe(CertificateType::APROBACION);
+    expect(BusinessRules::determineCertificateType(69.99))->toBe(CertificateType::ASISTENCIA);
+    expect(BusinessRules::determineCertificateType(100))->toBe(CertificateType::APROBACION);
+    expect(BusinessRules::determineCertificateType(0))->toBe(CertificateType::ASISTENCIA);
 });
 
 it('calculates haversine distance correctly', function () {

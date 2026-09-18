@@ -14,7 +14,7 @@ enum AttendanceStatus: string implements HasLabel
 
     public function getLabel(): ?string
     {
-        return match($this) {
+        return match ($this) {
             self::PRESENTE => 'Presente',
             self::AUSENTE => 'Ausente',
             self::JUSTIFICADO => 'Justificado',

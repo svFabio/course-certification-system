@@ -16,7 +16,7 @@ enum SignatureStatus: string implements HasLabel
 
     public function getLabel(): ?string
     {
-        return match($this) {
+        return match ($this) {
             self::PENDIENTE => 'Pendiente',
             self::FIRMADO_JEFE_DEPTO => 'Firmado – Jefe Depto.',
             self::FIRMADO_DIRECTOR_ACADEMICO => 'Firmado – Director Académico',

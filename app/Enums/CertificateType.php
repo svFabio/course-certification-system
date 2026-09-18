@@ -13,7 +13,7 @@ enum CertificateType: string implements HasLabel
 
     public function getLabel(): ?string
     {
-        return match($this) {
+        return match ($this) {
             self::APROBACION => 'Aprobación',
             self::ASISTENCIA => 'Asistencia',
         };

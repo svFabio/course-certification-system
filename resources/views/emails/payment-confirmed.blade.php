@@ -27,7 +27,7 @@
                 <strong>Monto pagado:</strong> Bs. {{ number_format($payment->monto, 2) }}
             </p>
             <p style="margin: 5px 0; font-size: 13px; color: #4A4A4A;">
-                <strong>Metodo:</strong> {{ ucfirst($payment->metodo) }}
+                <strong>Metodo:</strong> {{ ucfirst($payment->metodo instanceof \BackedEnum ? $payment->metodo->value : (string) $payment->metodo) }}
             </p>
         </div>
 
@@ -38,7 +38,7 @@
         <hr style="border: none; border-top: 1px solid #E5E5E5; margin: 20px 0;">
 
         <p style="color: #999; font-size: 11px; text-align: center;">
-            Universidad Mayor de San Simon — Formacion Continua
+            Universidad Mayor de San Simon — Cursos
         </p>
     </div>
 </body>

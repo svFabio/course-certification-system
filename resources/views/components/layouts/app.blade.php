@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? config('app.name', 'UMSS - Formación Continua') }}</title>
+    <title>{{ $title ?? config('app.name', 'UMSS Cursos') }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,22 +13,28 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="bg-[#F5F5F5] text-[#121212] font-sans min-h-screen flex flex-col antialiased">
-    <nav class="bg-white border-b border-[#E5E5E5] sticky top-0 z-30">
+<body class="bg-umss-gray-100 text-umss-black font-sans min-h-screen flex flex-col antialiased">
+    <nav class="bg-white border-b border-umss-gray-100 sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center space-x-3">
-                    <a href="/" class="text-xl font-semibold text-[#0E2E5F] tracking-tight">
-                        UMSS <span class="font-normal text-[#4A4A4A]">| Formación Continua</span>
+                    <a href="/" class="text-xl font-semibold text-umss-navy tracking-tight">
+                        UMSS <span class="font-normal text-umss-gray-700">Cursos</span>
                     </a>
                 </div>
                 <div class="flex items-center space-x-6 text-sm font-medium">
-                    <a href="/" class="text-[#4A4A4A] hover:text-[#0E2E5F] transition">Catálogo</a>
-                    <a href="/verificar-certificado" class="text-[#4A4A4A] hover:text-[#0E2E5F] transition">Verificar Certificado</a>
+                    <a href="/" class="text-umss-gray-700 hover:text-umss-navy transition">Catálogo</a>
+                    <a href="/verificar-certificado" class="text-umss-gray-700 hover:text-umss-navy transition">Verificar Certificado</a>
                     @auth
-                        @if(auth()->user()->hasRole('admin'))
+                        @php
+                            $user = auth()->user();
+                            if (!$user->relationLoaded('roles')) {
+                                $user->load('roles');
+                            }
+                        @endphp
+                        @if($user->roles->contains('name', 'admin'))
                             <a href="/admin" class="btn-primary !h-9 !px-3 !text-xs">Panel Admin</a>
-                        @elseif(auth()->user()->hasRole('instructor'))
+                        @elseif($user->roles->contains('name', 'instructor'))
                             <a href="/instructor" class="btn-primary !h-9 !px-3 !text-xs">Panel Docente</a>
                         @endif
                     @else
@@ -49,7 +55,7 @@
 
     @if (session('error'))
         <div class="max-w-7xl mx-auto mt-4 px-4 w-full">
-            <div class="bg-rose-50 border border-[#E01D2E] text-[#8B0000] px-4 py-3 rounded-lg text-sm">
+            <div class="bg-rose-50 border border-umss-red text-umss-red-dark px-4 py-3 rounded-lg text-sm">
                 {{ session('error') }}
             </div>
         </div>
@@ -59,8 +65,8 @@
         {{ $slot }}
     </main>
 
-    <footer class="bg-white border-t border-[#E5E5E5] py-6 text-center text-[#4A4A4A] text-xs">
-        &copy; {{ date('Y') }} Universidad Mayor de San Simón — Formación Continua
+    <footer class="bg-white border-t border-umss-gray-100 py-6 text-center text-umss-gray-700 text-xs">
+        &copy; {{ date('Y') }} Universidad Mayor de San Simón — Cursos
     </footer>
 
     @livewireScripts

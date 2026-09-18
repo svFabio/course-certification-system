@@ -62,6 +62,10 @@ class CourseResource extends Resource
                                 ->relationship('instructor', 'name')
                                 ->searchable()
                                 ->required(),
+                            Forms\Components\Select::make('status')
+                                ->options(CourseStatus::class)
+                                ->default(CourseStatus::EN_PREPARACION)
+                                ->required(),
                         ]),
                     Forms\Components\Wizard\Step::make('Precios')
                         ->schema([

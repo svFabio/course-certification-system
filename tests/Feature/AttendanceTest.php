@@ -7,6 +7,7 @@ use App\Models\Group;
 use App\Models\Preinscription;
 use App\Models\Session;
 use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -20,12 +21,13 @@ it('registers attendance successfully when student is within radius', function (
         'email' => $user->email,
     ]);
 
-    // Coordinates close to lab (-17.7833, -66.1500)
-    $response = $this->actingAs($user)->postJson('/api/asistencia/registrar', [
-        'session_id' => $session->id,
-        'lat' => -17.78331,
-        'lng' => -66.15001,
-    ]);
+    $response = $this->actingAs($user)
+        ->withoutMiddleware(ValidateCsrfToken::class)
+        ->postJson('/api/asistencia/registrar', [
+            'session_id' => $session->id,
+            'lat' => -17.78331,
+            'lng' => -66.15001,
+        ]);
 
     $response->assertOk()
         ->assertJson([
@@ -50,11 +52,13 @@ it('flags attendance for review when student is outside radius', function () {
     ]);
 
     // Coordinates far from lab
-    $response = $this->actingAs($user)->postJson('/api/asistencia/registrar', [
-        'session_id' => $session->id,
-        'lat' => -17.8000,
-        'lng' => -66.2000,
-    ]);
+    $response = $this->actingAs($user)
+        ->withoutMiddleware(ValidateCsrfToken::class)
+        ->postJson('/api/asistencia/registrar', [
+            'session_id' => $session->id,
+            'lat' => -17.8000,
+            'lng' => -66.2000,
+        ]);
 
     $response->assertOk()
         ->assertJson([

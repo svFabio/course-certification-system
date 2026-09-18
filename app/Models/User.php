@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -43,16 +44,15 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Course::class, 'instructor_id');
     }
 
-        /**
+    /**
      * Preinscriptions cannot be directly related to users via user_id
      * because the table identifies participants by CI and email, not by user FK.
      * Use Preinscription::where('email', $user->email) to look up a user's records.
      */
-    public function preinscriptionsByEmail(): \Illuminate\Database\Eloquent\Builder
+    public function preinscriptionsByEmail(): Builder
     {
-        return \App\Models\Preinscription::where('email', $this->email);
+        return Preinscription::where('email', $this->email);
     }
-
 
     public function verifiedPayments(): HasMany
     {

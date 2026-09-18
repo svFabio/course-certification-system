@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Enums\CertificateType;
+
 final class BusinessRules
 {
     /*
@@ -22,7 +24,9 @@ final class BusinessRules
     |--------------------------------------------------------------------------
     */
     public const MINIMUM_PASSING_GRADE = 70;
+
     public const GRADE_MIN = 0;
+
     public const GRADE_MAX = 100;
 
     /*
@@ -31,7 +35,9 @@ final class BusinessRules
     |--------------------------------------------------------------------------
     */
     public const DEFAULT_LAB_LAT = -17.7833;
+
     public const DEFAULT_LAB_LNG = -66.1500;
+
     public const ATTENDANCE_RADIUS_METERS = 100;
 
     /*
@@ -90,9 +96,9 @@ final class BusinessRules
         return (float) $price;
     }
 
-    public static function determineCertificateType(float $grade): string
+    public static function determineCertificateType(float $grade): CertificateType
     {
-        return $grade >= self::MINIMUM_PASSING_GRADE ? 'aprobacion' : 'asistencia';
+        return $grade >= self::MINIMUM_PASSING_GRADE ? CertificateType::APROBACION : CertificateType::ASISTENCIA;
     }
 
     public static function haversineDistance(float $lat1, float $lng1, float $lat2, float $lng2): float

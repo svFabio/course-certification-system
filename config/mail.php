@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
 
     'mailers' => [
@@ -13,7 +15,7 @@ return [
 
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Plataforma Formación')),
+        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'UMSS Cursos')),
     ],
 
 ];

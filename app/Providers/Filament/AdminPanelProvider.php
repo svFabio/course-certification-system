@@ -32,7 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(Login::class)
-            ->brandName('UMSS - Formación Continua')
+            ->brandName('UMSS Cursos')
             ->font('Montserrat')
             ->darkMode(false)
             ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.custom-styles'))

@@ -12,6 +12,23 @@ use Illuminate\Support\Facades\Config;
 
 class AttendanceService
 {
+    public function findSession(?int $sessionId, ?string $sessionCode): ?Session
+    {
+        if ($sessionId) {
+            return Session::with('group')->find($sessionId);
+        }
+
+        if ($sessionCode && is_numeric($sessionCode)) {
+            return Session::with('group')->find((int) $sessionCode);
+        }
+
+        if ($sessionCode && preg_match('/(\d+)/', $sessionCode, $matches)) {
+            return Session::with('group')->find((int) $matches[1]);
+        }
+
+        return null;
+    }
+
     public function registerManual(Session $session, int $preinscriptionId, string $status): Attendance
     {
         return Attendance::updateOrCreate(

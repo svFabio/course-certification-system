@@ -56,7 +56,7 @@ class CertificateService
     private function generateUniqueCode(): string
     {
         do {
-            $code = 'CERT-' . now()->year . '-' . strtoupper(Str::random(8));
+            $code = 'CERT-'.now()->year.'-'.strtoupper(Str::random(8));
         } while (Certificate::where('codigo_unico', $code)->exists());
 
         return $code;

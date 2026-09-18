@@ -14,8 +14,8 @@
 
     {{ \Filament\Support\Facades\FilamentView::renderHook(\Filament\View\PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, scopes: $this->getRenderHookScopes()) }}
 
-    <div class="mt-6 pt-4 border-t border-[#E5E5E5] text-center">
-        <a href="/" class="text-xs font-medium text-[#0E2E5F] hover:underline transition">
+    <div class="mt-6 pt-4 border-t border-umss-gray-100 text-center">
+        <a href="/" class="text-xs font-medium text-umss-navy hover:underline transition">
             Volver al catálogo público de cursos
         </a>
     </div>

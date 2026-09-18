@@ -13,7 +13,7 @@ class UsersSeeder extends Seeder
         $admin = User::create([
             'name' => 'Administrador',
             'email' => env('SEED_ADMIN_EMAIL', 'admin@umss.edu.bo'),
-            'password' => Hash::make(env('SEED_ADMIN_PASSWORD', 'change-me-in-env')),
+            'password' => Hash::make(env('SEED_ADMIN_PASSWORD', 'password')),
             'email_verified_at' => now(),
         ]);
         $admin->assignRole('admin');
@@ -21,7 +21,7 @@ class UsersSeeder extends Seeder
         $instructor = User::create([
             'name' => 'Instructor Demo',
             'email' => env('SEED_INSTRUCTOR_EMAIL', 'instructor@umss.edu.bo'),
-            'password' => Hash::make(env('SEED_INSTRUCTOR_PASSWORD', 'change-me-in-env')),
+            'password' => Hash::make(env('SEED_INSTRUCTOR_PASSWORD', 'password')),
             'email_verified_at' => now(),
         ]);
         $instructor->assignRole('instructor');
@@ -29,7 +29,7 @@ class UsersSeeder extends Seeder
         $student = User::create([
             'name' => 'Estudiante Demo',
             'email' => env('SEED_STUDENT_EMAIL', 'student@umss.edu.bo'),
-            'password' => Hash::make(env('SEED_STUDENT_PASSWORD', 'change-me-in-env')),
+            'password' => Hash::make(env('SEED_STUDENT_PASSWORD', 'password')),
             'email_verified_at' => now(),
         ]);
         $student->assignRole('student');

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Filament\Admin\Resources\PaymentResource\Pages;
 use App\Models\Payment;
 use App\Models\Preinscription;
@@ -14,7 +15,6 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Validation\ValidationException;
 
 class PaymentResource extends Resource
 {
@@ -63,12 +63,8 @@ class PaymentResource extends Resource
                     ->options(PaymentMethod::class)
                     ->required(),
                 Forms\Components\Select::make('estado')
-                    ->options([
-                        'pendiente' => 'Pendiente',
-                        'verificado' => 'Verificado',
-                        'rechazado' => 'Rechazado',
-                    ])
-                    ->default('pendiente')
+                    ->options(PaymentStatus::class)
+                    ->default(PaymentStatus::PENDIENTE)
                     ->required(),
                 Forms\Components\TextInput::make('numero_comprobante')
                     ->maxLength(100),
@@ -92,11 +88,7 @@ class PaymentResource extends Resource
                 Tables\Columns\TextColumn::make('metodo')
                     ->badge(),
                 Tables\Columns\TextColumn::make('estado')
-                    ->badge(fn (string $state) => match ($state) {
-                        'pendiente' => 'warning',
-                        'verificado' => 'success',
-                        'rechazado' => 'danger',
-                    }),
+                    ->badge(),
                 Tables\Columns\TextColumn::make('numero_comprobante'),
                 Tables\Columns\TextColumn::make('verificado_por'),
                 Tables\Columns\TextColumn::make('verificado_en')
@@ -108,18 +100,14 @@ class PaymentResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('estado')
-                    ->options([
-                        'pendiente' => 'Pendiente',
-                        'verificado' => 'Verificado',
-                        'rechazado' => 'Rechazado',
-                    ]),
+                    ->options(PaymentStatus::class),
             ])
             ->actions([
                 Tables\Actions\Action::make('verificar')
                     ->label('Verificar')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn (Payment $record) => $record->verificado_por === null && $record->estado !== 'rechazado')
+                    ->visible(fn (Payment $record) => $record->verificado_por === null && $record->estado !== PaymentStatus::RECHAZADO)
                     ->requiresConfirmation()
                     ->modalHeading('Verificar pago')
                     ->modalSubdescription('Confirma que el pago fue recibido en caja facultativa')
@@ -132,14 +120,15 @@ class PaymentResource extends Resource
                         $record->update([
                             'verificado_por' => auth()->id(),
                             'verificado_en' => $data['verificado_en'],
-                            'estado' => 'verificado',
+                            'estado' => PaymentStatus::VERIFICADO,
+                            'motivo_rechazo' => null,
                         ]);
                     }),
                 Tables\Actions\Action::make('rechazar')
                     ->label('Rechazar')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn (Payment $record) => $record->estado !== 'rechazado')
+                    ->visible(fn (Payment $record) => $record->estado !== PaymentStatus::RECHAZADO)
                     ->requiresConfirmation()
                     ->modalHeading('Rechazar pago')
                     ->modalSubdescription('El pago no fue recibido o presento problemas')
@@ -151,8 +140,10 @@ class PaymentResource extends Resource
                     ])
                     ->action(function (Payment $record, array $data) {
                         $record->update([
-                            'estado' => 'rechazado',
+                            'estado' => PaymentStatus::RECHAZADO,
                             'motivo_rechazo' => $data['motivo_rechazo'],
+                            'verificado_por' => null,
+                            'verificado_en' => null,
                         ]);
                     }),
                 Tables\Actions\EditAction::make(),

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\CourseResource\RelationManagers;
 
 use App\Enums\GroupStatus;
+use App\Support\BusinessRules;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -29,8 +31,8 @@ class GroupsRelationManager extends RelationManager
                 ->afterStateUpdated(function (Forms\Set $set, $state) {
                     $course = $this->getOwnerRecord();
                     if ($course) {
-                        $duration = \App\Support\BusinessRules::SESSION_DURATION_HOURS[$course->carga_horaria] ?? 1.5;
-                        $inicio = \Carbon\Carbon::parse($state);
+                        $duration = BusinessRules::SESSION_DURATION_HOURS[$course->carga_horaria] ?? 1.5;
+                        $inicio = Carbon::parse($state);
                         $set('hora_fin', $inicio->copy()->addMinutes((int) ($duration * 60))->format('H:i'));
                     }
                 }),
@@ -46,7 +48,7 @@ class GroupsRelationManager extends RelationManager
                 }),
             Forms\Components\TextInput::make('cupo_minimo')
                 ->numeric()
-                ->default(15),
+                ->default(BusinessRules::MIN_GROUP_CAPACITY),
             Forms\Components\TextInput::make('cupo_maximo')
                 ->numeric()
                 ->required(),

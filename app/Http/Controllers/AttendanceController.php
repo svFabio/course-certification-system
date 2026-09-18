@@ -5,11 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\AttendanceStatus;
-use App\Models\Attendance;
 use App\Models\Preinscription;
-use App\Models\Session;
 use App\Services\AttendanceService;
-use App\Support\BusinessRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
@@ -34,14 +31,7 @@ class AttendanceController extends Controller
         $sessionId = $request->input('session_id');
         $sessionCode = (string) $request->input('session_code', '');
 
-        $session = null;
-        if ($sessionId) {
-            $session = Session::with('group')->find($sessionId);
-        } elseif (is_numeric($sessionCode)) {
-            $session = Session::with('group')->find((int) $sessionCode);
-        } elseif (preg_match('/(\d+)/', $sessionCode, $matches)) {
-            $session = Session::with('group')->find((int) $matches[1]);
-        }
+        $session = $this->attendanceService->findSession($sessionId, $sessionCode);
 
         if (! $session) {
             return response()->json([

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
+use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Mail\PaymentConfirmedNotification;
 use App\Models\Payment;
@@ -20,8 +21,8 @@ class PaymentObserver
     {
         if ($payment->wasChanged('estado')) {
             match ($payment->estado) {
-                'verificado' => $this->handleVerified($payment),
-                'rechazado' => $this->handleRejected($payment),
+                PaymentStatus::VERIFICADO => $this->handleVerified($payment),
+                PaymentStatus::RECHAZADO => $this->handleRejected($payment),
                 default => null,
             };
         }
@@ -33,7 +34,10 @@ class PaymentObserver
 
         $preinscription->update(['status' => PreinscriptionStatus::INSCRITO]);
 
-        Mail::queue(new PaymentConfirmedNotification($payment));
+        $payment->loadMissing('preinscription.group.course');
+
+        Mail::to($preinscription->email)
+            ->queue(new PaymentConfirmedNotification($payment));
     }
 
     protected function handleRejected(Payment $payment): void

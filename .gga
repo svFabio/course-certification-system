@@ -1,0 +1,20 @@
+# Gentleman Guardian Angel (GGA) Configuration
+# Project-level configuration for 03-course-certification-system
+
+# AI Provider for code review
+PROVIDER="opencode"
+
+# File patterns to review (source code and templates only)
+FILE_PATTERNS="*.php,*.blade.php,*.js,*.ts,*.vue,*.css"
+
+# Patterns to exclude from review
+EXCLUDE_PATTERNS="vendor/*,node_modules/*,storage/*,public/*,bootstrap/cache/*,docs/*,*.json,package-lock.json,composer.lock,.agents/*,.atl/*,*.xlsx,*.min.js,*.min.css"
+
+# Rules file containing coding standards
+RULES_FILE="AGENTS.md"
+
+# Strict mode
+STRICT_MODE="true"
+
+# Review timeout in seconds
+TIMEOUT="300"

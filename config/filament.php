@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Filament\Admin\Resources\CourseResource;
 use Filament\Pages\Dashboard;
 
@@ -35,7 +37,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'default_font_family' => env('FILAMENT_DEFAULT_FONT_FAMILY', 'Inter'),
+    'default_font_family' => env('FILAMENT_DEFAULT_FONT_FAMILY', 'Montserrat'),
 
     /*
     |--------------------------------------------------------------------------
@@ -59,7 +61,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'brand_name' => env('FILAMENT_BRAND_NAME', 'Plataforma Formación'),
+    'brand_name' => env('FILAMENT_BRAND_NAME', 'UMSS Cursos'),
 
     /*
     |--------------------------------------------------------------------------

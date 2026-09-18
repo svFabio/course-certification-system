@@ -6,8 +6,10 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\GroupStatus;
 use App\Filament\Admin\Resources\GroupResource\Pages;
+use App\Models\Course;
 use App\Models\Group;
 use App\Support\BusinessRules;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -45,10 +47,10 @@ class GroupResource extends Resource
                     ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, $state) {
                         $courseId = $get('course_id');
                         if ($courseId) {
-                            $course = \App\Models\Course::find($courseId);
+                            $course = Course::find($courseId);
                             if ($course) {
-                                $duration = \App\Support\BusinessRules::SESSION_DURATION_HOURS[$course->carga_horaria] ?? 1.5;
-                                $inicio = \Carbon\Carbon::parse($state);
+                                $duration = BusinessRules::SESSION_DURATION_HOURS[$course->carga_horaria] ?? 1.5;
+                                $inicio = Carbon::parse($state);
                                 $set('hora_fin', $inicio->copy()->addMinutes((int) ($duration * 60))->format('H:i'));
                             }
                         }
