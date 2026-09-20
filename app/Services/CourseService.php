@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\CourseStatus;
 use App\Models\Course;
+use App\Support\BusinessRules;
 use Illuminate\Database\Eloquent\Collection;
 
 class CourseService
@@ -26,12 +27,7 @@ class CourseService
 
     public function calculatePrice(Course $course, string $participantType): float
     {
-        return match ($participantType) {
-            'umss' => (float) $course->precio_umss,
-            'externo' => (float) $course->precio_externo,
-            'auxiliar' => (float) $course->precio_auxiliar,
-            default => throw new \InvalidArgumentException("Invalid participant type: {$participantType}"),
-        };
+        return BusinessRules::calculatePrice((int) $course->carga_horaria, $participantType);
     }
 
     public function getPublishedCourses(): Collection

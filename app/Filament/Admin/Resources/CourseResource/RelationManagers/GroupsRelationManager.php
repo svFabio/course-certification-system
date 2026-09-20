@@ -27,7 +27,7 @@ class GroupsRelationManager extends RelationManager
                 ->maxLength(255),
             Forms\Components\TimePicker::make('hora_inicio')
                 ->required()
-                ->reactive()
+                ->live()
                 ->afterStateUpdated(function (Forms\Set $set, $state) {
                     $course = $this->getOwnerRecord();
                     if ($course) {
@@ -51,7 +51,15 @@ class GroupsRelationManager extends RelationManager
                 ->default(BusinessRules::MIN_GROUP_CAPACITY),
             Forms\Components\TextInput::make('cupo_maximo')
                 ->numeric()
-                ->required(),
+                ->required()
+                ->rules(function ($get) {
+                    return function ($attribute, $value, $fail) use ($get) {
+                        $min = (int) $get('cupo_minimo');
+                        if ($min > 0 && (int) $value < $min) {
+                            $fail("El cupo máximo debe ser mayor o igual al cupo mínimo ({$min}).");
+                        }
+                    };
+                }),
             Forms\Components\Select::make('status')
                 ->options(GroupStatus::class)
                 ->default(GroupStatus::HABILITADO),

@@ -49,8 +49,8 @@ class CourseResource extends Resource
                                     array_map(fn ($h) => "{$h} horas", BusinessRules::VALID_HOURS),
                                 ))
                                 ->required()
-                                ->reactive()
-                                ->afterStateUpdated(function ($set, $state) {
+                                ->live()
+                                ->afterStateUpdated(function (Forms\Set $set, $state) {
                                     $prices = BusinessRules::PRICING[$state] ?? [];
                                     $set('precio_umss', $prices['umss'] ?? 0);
                                     $set('precio_externo', $prices['externo'] ?? 0);
@@ -98,14 +98,7 @@ class CourseResource extends Resource
                 Tables\Columns\TextColumn::make('nivel'),
                 Tables\Columns\TextColumn::make('periodo'),
                 Tables\Columns\TextColumn::make('status')
-                    ->badge(fn (CourseStatus $state) => match ($state) {
-                        CourseStatus::EN_PREPARACION => 'warning',
-                        CourseStatus::PUBLICADO => 'success',
-                        CourseStatus::PREINSCRIPCION_CERRADA => 'gray',
-                        CourseStatus::EN_CURSO => 'info',
-                        CourseStatus::FINALIZADO => 'success',
-                        CourseStatus::CANCELADO => 'danger',
-                    }),
+                    ->badge(),
                 Tables\Columns\TextColumn::make('instructor.name'),
                 Tables\Columns\TextColumn::make('precio_umss')
                     ->numeric()

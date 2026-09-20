@@ -8,9 +8,13 @@ use App\Models\EvaluationCriteria;
 use App\Models\Group;
 use App\Models\Preinscription;
 use App\Models\User;
+use App\Services\CertificateService;
+use App\Services\EvaluationService;
+use App\Services\PreinscriptionService;
 use App\Support\BusinessRules;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -131,4 +135,83 @@ it('allows same ci in different groups', function () {
 
     expect($p1->exists)->toBeTrue();
     expect($p2->exists)->toBeTrue();
+});
+
+it('rejects preinscription when group capacity is full', function () {
+    $group = Group::factory()->create([
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 2,
+    ]);
+
+    $service = app(PreinscriptionService::class);
+
+    $service->register([
+        'group_id' => $group->id,
+        'ci' => '1111111',
+        'nombres' => 'Juan',
+        'apellido_paterno' => 'Perez',
+        'email' => 'juan@example.com',
+        'tipo_participante' => 'umss',
+    ]);
+
+    $service->register([
+        'group_id' => $group->id,
+        'ci' => '2222222',
+        'nombres' => 'Maria',
+        'apellido_paterno' => 'Gomez',
+        'email' => 'maria@example.com',
+        'tipo_participante' => 'externo',
+    ]);
+
+    expect(fn () => $service->register([
+        'group_id' => $group->id,
+        'ci' => '3333333',
+        'nombres' => 'Carlos',
+        'apellido_paterno' => 'Lopez',
+        'email' => 'carlos@example.com',
+        'tipo_participante' => 'auxiliar',
+    ]))->toThrow(ValidationException::class);
+});
+
+it('calculates weighted final grade correctly via EvaluationService', function () {
+    $course = Course::factory()->create();
+    $group = Group::factory()->create(['course_id' => $course->id]);
+    $preinscription = Preinscription::factory()->create(['group_id' => $group->id]);
+
+    $service = app(EvaluationService::class);
+    $service->setCriteria($course, [
+        ['nombre' => 'Examen Parcial', 'ponderacion' => 40.0],
+        ['nombre' => 'Proyecto Final', 'ponderacion' => 60.0],
+    ]);
+
+    $criteria = $course->evaluationCriteria()->get();
+    $service->recordGrades($preinscription, [
+        $criteria[0]->id => 80.0,
+        $criteria[1]->id => 90.0,
+    ]);
+
+    $finalGrade = $service->calculateFinalGrade($preinscription);
+    // (80 * 0.4) + (90 * 0.6) = 32 + 54 = 86.0
+    expect($finalGrade)->toBe(86.0);
+});
+
+it('generates certificate with correct type and matching course_id via CertificateService', function () {
+    $course = Course::factory()->create();
+    $group = Group::factory()->create(['course_id' => $course->id]);
+    $preinscription = Preinscription::factory()->create(['group_id' => $group->id]);
+
+    $evalService = app(EvaluationService::class);
+    $evalService->setCriteria($course, [
+        ['nombre' => 'Nota General', 'ponderacion' => 100.0],
+    ]);
+
+    $criteria = $course->evaluationCriteria()->first();
+    $evalService->recordGrades($preinscription, [$criteria->id => 75.0]);
+
+    $certService = app(CertificateService::class);
+    $certificate = $certService->generate($preinscription);
+
+    expect($certificate->course_id)->toBe($course->id);
+    expect($certificate->tipo)->toBe(CertificateType::APROBACION);
+    expect($certificate->codigo_unico)->toStartWith('CERT-');
 });

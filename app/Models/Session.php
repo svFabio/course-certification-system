@@ -47,7 +47,7 @@ class Session extends Model
     public function isUpcoming(): bool
     {
         return $this->fecha->isFuture()
-            || ($this->fecha->isToday() && $this->hora_inicio > now()->format('H:i'));
+            || ($this->fecha->isToday() && $this->hora_inicio->format('H:i') > now()->format('H:i'));
     }
 
     public function isPast(): bool

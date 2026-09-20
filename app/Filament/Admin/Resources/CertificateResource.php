@@ -46,6 +46,7 @@ class CertificateResource extends Resource
                 Forms\Components\TextInput::make('codigo_unico')
                     ->required()
                     ->unique(ignoreRecord: true)
+                    ->disabled(fn (string $operation) => $operation === 'edit')
                     ->maxLength(50),
                 Forms\Components\TextInput::make('pdf_path')
                     ->maxLength(500),

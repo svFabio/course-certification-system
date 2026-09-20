@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Models\Payment;
 use App\Models\Preinscription;
 use App\Models\User;
@@ -23,16 +24,17 @@ class PaymentFactory extends Factory
             'preinscription_id' => Preinscription::factory(),
             'monto' => 80.00,
             'metodo' => fake()->randomElement([PaymentMethod::EFECTIVO, PaymentMethod::QR]),
-            'estado' => 'pendiente',
+            'estado' => PaymentStatus::PENDIENTE,
             'numero_comprobante' => 'COMP-'.fake()->unique()->numerify('#####'),
-            'verificado_por' => User::factory(),
-            'verificado_en' => now(),
+            'verificado_por' => null,
+            'verificado_en' => null,
         ];
     }
 
     public function verified(?User $verifier = null): static
     {
         return $this->state(fn (array $attributes) => [
+            'estado' => PaymentStatus::VERIFICADO,
             'verificado_por' => $verifier?->id ?? User::factory(),
             'verificado_en' => now(),
         ]);

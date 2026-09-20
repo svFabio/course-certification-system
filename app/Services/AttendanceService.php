@@ -38,6 +38,9 @@ class AttendanceService
             ],
             [
                 'status' => AttendanceStatus::from($status),
+                'lat' => null,
+                'lng' => null,
+                'distancia_metros' => null,
             ]
         );
     }

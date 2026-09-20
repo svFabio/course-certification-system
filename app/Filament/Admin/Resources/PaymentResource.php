@@ -90,7 +90,7 @@ class PaymentResource extends Resource
                 Tables\Columns\TextColumn::make('estado')
                     ->badge(),
                 Tables\Columns\TextColumn::make('numero_comprobante'),
-                Tables\Columns\TextColumn::make('verificador.name')
+                Tables\Columns\TextColumn::make('verifier.name')
                     ->label('Verificado por'),
                 Tables\Columns\TextColumn::make('verificado_en')
                     ->dateTime()
@@ -108,7 +108,7 @@ class PaymentResource extends Resource
                     ->label('Verificar')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn (Payment $record) => $record->verificado_por === null && $record->estado !== PaymentStatus::RECHAZADO)
+                    ->visible(fn (Payment $record) => $record->estado === PaymentStatus::PENDIENTE)
                     ->requiresConfirmation()
                     ->modalHeading('Verificar pago')
                     ->modalSubdescription('Confirma que el pago fue recibido en caja facultativa')
@@ -129,7 +129,7 @@ class PaymentResource extends Resource
                     ->label('Rechazar')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn (Payment $record) => $record->estado !== PaymentStatus::RECHAZADO)
+                    ->visible(fn (Payment $record) => $record->estado === PaymentStatus::PENDIENTE)
                     ->requiresConfirmation()
                     ->modalHeading('Rechazar pago')
                     ->modalSubdescription('El pago no fue recibido o presento problemas')

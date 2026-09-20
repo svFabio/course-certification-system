@@ -64,11 +64,4 @@ class PreinscriptionService
             ->get()
             ->filter(fn ($group) => $group->confirmed_count < $group->cupo_maximo);
     }
-
-    public function processPaymentConfirmation(Preinscription $preinscription): Preinscription
-    {
-        $preinscription->update(['status' => PreinscriptionStatus::INSCRITO]);
-
-        return $preinscription->fresh();
-    }
 }

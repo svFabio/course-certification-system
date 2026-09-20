@@ -23,7 +23,7 @@ class CertificateFactory extends Factory
     {
         return [
             'preinscription_id' => Preinscription::factory(),
-            'course_id' => Course::factory(),
+            'course_id' => fn (array $attributes) => Preinscription::find($attributes['preinscription_id'])?->group?->course_id ?? Course::factory(),
             'tipo' => CertificateType::APROBACION,
             'codigo_unico' => 'CERT-'.strtoupper(Str::random(8)),
             'pdf_path' => 'certificates/'.fake()->uuid().'.pdf',

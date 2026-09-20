@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
-enum TipoParticipante: string
+use Filament\Support\Contracts\HasLabel;
+
+enum TipoParticipante: string implements HasLabel
 {
     case UMSS = 'umss';
     case EXTERNO = 'externo';

@@ -18,7 +18,7 @@ class EvaluationService
     {
         $totalWeight = array_sum(array_column($criteria, 'ponderacion'));
 
-        if ($totalWeight !== BusinessRules::EVALUATION_TOTAL_PERCENT) {
+        if ((float) $totalWeight !== (float) BusinessRules::EVALUATION_TOTAL_PERCENT) {
             throw ValidationException::withMessages([
                 'criteria' => "Criteria weights must sum to 100%. Current sum: {$totalWeight}%.",
             ]);

@@ -32,12 +32,14 @@ class PaymentObserver
     {
         $preinscription = $payment->preinscription;
 
-        $preinscription->update(['status' => PreinscriptionStatus::INSCRITO]);
+        if ($preinscription->status !== PreinscriptionStatus::INSCRITO) {
+            $preinscription->update(['status' => PreinscriptionStatus::INSCRITO]);
 
-        $payment->loadMissing('preinscription.group.course');
+            $payment->loadMissing('preinscription.group.course');
 
-        Mail::to($preinscription->email)
-            ->queue(new PaymentConfirmedNotification($payment));
+            Mail::to($preinscription->email)
+                ->queue(new PaymentConfirmedNotification($payment));
+        }
     }
 
     protected function handleRejected(Payment $payment): void
