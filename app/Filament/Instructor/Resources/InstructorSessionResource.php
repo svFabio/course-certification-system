@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Instructor\Resources;
 
 use App\Filament\Instructor\Resources\InstructorSessionResource\Pages;
+use App\Models\Group;
 use App\Models\Session;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -30,6 +31,14 @@ class InstructorSessionResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Select::make('group_id')
+                    ->label('Grupo')
+                    ->options(fn () => Group::whereHas('course', fn ($q) => $q->where('instructor_id', auth()->id()))
+                        ->with('course')
+                        ->get()
+                        ->mapWithKeys(fn ($g) => [$g->id => "{$g->course->nombre} — {$g->nombre}"]))
+                    ->searchable()
+                    ->required(),
                 Forms\Components\DatePicker::make('fecha')
                     ->required(),
                 Forms\Components\TimePicker::make('hora_inicio')

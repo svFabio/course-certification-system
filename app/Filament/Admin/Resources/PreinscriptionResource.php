@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\PreinscriptionStatus;
+use App\Enums\TipoParticipante;
 use App\Filament\Admin\Resources\PreinscriptionResource\Pages;
 use App\Models\Preinscription;
 use Filament\Forms;
@@ -54,11 +55,7 @@ class PreinscriptionResource extends Resource
                     ->required()
                     ->maxLength(255),
                 Forms\Components\Select::make('tipo_participante')
-                    ->options([
-                        'umss' => 'UMSS',
-                        'externo' => 'Externo',
-                        'auxiliar' => 'Auxiliar',
-                    ])
+                    ->options(TipoParticipante::class)
                     ->required(),
                 Forms\Components\Select::make('status')
                     ->options(PreinscriptionStatus::class)
@@ -77,6 +74,11 @@ class PreinscriptionResource extends Resource
                 Tables\Columns\TextColumn::make('apellido_paterno'),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('group.course.nombre')
+                    ->label('Curso')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('group.nombre')
+                    ->label('Grupo'),
                 Tables\Columns\TextColumn::make('tipo_participante')
                     ->badge(),
                 Tables\Columns\TextColumn::make('status')

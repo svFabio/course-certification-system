@@ -40,7 +40,7 @@ class PreinscriptionComponent extends Component
     {
         $this->groupId = $group;
         $this->group = Group::with('course')->findOrFail($group);
-        $this->availableGroups = PreinscriptionService::getAvailableGroups($this->group->course_id);
+        $this->availableGroups = app(PreinscriptionService::class)->getAvailableGroups($this->group->course_id);
     }
 
     public function updatedGroupId(): void

@@ -24,7 +24,7 @@ class CertificateReadyNotification extends Notification implements ShouldQueue
     {
         return (new MailMessage)
             ->subject('Certificado disponible')
-            ->line('Su certificado está listo para descargar.')
-            ->action('Descargar certificado', route('certificates.download', $this->certificateData['codigo_unico']));
+            ->line('Su certificado esta listo para descargar.')
+            ->line('Ingrese al panel de administracion para descargarlo.');
     }
 }

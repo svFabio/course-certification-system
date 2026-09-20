@@ -26,6 +26,6 @@ class PaymentConfirmedNotification extends Notification implements ShouldQueue
             ->subject('Pago confirmado')
             ->line('Su pago ha sido confirmado. Ya está inscrito al curso.')
             ->line('Monto: Bs. '.number_format($this->paymentData['monto'], 2))
-            ->action('Ver mi inscripción', route('preinscriptions.show', $this->paymentData['preinscription_id']));
+            ->line('Revise su correo para mas detalles.');
     }
 }

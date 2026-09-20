@@ -16,7 +16,7 @@ class EvaluationService
 {
     public function setCriteria(Course $course, array $criteria): void
     {
-        $totalWeight = array_sum(array_column($criteria, 'porcentaje'));
+        $totalWeight = array_sum(array_column($criteria, 'ponderacion'));
 
         if ($totalWeight !== BusinessRules::EVALUATION_TOTAL_PERCENT) {
             throw ValidationException::withMessages([
@@ -31,7 +31,7 @@ class EvaluationService
                 EvaluationCriteria::create([
                     'course_id' => $course->id,
                     'nombre' => $item['nombre'],
-                    'porcentaje' => $item['porcentaje'],
+                    'ponderacion' => $item['ponderacion'],
                 ]);
             }
         });
@@ -61,7 +61,7 @@ class EvaluationService
         }
 
         $weighted = $grades->sum(
-            fn ($grade) => ($grade->nota * $grade->evaluationCriteria->porcentaje) / 100
+            fn ($grade) => ($grade->nota * $grade->evaluationCriteria->ponderacion) / 100
         );
 
         return round($weighted, 2);
@@ -79,9 +79,9 @@ class EvaluationService
             'passed' => $finalGrade >= BusinessRules::MINIMUM_PASSING_GRADE,
             'criteria' => $grades->map(fn ($g) => [
                 'name' => $g->evaluationCriteria->nombre,
-                'weight' => $g->evaluationCriteria->porcentaje,
+                'weight' => $g->evaluationCriteria->ponderacion,
                 'score' => $g->nota,
-                'weighted' => round(($g->nota * $g->evaluationCriteria->porcentaje) / 100, 2),
+                'weighted' => round(($g->nota * $g->evaluationCriteria->ponderacion) / 100, 2),
             ])->toArray(),
         ];
     }

@@ -55,7 +55,7 @@ class PreinscriptionService
         return $confirmed < $group->cupo_maximo;
     }
 
-    public static function getAvailableGroups(int $courseId): Collection
+    public function getAvailableGroups(int $courseId): Collection
     {
         return Group::where('course_id', $courseId)
             ->where('status', GroupStatus::HABILITADO)

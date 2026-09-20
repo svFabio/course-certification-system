@@ -90,7 +90,8 @@ class PaymentResource extends Resource
                 Tables\Columns\TextColumn::make('estado')
                     ->badge(),
                 Tables\Columns\TextColumn::make('numero_comprobante'),
-                Tables\Columns\TextColumn::make('verificado_por'),
+                Tables\Columns\TextColumn::make('verificador.name')
+                    ->label('Verificado por'),
                 Tables\Columns\TextColumn::make('verificado_en')
                     ->dateTime()
                     ->sortable(),

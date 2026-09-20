@@ -6,12 +6,9 @@ namespace App\Policies;
 
 use App\Models\EvaluationCriteria;
 use App\Models\User;
-use Illuminate\Auth\Access\HandlesAuthorization;
 
 class EvaluationCriteriaPolicy
 {
-    use HandlesAuthorization;
-
     public function viewAny(User $user): bool
     {
         return $user->hasRole('admin');

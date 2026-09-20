@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\GroupStatus;
-use App\Enums\PreinscriptionStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -49,18 +48,5 @@ class Group extends Model
     public function preinscriptions(): HasMany
     {
         return $this->hasMany(Preinscription::class);
-    }
-
-    public function getCapacityPercentageAttribute(): float
-    {
-        if ($this->cupo_maximo === 0) {
-            return 0.0;
-        }
-
-        $inscritos = $this->preinscriptions()
-            ->where('status', PreinscriptionStatus::INSCRITO)
-            ->count();
-
-        return round(($inscritos / $this->cupo_maximo) * 100, 2);
     }
 }

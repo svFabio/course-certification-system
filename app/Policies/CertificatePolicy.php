@@ -6,12 +6,9 @@ namespace App\Policies;
 
 use App\Models\Certificate;
 use App\Models\User;
-use Illuminate\Auth\Access\HandlesAuthorization;
 
 class CertificatePolicy
 {
-    use HandlesAuthorization;
-
     public function viewAny(User $user): bool
     {
         return $user->hasRole('admin');
@@ -28,7 +25,7 @@ class CertificatePolicy
         }
 
         if ($user->hasRole('student')) {
-            return $user->id === $certificate->preinscription->user_id;
+            return $user->email === $certificate->preinscription->email;
         }
 
         return false;

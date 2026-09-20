@@ -6,12 +6,9 @@ namespace App\Policies;
 
 use App\Models\Preinscription;
 use App\Models\User;
-use Illuminate\Auth\Access\HandlesAuthorization;
 
 class PreinscriptionPolicy
 {
-    use HandlesAuthorization;
-
     public function viewAny(User $user): bool
     {
         return $user->hasRole('admin') || $user->hasRole('instructor');

@@ -27,6 +27,6 @@ class PreinscriptionApprovedNotification extends Notification implements ShouldQ
             ->line('Su preinscripción ha sido aprobada.')
             ->line('Curso: '.$this->preinscriptionData['curso_nombre'])
             ->line('Grupo: '.$this->preinscriptionData['grupo_nombre'])
-            ->action('Realizar pago', route('payments.create', $this->preinscriptionData['preinscription_id']));
+            ->line('Dirijase a caja facultativa para realizar el pago.');
     }
 }

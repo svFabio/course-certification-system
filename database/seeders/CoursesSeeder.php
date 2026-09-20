@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Enums\CourseStatus;
+use App\Enums\GroupStatus;
 use App\Models\Course;
 use App\Models\Group;
 use App\Models\User;
@@ -22,7 +24,7 @@ class CoursesSeeder extends Seeder
             'carga_horaria' => '20',
             'nivel' => 'Básico',
             'periodo' => '2024-II',
-            'status' => 'publicado',
+            'status' => CourseStatus::PUBLICADO,
             'precio_umss' => BusinessRules::calculatePrice(20, 'umss'),
             'precio_externo' => BusinessRules::calculatePrice(20, 'externo'),
             'precio_auxiliar' => BusinessRules::calculatePrice(20, 'auxiliar'),
@@ -36,7 +38,7 @@ class CoursesSeeder extends Seeder
             'hora_fin' => '09:30',
             'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
             'cupo_maximo' => 30,
-            'status' => 'habilitado',
+            'status' => GroupStatus::HABILITADO,
         ]);
     }
 }
