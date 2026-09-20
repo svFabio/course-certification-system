@@ -36,10 +36,11 @@ class PreinscriptionComponent extends Component
 
     public $availableGroups = [];
 
-    public function mount(int $group): void
+    public function mount(Group|int $group): void
     {
-        $this->groupId = $group;
-        $this->group = Group::with('course')->findOrFail($group);
+        $groupModel = $group instanceof Group ? $group : Group::with('course')->findOrFail($group);
+        $this->groupId = $groupModel->id;
+        $this->group = $groupModel;
         $this->availableGroups = app(PreinscriptionService::class)->getAvailableGroups($this->group->course_id);
     }
 
