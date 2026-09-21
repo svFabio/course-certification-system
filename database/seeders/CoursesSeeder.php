@@ -18,27 +18,30 @@ class CoursesSeeder extends Seeder
     {
         $instructor = User::where('email', 'instructor@umss.edu.bo')->first();
 
-        $course = Course::create([
-            'nombre' => 'Introducción a la Programación Web',
-            'contenido' => 'Curso introductorio a HTML, CSS, JavaScript y PHP.',
-            'carga_horaria' => '20',
-            'nivel' => 'Básico',
-            'periodo' => '2024-II',
-            'status' => CourseStatus::PUBLICADO,
-            'precio_umss' => BusinessRules::calculatePrice(20, 'umss'),
-            'precio_externo' => BusinessRules::calculatePrice(20, 'externo'),
-            'precio_auxiliar' => BusinessRules::calculatePrice(20, 'auxiliar'),
-            'instructor_id' => $instructor->id,
-        ]);
+        $course = Course::firstOrCreate(
+            ['nombre' => 'Introducción a la Programación Web'],
+            [
+                'contenido' => 'Curso introductorio a HTML, CSS, JavaScript y PHP.',
+                'carga_horaria' => '20',
+                'nivel' => 'Básico',
+                'periodo' => '2024-II',
+                'status' => CourseStatus::PUBLICADO,
+                'precio_umss' => BusinessRules::calculatePrice(20, 'umss'),
+                'precio_externo' => BusinessRules::calculatePrice(20, 'externo'),
+                'precio_auxiliar' => BusinessRules::calculatePrice(20, 'auxiliar'),
+                'instructor_id' => $instructor->id,
+            ]
+        );
 
-        Group::create([
-            'course_id' => $course->id,
-            'nombre' => 'Grupo A',
-            'hora_inicio' => '08:00',
-            'hora_fin' => '09:30',
-            'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
-            'cupo_maximo' => 30,
-            'status' => GroupStatus::HABILITADO,
-        ]);
+        Group::firstOrCreate(
+            ['course_id' => $course->id, 'nombre' => 'Grupo A'],
+            [
+                'hora_inicio' => '08:00',
+                'hora_fin' => '09:30',
+                'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
+                'cupo_maximo' => 30,
+                'status' => GroupStatus::HABILITADO,
+            ]
+        );
     }
 }
