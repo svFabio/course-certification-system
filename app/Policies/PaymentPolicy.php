@@ -24,11 +24,6 @@ class PaymentPolicy
             return $user->id === $payment->preinscription->group->course->instructor_id;
         }
 
-        if ($user->hasRole('student')) {
-            // preinscriptions are identified by email, not user_id
-            return $user->email === $payment->preinscription->email;
-        }
-
         return false;
     }
 

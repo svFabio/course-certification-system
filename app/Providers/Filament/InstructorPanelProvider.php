@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Providers\Filament;
 
 use App\Filament\Instructor\Resources;
-use App\Filament\Pages\Auth\Login;
 use App\Http\Middleware\EnsureUserIsInstructor;
+use App\Support\DesignTokens;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -30,14 +30,14 @@ class InstructorPanelProvider extends PanelProvider
         return $panel
             ->id('instructor')
             ->path('instructor')
-            ->login(Login::class)
             ->brandName('UMSS - Panel Instructor')
             ->font('Montserrat')
             ->darkMode(false)
             ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.custom-styles'))
+            ->renderHook(PanelsRenderHook::GLOBAL_SEARCH_BEFORE, fn () => view('filament.topbar-public-link'))
             ->colors([
-                'primary' => Color::hex('#0E2E5F'),
-                'danger' => Color::hex('#E01D2E'),
+                'primary' => Color::hex(DesignTokens::NAVY),
+                'danger' => Color::hex(DesignTokens::RED),
                 'gray' => Color::Gray,
             ])
             ->resources([

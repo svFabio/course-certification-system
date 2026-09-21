@@ -14,7 +14,7 @@
     @livewireStyles
 </head>
 <body class="bg-umss-gray-100 text-umss-black font-sans min-h-screen flex flex-col antialiased">
-    <nav class="bg-white border-b border-umss-gray-100 sticky top-0 z-30">
+    <nav class="bg-white border-b border-umss-gray-100 border-t-4 border-t-umss-navy sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center space-x-3">
@@ -26,17 +26,15 @@
                     <a href="/" class="text-umss-gray-700 hover:text-umss-navy transition">Catálogo</a>
                     <a href="/verificar-certificado" class="text-umss-gray-700 hover:text-umss-navy transition">Verificar Certificado</a>
                     @auth
-                        @php
-                            $user = auth()->user();
-                            if (!$user->relationLoaded('roles')) {
-                                $user->load('roles');
-                            }
-                        @endphp
-                        @if($user->roles->contains('name', 'admin'))
+                        @role(\App\Enums\UserRole::ADMIN->value)
                             <a href="/admin" class="btn-primary !h-9 !px-3 !text-xs">Panel Admin</a>
-                        @elseif($user->roles->contains('name', 'instructor'))
+                        @elserole(\App\Enums\UserRole::INSTRUCTOR->value)
                             <a href="/instructor" class="btn-primary !h-9 !px-3 !text-xs">Panel Docente</a>
-                        @endif
+                        @endrole
+                        <form method="POST" action="{{ route('logout') }}" class="inline">
+                            @csrf
+                            <button type="submit" class="text-umss-gray-700 hover:text-umss-navy transition text-xs font-medium">Salir</button>
+                        </form>
                     @else
                         <a href="/login" class="btn-primary !h-9 !px-4 !text-xs">Iniciar Sesión</a>
                     @endauth

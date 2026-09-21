@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Enums\TipoParticipante;
 use App\Filament\Admin\Resources\PreinscriptionResource\Pages;
+use App\Models\Payment;
 use App\Models\Preinscription;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -80,10 +84,13 @@ class PreinscriptionResource extends Resource
                 Tables\Columns\TextColumn::make('group.nombre')
                     ->label('Grupo'),
                 Tables\Columns\TextColumn::make('tipo_participante')
+                    ->label('Tipo participante')
                     ->badge(),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Estado')
                     ->badge(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de registro')
                     ->dateTime()
                     ->sortable(),
             ])
@@ -91,6 +98,41 @@ class PreinscriptionResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\Action::make('registrarPago')
+                    ->label('Validar Pago')
+                    ->icon('heroicon-o-currency-dollar')
+                    ->color('success')
+                    ->visible(fn (Preinscription $record) => $record->status === PreinscriptionStatus::PENDIENTE_PAGO)
+                    ->requiresConfirmation()
+                    ->modalHeading('Registrar y Validar Pago en Caja')
+                    ->modalDescription(fn (Preinscription $record) => "¿Confirmar cobro de Bs. {$record->price} a {$record->full_name} e inscribirlo automáticamente?")
+                    ->form([
+                        Forms\Components\Select::make('metodo')
+                            ->label('Método de pago')
+                            ->options(PaymentMethod::class)
+                            ->default(PaymentMethod::EFECTIVO)
+                            ->required(),
+                        Forms\Components\TextInput::make('numero_comprobante')
+                            ->label('Número de comprobante / recibo')
+                            ->placeholder('Opcional')
+                            ->maxLength(100),
+                    ])
+                    ->action(function (Preinscription $record, array $data) {
+                        Payment::create([
+                            'preinscription_id' => $record->id,
+                            'monto' => $record->price,
+                            'metodo' => $data['metodo'],
+                            'numero_comprobante' => $data['numero_comprobante'] ?? null,
+                            'estado' => PaymentStatus::VERIFICADO,
+                            'verificado_por' => auth()->id(),
+                            'verificado_en' => now(),
+                        ]);
+
+                        Notification::make()
+                            ->title('Pago registrado y estudiante inscrito con éxito.')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

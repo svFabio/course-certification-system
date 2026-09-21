@@ -62,20 +62,27 @@ class CertificateResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('preinscription.nombres')
+                Tables\Columns\TextColumn::make('preinscription.full_name')
+                    ->label('Participante')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('course.nombre')
+                    ->label('Curso')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('tipo')
+                    ->label('Tipo de certificado')
                     ->badge(),
                 Tables\Columns\TextColumn::make('codigo_unico')
+                    ->label('Código único')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('signature_status')
+                    ->label('Estado de firma')
                     ->badge(),
                 Tables\Columns\TextColumn::make('emitido_en')
+                    ->label('Fecha de emisión')
                     ->dateTime()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de registro')
                     ->dateTime()
                     ->sortable(),
             ])

@@ -8,10 +8,12 @@ use App\Enums\GroupStatus;
 use App\Filament\Admin\Resources\GroupResource\Pages;
 use App\Models\Course;
 use App\Models\Group;
+use App\Services\HolidayService;
 use App\Support\BusinessRules;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -42,6 +44,8 @@ class GroupResource extends Resource
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TimePicker::make('hora_inicio')
+                    ->label('Hora de inicio (Formatos UMSS: 06:45, 08:15, 09:45, 11:15, 14:15, 15:45, 17:15, 18:45)')
+                    ->datalist(array_keys(BusinessRules::UMSS_SCHEDULE_BLOCKS))
                     ->required()
                     ->live()
                     ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, $state) {
@@ -99,10 +103,13 @@ class GroupResource extends Resource
                     ->time(),
                 Tables\Columns\TextColumn::make('hora_fin')
                     ->time(),
-                Tables\Columns\TextColumn::make('cupo_maximo'),
+                Tables\Columns\TextColumn::make('cupo_maximo')
+                    ->label('Cupo máximo'),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Estado')
                     ->badge(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de creación')
                     ->dateTime()
                     ->sortable(),
             ])
@@ -110,6 +117,46 @@ class GroupResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\Action::make('generateSessions')
+                    ->label('Programar 10 Clases')
+                    ->icon('heroicon-o-calendar-days')
+                    ->color('primary')
+                    ->form([
+                        Forms\Components\DatePicker::make('fecha_inicio')
+                            ->label('Fecha de inicio del curso')
+                            ->default(now()->addDay())
+                            ->required(),
+                        Forms\Components\CheckboxList::make('dias_semana')
+                            ->label('Días de clase')
+                            ->options([
+                                1 => 'Lunes',
+                                2 => 'Martes',
+                                3 => 'Miércoles',
+                                4 => 'Jueves',
+                                5 => 'Viernes',
+                                6 => 'Sábado',
+                            ])
+                            ->default([1, 2, 3, 4, 5])
+                            ->required(),
+                        Forms\Components\Toggle::make('respetar_feriados')
+                            ->label('Respetar y saltar feriados (Cochabamba / UMSS)')
+                            ->helperText('Si se activa, los feriados se reemplazan y se programa en el siguiente día hábil disponible.')
+                            ->default(true),
+                    ])
+                    ->action(function (Group $record, array $data) {
+                        $holidayService = app(HolidayService::class);
+                        $created = $holidayService->generateSessionsForGroup(
+                            $record,
+                            Carbon::parse($data['fecha_inicio']),
+                            $data['dias_semana'],
+                            (bool) $data['respetar_feriados']
+                        );
+
+                        Notification::make()
+                            ->title("Se han programado exitosamente {$created->count()} clases para el grupo.")
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

@@ -24,10 +24,6 @@ class CertificatePolicy
             return $user->id === $certificate->course->instructor_id;
         }
 
-        if ($user->hasRole('student')) {
-            return $user->email === $certificate->preinscription->email;
-        }
-
         return false;
     }
 

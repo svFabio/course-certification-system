@@ -65,6 +65,7 @@ class UserResource extends Resource
                 Tables\Columns\IconColumn::make('activo')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de registro')
                     ->dateTime()
                     ->sortable(),
             ])

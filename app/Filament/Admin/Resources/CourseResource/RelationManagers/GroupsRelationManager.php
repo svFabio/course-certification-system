@@ -26,6 +26,8 @@ class GroupsRelationManager extends RelationManager
                 ->required()
                 ->maxLength(255),
             Forms\Components\TimePicker::make('hora_inicio')
+                ->label('Hora de inicio (Formatos UMSS: 06:45, 08:15, 09:45, 11:15, 14:15, 15:45, 17:15, 18:45)')
+                ->datalist(array_keys(BusinessRules::UMSS_SCHEDULE_BLOCKS))
                 ->required()
                 ->live()
                 ->afterStateUpdated(function (Forms\Set $set, $state) {
@@ -71,13 +73,18 @@ class GroupsRelationManager extends RelationManager
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('nombre')
+                    ->label('Nombre')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('hora_inicio')
+                    ->label('Hora inicio')
                     ->time(),
                 Tables\Columns\TextColumn::make('hora_fin')
+                    ->label('Hora fin')
                     ->time(),
-                Tables\Columns\TextColumn::make('cupo_maximo'),
+                Tables\Columns\TextColumn::make('cupo_maximo')
+                    ->label('Cupo máximo'),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Estado')
                     ->badge(),
             ])
             ->headerActions([

@@ -31,15 +31,5 @@ class UsersSeeder extends Seeder
             ]
         );
         $instructor->assignRole('instructor');
-
-        $student = User::firstOrCreate(
-            ['email' => 'student@umss.edu.bo'],
-            [
-                'name' => 'Estudiante Demo',
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]
-        );
-        $student->assignRole('student');
     }
 }

@@ -44,8 +44,10 @@ class InstructorCourseResource extends Resource
                 Tables\Columns\TextColumn::make('nivel'),
                 Tables\Columns\TextColumn::make('periodo'),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Estado')
                     ->badge(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de creación')
                     ->dateTime()
                     ->sortable(),
             ])

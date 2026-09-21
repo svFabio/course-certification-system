@@ -24,10 +24,6 @@ class AttendancePolicy
             return $user->id === $attendance->session->group->course->instructor_id;
         }
 
-        if ($user->hasRole('student')) {
-            return $user->email === $attendance->preinscription->email;
-        }
-
         return false;
     }
 

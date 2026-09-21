@@ -12,6 +12,7 @@ use App\Models\Preinscription;
 use App\Support\BusinessRules;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -80,22 +81,29 @@ class PaymentResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('preinscription.nombres')
+                Tables\Columns\TextColumn::make('preinscription.full_name')
+                    ->label('Participante')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('monto')
+                    ->label('Monto')
                     ->numeric()
                     ->prefix('Bs.'),
                 Tables\Columns\TextColumn::make('metodo')
+                    ->label('Método')
                     ->badge(),
                 Tables\Columns\TextColumn::make('estado')
+                    ->label('Estado')
                     ->badge(),
-                Tables\Columns\TextColumn::make('numero_comprobante'),
+                Tables\Columns\TextColumn::make('numero_comprobante')
+                    ->label('N° Comprobante'),
                 Tables\Columns\TextColumn::make('verifier.name')
                     ->label('Verificado por'),
                 Tables\Columns\TextColumn::make('verificado_en')
+                    ->label('Fecha de verificación')
                     ->dateTime()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de pago')
                     ->dateTime()
                     ->sortable(),
             ])
@@ -110,20 +118,20 @@ class PaymentResource extends Resource
                     ->color('success')
                     ->visible(fn (Payment $record) => $record->estado === PaymentStatus::PENDIENTE)
                     ->requiresConfirmation()
-                    ->modalHeading('Verificar pago')
-                    ->modalSubdescription('Confirma que el pago fue recibido en caja facultativa')
-                    ->form([
-                        Forms\Components\DateTimePicker::make('verificado_en')
-                            ->label('Fecha de verificacion')
-                            ->default(now()),
-                    ])
-                    ->action(function (Payment $record, array $data) {
+                    ->modalHeading('¿Confirmar recepción del pago?')
+                    ->modalDescription('Se validará el pago inmediatamente y el estudiante quedará inscrito con notificación por correo.')
+                    ->action(function (Payment $record) {
                         $record->update([
                             'verificado_por' => auth()->id(),
-                            'verificado_en' => $data['verificado_en'],
+                            'verificado_en' => now(),
                             'estado' => PaymentStatus::VERIFICADO,
                             'motivo_rechazo' => null,
                         ]);
+
+                        Notification::make()
+                            ->title('Pago verificado y estudiante inscrito correctamente.')
+                            ->success()
+                            ->send();
                     }),
                 Tables\Actions\Action::make('rechazar')
                     ->label('Rechazar')

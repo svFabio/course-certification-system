@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Providers\Filament;
 
 use App\Filament\Admin\Resources;
-use App\Filament\Pages\Auth\Login;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Support\DesignTokens;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -31,14 +31,14 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login(Login::class)
             ->brandName('UMSS Cursos')
             ->font('Montserrat')
             ->darkMode(false)
             ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.custom-styles'))
+            ->renderHook(PanelsRenderHook::GLOBAL_SEARCH_BEFORE, fn () => view('filament.topbar-public-link'))
             ->colors([
-                'primary' => Color::hex('#0E2E5F'),
-                'danger' => Color::hex('#E01D2E'),
+                'primary' => Color::hex(DesignTokens::NAVY),
+                'danger' => Color::hex(DesignTokens::RED),
                 'gray' => Color::Gray,
             ])
             ->navigationGroups([
@@ -58,6 +58,7 @@ class AdminPanelProvider extends PanelProvider
                 Resources\EvaluationCriteriaResource::class,
                 Resources\GradeResource::class,
                 Resources\CertificateResource::class,
+                Resources\HolidayResource::class,
                 Resources\UserResource::class,
             ])
             ->pages([

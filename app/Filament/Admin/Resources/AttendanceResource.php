@@ -61,13 +61,17 @@ class AttendanceResource extends Resource
                 Tables\Columns\TextColumn::make('session.fecha')
                     ->date()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('preinscription.nombres')
+                Tables\Columns\TextColumn::make('preinscription.full_name')
+                    ->label('Participante')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Estado')
                     ->badge(),
                 Tables\Columns\TextColumn::make('distancia_metros')
+                    ->label('Distancia')
                     ->suffix('m'),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de registro')
                     ->dateTime()
                     ->sortable(),
             ])

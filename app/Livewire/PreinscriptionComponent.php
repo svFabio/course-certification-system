@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
+use App\Enums\PreinscriptionStatus;
 use App\Models\Group;
 use App\Models\Preinscription;
 use App\Services\PreinscriptionService;
@@ -77,11 +78,15 @@ class PreinscriptionComponent extends Component
         ]);
 
         $exists = Preinscription::where('ci', $this->ci)
-            ->where('group_id', $this->groupId)
+            ->whereHas('group', fn ($q) => $q->where('course_id', $this->group->course_id))
+            ->whereIn('status', [
+                PreinscriptionStatus::PENDIENTE_PAGO,
+                PreinscriptionStatus::INSCRITO,
+            ])
             ->exists();
 
         if ($exists) {
-            $this->addError('ci', 'Ya cuentas con una preinscripcion activa para este curso.');
+            $this->addError('ci', 'Ya cuenta con una preinscripción activa o inscripción confirmada en este curso.');
 
             return;
         }

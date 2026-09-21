@@ -24,10 +24,6 @@ class PreinscriptionPolicy
             return $user->id === $preinscription->group->course->instructor_id;
         }
 
-        if ($user->hasRole('student')) {
-            return $user->email === $preinscription->email;
-        }
-
         return false;
     }
 

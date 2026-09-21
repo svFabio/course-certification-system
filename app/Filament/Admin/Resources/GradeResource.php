@@ -52,12 +52,16 @@ class GradeResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('evaluationCriteria.nombre')
+                    ->label('Criterio de evaluación')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('preinscription.nombres')
-                    ->searchable(),
+                Tables\Columns\TextColumn::make('preinscription.full_name')
+                    ->label('Participante')
+                    ->searchable(['preinscription.nombres', 'preinscription.apellidos']),
                 Tables\Columns\TextColumn::make('nota')
+                    ->label('Nota')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de registro')
                     ->dateTime()
                     ->sortable(),
             ])

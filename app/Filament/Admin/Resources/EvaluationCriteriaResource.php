@@ -56,6 +56,7 @@ class EvaluationCriteriaResource extends Resource
                 Tables\Columns\TextColumn::make('ponderacion')
                     ->suffix('%'),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de registro')
                     ->dateTime()
                     ->sortable(),
             ])

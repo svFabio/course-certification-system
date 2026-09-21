@@ -24,10 +24,6 @@ class GradePolicy
             return $user->id === $grade->evaluationCriteria->course->instructor_id;
         }
 
-        if ($user->hasRole('student')) {
-            return $user->email === $grade->preinscription->email;
-        }
-
         return false;
     }
 

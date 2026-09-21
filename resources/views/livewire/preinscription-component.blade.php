@@ -12,7 +12,7 @@
                         <option value="">Seleccione un grupo</option>
                         @foreach($availableGroups as $g)
                             <option value="{{ $g->id }}">
-                                {{ $g->nombre }} — {{ $g->hora_inicio instanceof \Carbon\Carbon ? $g->hora_inicio->format('H:i') : $g->hora_inicio }}-{{ $g->hora_fin instanceof \Carbon\Carbon ? $g->hora_fin->format('H:i') : $g->hora_fin }}
+                                {{ $g->nombre }} — {{ $g->hora_inicio->format('H:i') }}-{{ $g->hora_fin->format('H:i') }}
                                 ({{ $g->cupo_maximo - ($g->confirmed_count ?? 0) }} cupos)
                             </option>
                         @endforeach
@@ -107,7 +107,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-xs text-umss-gray-700 uppercase">Grupo</span>
-                        <span class="text-sm font-medium text-umss-black">{{ $group->nombre }} ({{ $group->hora_inicio instanceof \Carbon\Carbon ? $group->hora_inicio->format('H:i') : $group->hora_inicio }} - {{ $group->hora_fin instanceof \Carbon\Carbon ? $group->hora_fin->format('H:i') : $group->hora_fin }})</span>
+                        <span class="text-sm font-medium text-umss-black">{{ $group->nombre }} ({{ $group->hora_inicio->format('H:i') }} - {{ $group->hora_fin->format('H:i') }})</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-xs text-umss-gray-700 uppercase">Tipo participante</span>

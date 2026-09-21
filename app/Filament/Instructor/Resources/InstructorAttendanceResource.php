@@ -52,11 +52,14 @@ class InstructorAttendanceResource extends Resource
                 Tables\Columns\TextColumn::make('session.fecha')
                     ->date()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('preinscription.nombres')
-                    ->searchable(),
+                Tables\Columns\TextColumn::make('preinscription.full_name')
+                    ->label('Participante')
+                    ->searchable(['preinscription.nombres', 'preinscription.apellidos']),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Estado')
                     ->badge(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de registro')
                     ->dateTime()
                     ->sortable(),
             ])

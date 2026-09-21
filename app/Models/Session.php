@@ -21,6 +21,8 @@ class Session extends Model
         'hora_inicio',
         'hora_fin',
         'dictada',
+        'es_pospuesta',
+        'fecha_original',
         'motivo_reprogramacion',
     ];
 
@@ -28,9 +30,11 @@ class Session extends Model
     {
         return [
             'fecha' => 'date',
+            'fecha_original' => 'date',
             'hora_inicio' => 'datetime:H:i',
             'hora_fin' => 'datetime:H:i',
             'dictada' => 'boolean',
+            'es_pospuesta' => 'boolean',
         ];
     }
 
