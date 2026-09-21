@@ -9,6 +9,7 @@
         "barryvdh/laravel-dompdf": "^2.0",
         "cloudinary-labs/cloudinary-laravel": "^3.0",
         "filament/filament": "^3.0",
+        "google/apiclient": "^2.16",
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",

@@ -17,3 +17,4 @@ yarn-error.log
 .idea
 .vscode
 apply_fixes*.py
+storage/app/google/credentials.json
