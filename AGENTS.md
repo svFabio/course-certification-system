@@ -12,6 +12,7 @@ Sistema de gestión académica para cursos de Formación Continua y certificaci�
 - **Admin & Instructor Panels:** Filament v3
 - **Frontend Reactivo Público:** Livewire v3 | Blade | Tailwind CSS
 - **Base de Datos:** PostgreSQL (producción/desarrollo) | SQLite (testing)
+- **Almacenamiento en la Nube:** Cloudinary (vía Flysystem / Laravel Cloudinary para imágenes y PDFs)
 - **Testing:** Pest PHP / PHPUnit
 - **Code Style:** Laravel Pint
 
@@ -58,6 +59,14 @@ Todas las reglas de cálculo y validación de negocio residen en `App\Support\Bu
   - Si un campo dispara cambios en otros campos (como previsualizaciones de precio o selectores dependientes), usar `wire:model.live` o hooks de ciclo de vida (`updatedPropName()`).
 - **Manejo de Fechas:**
   - Atributos casteados a fecha/hora (e.g. `datetime:H:i`) retornan instancias de `Carbon\Carbon`. Usar siempre `->format('H:i')` en Blade, nunca `substr()` sobre el objeto.
+
+### Almacenamiento y Cloudinary (Imágenes y Certificados PDF)
+- **Disco Oficial:** Todo archivo subido (fotografías de cursos/usuarios y documentos PDF de certificados) debe gestionarse mediante el disco `cloudinary` configurado en Flysystem (`Storage::disk('cloudinary')`) o Spatie MediaLibrary.
+- **Diferenciación de Resource Types:**
+  - **Imágenes (`image/*`):** Se clasifican como `resource_type => 'image'` para transformaciones, recorte y entrega optimizada por CDN.
+  - **Certificados PDF (`application/pdf`):** Se clasifican como `resource_type => 'raw'` para preservar la integridad binaria del documento descargable y verificable.
+- **Cero SDK Acoplado en Controladores:** Nunca importar ni llamar directamente al SDK de Cloudinary en controladores o vistas; interactuar siempre a través de `Storage::disk('cloudinary')` o servicios de dominio (`CertificateService`).
+- **Zero Secrets & Testing:** Las credenciales (`CLOUDINARY_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`) residen exclusivamente en `.env`. En tests unitarios y CI se debe usar siempre `Storage::fake('cloudinary')`.
 
 ---
 
