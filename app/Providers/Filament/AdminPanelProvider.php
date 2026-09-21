@@ -6,6 +6,8 @@ namespace App\Providers\Filament;
 
 use App\Filament\Admin\Resources;
 use App\Filament\Pages\Settings\GoogleSheetsSettings;
+use App\Filament\Widgets\StatsOverviewWidget;
+use App\Filament\Widgets\UpcomingGroupsWidget;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Support\DesignTokens;
 use Filament\Http\Middleware\Authenticate;
@@ -69,6 +71,10 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
                 GoogleSheetsSettings::class,
+            ])
+            ->widgets([
+                StatsOverviewWidget::class,
+                UpcomingGroupsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
