@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 
@@ -28,10 +29,11 @@ it('authenticates admin and redirects to admin panel', function () {
     ]);
     $admin->assignRole('admin');
 
-    $response = $this->post('/login', [
-        'email' => 'admin@umss.edu.bo',
-        'password' => 'secret123',
-    ]);
+    $response = $this->withoutMiddleware(ValidateCsrfToken::class)
+        ->post('/login', [
+            'email' => 'admin@umss.edu.bo',
+            'password' => 'secret123',
+        ]);
 
     $response->assertRedirect('/admin');
     $this->assertAuthenticatedAs($admin);
@@ -46,20 +48,22 @@ it('authenticates instructor and redirects to instructor panel', function () {
     ]);
     $instructor->assignRole('instructor');
 
-    $response = $this->post('/login', [
-        'email' => 'docente@umss.edu.bo',
-        'password' => 'secret123',
-    ]);
+    $response = $this->withoutMiddleware(ValidateCsrfToken::class)
+        ->post('/login', [
+            'email' => 'docente@umss.edu.bo',
+            'password' => 'secret123',
+        ]);
 
     $response->assertRedirect('/instructor');
     $this->assertAuthenticatedAs($instructor);
 });
 
 it('rejects invalid credentials', function () {
-    $response = $this->post('/login', [
-        'email' => 'fake@umss.edu.bo',
-        'password' => 'wrongpass',
-    ]);
+    $response = $this->withoutMiddleware(ValidateCsrfToken::class)
+        ->post('/login', [
+            'email' => 'fake@umss.edu.bo',
+            'password' => 'wrongpass',
+        ]);
 
     $response->assertSessionHasErrors('email');
     $this->assertGuest();
