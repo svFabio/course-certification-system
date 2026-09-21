@@ -42,25 +42,34 @@ class PreinscriptionResource extends Resource
                 Forms\Components\TextInput::make('ci')
                     ->label('Cédula de Identidad (CI)')
                     ->required()
+                    ->regex('/^[0-9]{4,10}(-[0-9A-Z]{1,2})?$/i')
+                    ->helperText('4 a 10 dígitos numéricos (ej. 7894561 o 7894561-1A)')
                     ->maxLength(20),
                 Forms\Components\TextInput::make('cod_sis')
                     ->label('Código SIS')
+                    ->regex('/^[0-9]{7,10}$/')
+                    ->helperText('7 a 10 dígitos numéricos')
                     ->maxLength(50),
                 Forms\Components\TextInput::make('nombres')
                     ->required()
-                    ->maxLength(255),
+                    ->regex('/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/')
+                    ->maxLength(100),
                 Forms\Components\TextInput::make('apellido_paterno')
                     ->required()
-                    ->maxLength(255),
+                    ->regex('/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/')
+                    ->maxLength(100),
                 Forms\Components\TextInput::make('apellido_materno')
-                    ->maxLength(255),
+                    ->regex('/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/')
+                    ->maxLength(100),
                 Forms\Components\TextInput::make('celular')
                     ->tel()
+                    ->regex('/^[67][0-9]{7}$/')
+                    ->helperText('8 dígitos iniciando en 6 o 7')
                     ->maxLength(20),
                 Forms\Components\TextInput::make('email')
                     ->email()
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(150),
                 Forms\Components\Select::make('tipo_participante')
                     ->options(TipoParticipante::class)
                     ->required(),

@@ -63,7 +63,9 @@ class PaymentResource extends Resource
                     ->default(PaymentStatus::PENDIENTE)
                     ->required(),
                 Forms\Components\TextInput::make('numero_comprobante')
-                    ->maxLength(100),
+                    ->regex('/^[a-zA-Z0-9\-_]+$/')
+                    ->helperText('Solo caracteres alfanuméricos, guiones o guiones bajos')
+                    ->maxLength(50),
                 Forms\Components\Select::make('verificado_por')
                     ->relationship('verifier', 'name')
                     ->searchable()
