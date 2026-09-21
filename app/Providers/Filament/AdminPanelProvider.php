@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\Filament;
 
 use App\Filament\Admin\Resources;
+use App\Filament\Pages\Settings\GoogleSheetsSettings;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Support\DesignTokens;
 use Filament\Http\Middleware\Authenticate;
@@ -34,11 +35,15 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('UMSS Cursos')
             ->font('Montserrat')
             ->darkMode(false)
+            ->maxContentWidth('full')
             ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.custom-styles'))
             ->renderHook(PanelsRenderHook::GLOBAL_SEARCH_BEFORE, fn () => view('filament.topbar-public-link'))
             ->colors([
                 'primary' => Color::hex(DesignTokens::NAVY),
                 'danger' => Color::hex(DesignTokens::RED),
+                'success' => Color::hex(DesignTokens::GREEN),
+                'warning' => Color::hex(DesignTokens::AMBER),
+                'info' => Color::hex(DesignTokens::SKY),
                 'gray' => Color::Gray,
             ])
             ->navigationGroups([
@@ -63,6 +68,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->pages([
                 Pages\Dashboard::class,
+                GoogleSheetsSettings::class,
             ])
             ->middleware([
                 EncryptCookies::class,

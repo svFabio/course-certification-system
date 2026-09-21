@@ -11,7 +11,7 @@ Sistema de gestión académica para cursos de Formación Continua y certificaci�
 - **Backend:** PHP 8.2+ | Laravel 11
 - **Admin & Instructor Panels:** Filament v3
 - **Frontend Reactivo Público:** Livewire v3 | Blade | Tailwind CSS
-- **Base de Datos:** PostgreSQL (producción/desarrollo) | SQLite (testing)
+- **Base de Datos:** PostgreSQL (producción / desarrollo / testing)
 - **Almacenamiento en la Nube:** Cloudinary (vía Flysystem / Laravel Cloudinary para imágenes y PDFs)
 - **Testing:** Pest PHP / PHPUnit
 - **Code Style:** Laravel Pint
@@ -106,8 +106,23 @@ PROHIBIDO escribir colores hexadecimales arbitrarios en clases Tailwind (e.g. `t
 | **Rojo oscuro** | `#8B0000` | `text-umss-red-dark` / `bg-umss-red-dark` | `[#8B0000]` |
 | **Blanco** | `#FFFFFF` | `text-umss-white` / `bg-umss-white` (o `white`) | `[#FFFFFF]` |
 | **Gris 100** | `#F5F5F5` | `bg-umss-gray-100` / `text-umss-gray-100` | `[#F5F5F5]` |
+| **Gris 200 (Bordes UI)** | `#E5E5E5` | `border-umss-gray-200` / `bg-umss-gray-200` | `[#E5E5E5]` |
+| **Gris 300 (Bordes inputs)** | `#D6D6D6` | `border-umss-gray-300` | `[#D6D6D6]` |
 | **Gris 700** | `#4A4A4A` | `text-umss-gray-700` / `border-umss-gray-700` | `[#4A4A4A]` |
 | **Negro** | `#121212` | `text-umss-black` / `bg-umss-black` | `[#121212]` |
+
+### Tokens Semánticos de Estado (Alertas, Badges y Métricas)
+Para estados de negocio (inscrito, pendiente, en curso, finalizado) y feedback:
+
+| Estado Semántico | HEX | Clase Tailwind Obligatoria | Propósito de Negocio |
+| :--- | :--- | :--- | :--- |
+| **Éxito / Aprobado (Verde)** | `#16A34A` | `text-umss-green` / `bg-umss-green` / `border-umss-green` | Pago verificado, inscripción confirmada, grupo habilitado |
+| **Verde oscuro (Hover)** | `#15803D` | `bg-umss-green-dark` | Interacciones hover en acciones positivas |
+| **Verde sutil (Fondo badge)** | `#DCFCE7` | `bg-umss-green-light` / `text-umss-green-dark` | Badges de estado 'inscrito', 'habilitado' |
+| **Alerta / Pendiente (Ámbar)** | `#D97706` | `text-umss-amber` / `bg-umss-amber` / `border-umss-amber` | Pendiente de pago, grupo no habilitado |
+| **Ámbar sutil (Fondo badge)** | `#FEF3C7` | `bg-umss-amber-light` / `text-umss-amber-dark` | Badges de advertencia o estados transitorios |
+| **Info / En Curso (Azul cielo)**| `#0284C7` | `text-umss-sky` / `bg-umss-sky` / `border-umss-sky` | Curso/grupo en curso, sesiones activas |
+| **Info sutil (Fondo badge)** | `#E0F2FE` | `bg-umss-sky-light` / `text-umss-sky-dark` | Badges informativos de proceso |
 
 Cualquier nuevo componente, vista Blade o componente Vue debe utilizar exclusivamente estos tokens.
 

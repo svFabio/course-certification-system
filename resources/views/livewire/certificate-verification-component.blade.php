@@ -18,11 +18,11 @@
 
         @if ($searched)
             @if ($certificate)
-                <div class="p-6 border border-emerald-200 border-l-4 border-l-emerald-600 bg-white rounded-lg shadow-sm">
-                    <div class="flex items-center gap-2 mb-5 pb-3 border-b border-umss-gray-100">
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">✓</span>
+                <div class="p-6 border border-umss-green/40 border-l-4 border-l-umss-green bg-white rounded-lg shadow-sm">
+                    <div class="flex items-center gap-2.5 mb-5 pb-3 border-b border-umss-gray-100">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-umss-green-light text-umss-green-dark text-xs font-bold">✓</span>
                         <div>
-                            <h2 class="text-base font-semibold text-emerald-900 leading-tight">Certificado Válido y Registrado</h2>
+                            <h2 class="text-base font-semibold text-umss-green-dark leading-tight">Certificado Válido y Registrado</h2>
                             <p class="text-xs text-umss-gray-700">Documento verificado en la base de datos oficial.</p>
                         </div>
                     </div>
@@ -59,7 +59,7 @@
                     @endif
                 </div>
             @else
-                <div class="p-6 border border-red-200 border-l-4 border-l-umss-red bg-white rounded-lg text-center shadow-sm">
+                <div class="p-6 border border-umss-red/30 border-l-4 border-l-umss-red bg-white rounded-lg text-center shadow-sm">
                     <p class="text-umss-red font-semibold text-sm">No se encontró ningún certificado con ese código</p>
                     <p class="text-umss-gray-700 text-xs mt-1">Verifique que el código coincida exactamente con el impreso en el documento oficial.</p>
                 </div>

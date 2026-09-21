@@ -21,4 +21,14 @@ final class DesignTokens
     public const GRAY_700 = '#4A4A4A';
 
     public const BLACK = '#121212';
+
+    public const GRAY_200 = '#E5E5E5';
+
+    public const GRAY_300 = '#D6D6D6';
+
+    public const GREEN = '#16A34A';
+
+    public const AMBER = '#D97706';
+
+    public const SKY = '#0284C7';
 }
