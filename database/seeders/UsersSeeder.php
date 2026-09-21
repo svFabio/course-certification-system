@@ -22,14 +22,35 @@ class UsersSeeder extends Seeder
         );
         $admin->assignRole('admin');
 
-        $instructor = User::firstOrCreate(
-            ['email' => 'instructor@umss.edu.bo'],
+        $instructors = [
             [
-                'name' => 'Instructor Demo',
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]
-        );
-        $instructor->assignRole('instructor');
+                'name' => 'Adan Alberto Llanos Zela',
+                'email' => 'instructor@umss.edu.bo',
+            ],
+            [
+                'name' => 'Santos Flores Apaza',
+                'email' => 'santos.flores@umss.edu.bo',
+            ],
+            [
+                'name' => 'Beatriz Murillo Rojas',
+                'email' => 'beatriz.murillo@umss.edu.bo',
+            ],
+            [
+                'name' => 'Carlos Eduardo Vargas Torrico',
+                'email' => 'carlos.vargas@umss.edu.bo',
+            ],
+        ];
+
+        foreach ($instructors as $instData) {
+            $inst = User::firstOrCreate(
+                ['email' => $instData['email']],
+                [
+                    'name' => $instData['name'],
+                    'password' => Hash::make('password'),
+                    'email_verified_at' => now(),
+                ]
+            );
+            $inst->syncRoles(['instructor']);
+        }
     }
 }
