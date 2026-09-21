@@ -43,6 +43,17 @@ class CourseResource extends Resource
                                 ->unique(ignoreRecord: true),
                             Forms\Components\Textarea::make('contenido')
                                 ->rows(4),
+                            Forms\Components\FileUpload::make('portada_path')
+                                ->label('Imagen de portada')
+                                ->image()
+                                ->disk('cloudinary')
+                                ->directory('courses')
+                                ->imageResizeMode('cover')
+                                ->imageCropAspectRatio('16:9')
+                                ->imageResizeTargetWidth('1200')
+                                ->imageResizeTargetHeight('675')
+                                ->maxSize(5120)
+                                ->helperText('Imagen de cabecera para el catálogo público (máx. 5MB).'),
                             Forms\Components\Select::make('carga_horaria')
                                 ->options(array_combine(
                                     BusinessRules::VALID_HOURS,

@@ -65,18 +65,39 @@
     @else
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach ($courses as $course)
-                <div class="card-umss bg-white border border-umss-gray-100 hover:border-umss-navy transition-all duration-200 rounded-xl shadow-sm hover:shadow-md flex flex-col justify-between overflow-hidden">
-                    <div class="p-6">
-                        <div class="flex items-center justify-between gap-2 mb-2">
-                            <span class="text-xs font-medium px-2.5 py-0.5 rounded-md bg-umss-gray-100 text-umss-gray-700 border border-umss-gray-100">
+                <div class="card-umss bg-white border border-umss-gray-100 hover:border-umss-navy transition-all duration-200 rounded-xl shadow-sm hover:shadow-md flex flex-col justify-between overflow-hidden group">
+                    {{-- Cover image header (approx. top 1/4 of card) --}}
+                    <div class="relative h-36 w-full overflow-hidden bg-gradient-to-br from-umss-navy via-umss-navy to-umss-navy-dark flex items-center justify-center">
+                        @if ($course->portada_url)
+                            <img src="{{ $course->portada_url }}"
+                                alt="Portada de {{ $course->nombre }}"
+                                class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                                loading="lazy">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                        @else
+                            <div class="flex flex-col items-center justify-center text-white/70 select-none p-4 text-center">
+                                <svg class="w-9 h-9 mb-1 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                                <span class="text-[11px] font-medium tracking-wide uppercase text-white/90">Formación Continua UMSS</span>
+                            </div>
+                        @endif
+
+                        <div class="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 z-10">
+                            <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-white/95 text-umss-navy shadow-sm backdrop-blur-sm">
                                 {{ $course->periodo }}
                             </span>
-                            <span class="text-xs font-medium text-umss-gray-700">
+                            <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-umss-navy-dark/80 text-white shadow-sm backdrop-blur-sm border border-white/20">
                                 {{ $course->nivel }}
                             </span>
                         </div>
-                        <h2 class="text-lg font-semibold text-umss-black mb-2 leading-snug">{{ $course->nombre }}</h2>
-                        <p class="text-umss-gray-700 text-sm mb-4 line-clamp-2 leading-relaxed">{{ $course->contenido }}</p>
+                    </div>
+
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold text-umss-black mb-2 leading-snug">{{ $course->nombre }}</h2>
+                            <p class="text-umss-gray-700 text-sm mb-4 line-clamp-2 leading-relaxed">{{ $course->contenido }}</p>
+                        </div>
 
                         <div class="space-y-1.5 text-xs text-umss-gray-700 pt-3 border-t border-umss-gray-100">
                             <p><span class="font-medium text-umss-black">Docente:</span> {{ $course->instructor->name ?? 'Por asignar' }}</p>
