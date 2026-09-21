@@ -18,7 +18,7 @@ class EvaluationCriteriaResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-star';
 
-    protected static ?string $navigationGroup = 'Evaluación';
+    protected static ?string $navigationGroup = 'Evaluación & Certificados';
 
     protected static ?int $navigationSort = 1;
 

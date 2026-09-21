@@ -20,7 +20,7 @@ class HolidayResource extends Resource
 
     protected static ?string $navigationGroup = 'Gestión Académica';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 5;
 
     protected static ?string $modelLabel = 'Feriado / Asueto';
 

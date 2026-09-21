@@ -12,8 +12,12 @@ use Illuminate\Validation\ValidationException;
 
 class PaymentService
 {
-    public function registerAndVerify(Preinscription $preinscription, string $method, ?string $reference): Payment
+    public function registerAndVerify(Preinscription $preinscription, string $method, ?string $reference, bool $fotocopiaCi = false): Payment
     {
+        if ($fotocopiaCi) {
+            $preinscription->update(['fotocopia_ci' => true]);
+        }
+
         return Payment::create([
             'preinscription_id' => $preinscription->id,
             'monto' => $preinscription->price,
@@ -22,6 +26,26 @@ class PaymentService
             'estado' => PaymentStatus::VERIFICADO,
             'verificado_por' => auth()->id(),
             'verificado_en' => now(),
+        ]);
+    }
+
+    public function verify(Payment $payment): void
+    {
+        $payment->update([
+            'verificado_por' => auth()->id(),
+            'verificado_en' => now(),
+            'estado' => PaymentStatus::VERIFICADO,
+            'motivo_rechazo' => null,
+        ]);
+    }
+
+    public function reject(Payment $payment, string $reason): void
+    {
+        $payment->update([
+            'estado' => PaymentStatus::RECHAZADO,
+            'motivo_rechazo' => $reason,
+            'verificado_por' => null,
+            'verificado_en' => null,
         ]);
     }
 

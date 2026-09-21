@@ -20,7 +20,7 @@ class UserResource extends Resource
 
     protected static ?string $navigationGroup = 'Gestión Académica';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 8;
 
     protected static ?string $modelLabel = 'Usuario';
 

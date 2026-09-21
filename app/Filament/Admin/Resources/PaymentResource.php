@@ -23,9 +23,9 @@ class PaymentResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static ?string $navigationGroup = 'Inscripciones';
+    protected static ?string $navigationGroup = 'Gestión Académica';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 7;
 
     protected static ?string $modelLabel = 'Pago';
 
@@ -85,6 +85,13 @@ class PaymentResource extends Resource
                 Tables\Columns\TextColumn::make('preinscription.full_name')
                     ->label('Participante')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('preinscription.cod_sis')
+                    ->label('Cód. SIS')
+                    ->placeholder('—')
+                    ->searchable(),
+                Tables\Columns\IconColumn::make('preinscription.fotocopia_ci')
+                    ->label('Fotocopia CI')
+                    ->boolean(),
                 Tables\Columns\TextColumn::make('monto')
                     ->label('Monto')
                     ->numeric()
@@ -121,13 +128,8 @@ class PaymentResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('¿Confirmar recepción del pago?')
                     ->modalDescription('Se validará el pago inmediatamente y el estudiante quedará inscrito con notificación por correo.')
-                    ->action(function (Payment $record) {
-                        $record->update([
-                            'verificado_por' => auth()->id(),
-                            'verificado_en' => now(),
-                            'estado' => PaymentStatus::VERIFICADO,
-                            'motivo_rechazo' => null,
-                        ]);
+                    ->action(function (Payment $record, PaymentService $service) {
+                        $service->verify($record);
 
                         Notification::make()
                             ->title('Pago verificado y estudiante inscrito correctamente.')
@@ -148,13 +150,13 @@ class PaymentResource extends Resource
                             ->required()
                             ->maxLength(255),
                     ])
-                    ->action(function (Payment $record, array $data) {
-                        $record->update([
-                            'estado' => PaymentStatus::RECHAZADO,
-                            'motivo_rechazo' => $data['motivo_rechazo'],
-                            'verificado_por' => null,
-                            'verificado_en' => null,
-                        ]);
+                    ->action(function (Payment $record, array $data, PaymentService $service) {
+                        $service->reject($record, $data['motivo_rechazo']);
+
+                        Notification::make()
+                            ->title('Pago rechazado correctamente.')
+                            ->warning()
+                            ->send();
                     }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
