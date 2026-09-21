@@ -1,7 +1,7 @@
 <div>
-    <div class="max-w-2xl mx-auto card-umss p-8">
-        <h1 class="text-2xl font-semibold text-umss-navy mb-2">Formulario de Preinscripcion</h1>
-        <p class="text-sm text-umss-gray-700 mb-6">Complete sus datos para reservar su cupo en el curso seleccionado.</p>
+    <div class="max-w-2xl mx-auto card-umss p-8 bg-white border border-umss-gray-100 border-t-4 border-t-umss-navy rounded-xl shadow-md">
+        <h1 class="text-2xl font-bold text-umss-navy tracking-tight mb-2">Formulario de Preinscripción</h1>
+        <p class="text-xs text-umss-gray-700 mb-6">Complete sus datos para reservar su cupo en el curso seleccionado.</p>
 
         @if (!$stepConfirmation)
             {{-- STEP 1: Form --}}
@@ -64,6 +64,14 @@
                     @error('tipoParticipante') <p class="text-umss-red text-xs mt-1 font-medium">{{ $message }}</p> @enderror
                 </div>
 
+                @if(in_array($tipoParticipante, ['umss', 'auxiliar'], true))
+                    <div>
+                        <label class="block text-xs font-medium text-umss-gray-700 mb-1.5 uppercase tracking-wide">Código SIS (Opcional si cuenta con registro UMSS)</label>
+                        <input type="text" wire:model="codSis" placeholder="Ej. 202002515" class="input-umss">
+                        @error('codSis') <p class="text-umss-red text-xs mt-1 font-medium">{{ $message }}</p> @enderror
+                    </div>
+                @endif
+
                 @if($this->precioCalculado !== null)
                     <div class="bg-umss-gray-100 border border-umss-gray-100 rounded-lg p-4">
                         <p class="text-xs text-umss-gray-700 uppercase tracking-wide mb-1">Costo de inscripcion</p>
@@ -92,6 +100,12 @@
                         <span class="text-xs text-umss-gray-700 uppercase">CI</span>
                         <span class="text-sm font-medium text-umss-black">{{ $ci }}</span>
                     </div>
+                    @if($codSis)
+                        <div class="flex justify-between">
+                            <span class="text-xs text-umss-gray-700 uppercase">Código SIS</span>
+                            <span class="text-sm font-medium text-umss-black">{{ $codSis }}</span>
+                        </div>
+                    @endif
                     <div class="flex justify-between">
                         <span class="text-xs text-umss-gray-700 uppercase">Email</span>
                         <span class="text-sm font-medium text-umss-black">{{ $email }}</span>

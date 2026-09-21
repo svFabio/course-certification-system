@@ -23,9 +23,9 @@ class PreinscriptionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
-    protected static ?string $navigationGroup = 'Inscripciones';
+    protected static ?string $navigationGroup = 'Gestión Académica';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 6;
 
     protected static ?string $modelLabel = 'Preinscripción';
 
@@ -40,8 +40,12 @@ class PreinscriptionResource extends Resource
                     ->searchable()
                     ->required(),
                 Forms\Components\TextInput::make('ci')
+                    ->label('Cédula de Identidad (CI)')
                     ->required()
                     ->maxLength(20),
+                Forms\Components\TextInput::make('cod_sis')
+                    ->label('Código SIS')
+                    ->maxLength(50),
                 Forms\Components\TextInput::make('nombres')
                     ->required()
                     ->maxLength(255),
@@ -63,6 +67,9 @@ class PreinscriptionResource extends Resource
                 Forms\Components\Select::make('status')
                     ->options(PreinscriptionStatus::class)
                     ->default(PreinscriptionStatus::PENDIENTE_PAGO),
+                Forms\Components\Toggle::make('fotocopia_ci')
+                    ->label('Fotocopia de C.I. entregada')
+                    ->default(false),
             ]);
     }
 
@@ -71,10 +78,23 @@ class PreinscriptionResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('ci')
+                    ->label('CI')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('cod_sis')
+                    ->label('Cód. SIS')
+                    ->placeholder('—')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('nombres')
+                    ->label('Nombres')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('apellido_paterno'),
+                Tables\Columns\TextColumn::make('apellido_paterno')
+                    ->label('Ap. Paterno'),
+                Tables\Columns\TextColumn::make('celular')
+                    ->label('Celular')
+                    ->placeholder('—'),
+                Tables\Columns\IconColumn::make('fotocopia_ci')
+                    ->label('Fotocopia CI')
+                    ->boolean(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('group.course.nombre')
@@ -115,12 +135,16 @@ class PreinscriptionResource extends Resource
                             ->label('Número de comprobante / recibo')
                             ->placeholder('Opcional')
                             ->maxLength(100),
+                        Forms\Components\Toggle::make('fotocopia_ci')
+                            ->label('Fotocopia de C.I. entregada físicamente')
+                            ->default(fn (Preinscription $record) => (bool) $record->fotocopia_ci),
                     ])
                     ->action(function (Preinscription $record, array $data) {
                         app(PaymentService::class)->registerAndVerify(
                             $record,
                             $data['metodo'],
                             $data['numero_comprobante'] ?? null,
+                            (bool) ($data['fotocopia_ci'] ?? false),
                         );
 
                         Notification::make()

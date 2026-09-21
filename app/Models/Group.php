@@ -19,6 +19,7 @@ class Group extends Model
     protected $fillable = [
         'course_id',
         'nombre',
+        'aula',
         'hora_inicio',
         'hora_fin',
         'cupo_minimo',

@@ -27,6 +27,7 @@ class PreinscriptionService
         return Preinscription::create([
             'group_id' => $group->id,
             'ci' => $data['ci'],
+            'cod_sis' => $data['cod_sis'] ?? null,
             'nombres' => $data['nombres'],
             'apellido_paterno' => $data['apellido_paterno'],
             'apellido_materno' => $data['apellido_materno'] ?? null,
@@ -34,6 +35,7 @@ class PreinscriptionService
             'email' => $data['email'],
             'tipo_participante' => $data['tipo_participante'],
             'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+            'fotocopia_ci' => (bool) ($data['fotocopia_ci'] ?? false),
         ]);
     }
 

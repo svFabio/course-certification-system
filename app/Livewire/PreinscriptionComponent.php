@@ -19,6 +19,8 @@ class PreinscriptionComponent extends Component
 
     public ?string $ci = null;
 
+    public ?string $codSis = null;
+
     public ?string $nombres = null;
 
     public ?string $apellidoPaterno = null;
@@ -69,6 +71,7 @@ class PreinscriptionComponent extends Component
         $this->validate([
             'groupId' => 'required|integer|exists:groups,id',
             'ci' => 'required|string|max:20',
+            'codSis' => 'nullable|string|max:50',
             'nombres' => 'required|string|max:100',
             'apellidoPaterno' => 'required|string|max:100',
             'apellidoMaterno' => 'nullable|string|max:100',
@@ -104,6 +107,7 @@ class PreinscriptionComponent extends Component
         $validated = $this->validate([
             'groupId' => 'required|integer|exists:groups,id',
             'ci' => 'required|string|max:20',
+            'codSis' => 'nullable|string|max:50',
             'nombres' => 'required|string|max:100',
             'apellidoPaterno' => 'required|string|max:100',
             'apellidoMaterno' => 'nullable|string|max:100',
@@ -115,6 +119,7 @@ class PreinscriptionComponent extends Component
         $service->register([
             'group_id' => $validated['groupId'],
             'ci' => $validated['ci'],
+            'cod_sis' => in_array($validated['tipoParticipante'], ['umss', 'auxiliar'], true) ? ($validated['codSis'] ?? null) : null,
             'nombres' => $validated['nombres'],
             'apellido_paterno' => $validated['apellidoPaterno'],
             'apellido_materno' => $validated['apellidoMaterno'] ?? null,
@@ -125,7 +130,7 @@ class PreinscriptionComponent extends Component
 
         session()->flash('success', 'Preinscripcion registrada correctamente. Siga las instrucciones de pago en caja facultativa.');
 
-        $this->reset(['ci', 'nombres', 'apellidoPaterno', 'apellidoMaterno', 'celular', 'email', 'tipoParticipante', 'stepConfirmation']);
+        $this->reset(['ci', 'codSis', 'nombres', 'apellidoPaterno', 'apellidoMaterno', 'celular', 'email', 'tipoParticipante', 'stepConfirmation']);
     }
 
     public function render()

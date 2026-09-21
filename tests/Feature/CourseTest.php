@@ -215,3 +215,34 @@ it('generates certificate with correct type and matching course_id via Certifica
     expect($certificate->tipo)->toBe(CertificateType::APROBACION);
     expect($certificate->codigo_unico)->toStartWith('CERT-');
 });
+
+it('supports cod_sis, fotocopia_ci in preinscriptions and aula in groups', function () {
+    $group = Group::factory()->create([
+        'aula' => 'Laboratorio 3',
+    ]);
+
+    $preinscription = Preinscription::factory()->create([
+        'group_id' => $group->id,
+        'cod_sis' => '202002515',
+        'fotocopia_ci' => true,
+    ]);
+
+    expect($group->aula)->toBe('Laboratorio 3');
+    expect($preinscription->cod_sis)->toBe('202002515');
+    expect($preinscription->fotocopia_ci)->toBeTrue();
+});
+
+it('supports portada_path and resolves portada_url', function () {
+    $course = Course::factory()->create([
+        'portada_path' => 'https://res.cloudinary.com/demo/image/upload/sample.jpg',
+    ]);
+
+    expect($course->portada_path)->toBe('https://res.cloudinary.com/demo/image/upload/sample.jpg');
+    expect($course->portada_url)->toBe('https://res.cloudinary.com/demo/image/upload/sample.jpg');
+
+    $localCourse = Course::factory()->create([
+        'portada_path' => null,
+    ]);
+
+    expect($localCourse->portada_url)->toBeNull();
+});
