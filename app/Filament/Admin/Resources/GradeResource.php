@@ -56,7 +56,7 @@ class GradeResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('preinscription.full_name')
                     ->label('Participante')
-                    ->searchable(['preinscription.nombres', 'preinscription.apellidos']),
+                    ->searchable(['preinscription.nombres', 'preinscription.apellido_paterno', 'preinscription.apellido_materno']),
                 Tables\Columns\TextColumn::make('nota')
                     ->label('Nota')
                     ->sortable(),

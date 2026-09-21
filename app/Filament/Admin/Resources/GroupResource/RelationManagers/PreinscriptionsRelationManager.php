@@ -2,88 +2,70 @@
 
 declare(strict_types=1);
 
-namespace App\Filament\Admin\Resources;
+namespace App\Filament\Admin\Resources\GroupResource\RelationManagers;
 
 use App\Enums\PaymentMethod;
 use App\Enums\PreinscriptionStatus;
 use App\Enums\TipoParticipante;
-use App\Filament\Admin\Resources\PreinscriptionResource\Pages;
 use App\Models\Preinscription;
 use App\Services\PaymentService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class PreinscriptionResource extends Resource
+class PreinscriptionsRelationManager extends RelationManager
 {
-    protected static ?string $model = Preinscription::class;
+    protected static string $relationship = 'preinscriptions';
 
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static ?string $title = 'Preinscripciones';
 
-    protected static ?string $navigationGroup = 'Inscripciones';
-
-    protected static ?int $navigationSort = 1;
-
-    protected static ?string $modelLabel = 'Preinscripción';
-
-    protected static ?string $modelLabelPlural = 'Preinscripciones';
-
-    public static function form(Form $form): Form
+    public function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\Select::make('group_id')
-                    ->relationship('group', 'nombre')
-                    ->searchable()
-                    ->required(),
-                Forms\Components\TextInput::make('ci')
-                    ->required()
-                    ->maxLength(20),
-                Forms\Components\TextInput::make('nombres')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('apellido_paterno')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('apellido_materno')
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('celular')
-                    ->tel()
-                    ->maxLength(20),
-                Forms\Components\TextInput::make('email')
-                    ->email()
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\Select::make('tipo_participante')
-                    ->options(TipoParticipante::class)
-                    ->required(),
-                Forms\Components\Select::make('status')
-                    ->options(PreinscriptionStatus::class)
-                    ->default(PreinscriptionStatus::PENDIENTE_PAGO),
-            ]);
+        return $form->schema([
+            Forms\Components\TextInput::make('ci')
+                ->required()
+                ->maxLength(20),
+            Forms\Components\TextInput::make('nombres')
+                ->required()
+                ->maxLength(255),
+            Forms\Components\TextInput::make('apellido_paterno')
+                ->required()
+                ->maxLength(255),
+            Forms\Components\TextInput::make('apellido_materno')
+                ->maxLength(255),
+            Forms\Components\TextInput::make('celular')
+                ->tel()
+                ->maxLength(20),
+            Forms\Components\TextInput::make('email')
+                ->email()
+                ->required()
+                ->maxLength(255),
+            Forms\Components\Select::make('tipo_participante')
+                ->options(TipoParticipante::class)
+                ->required(),
+            Forms\Components\Select::make('status')
+                ->options(PreinscriptionStatus::class)
+                ->default(PreinscriptionStatus::PENDIENTE_PAGO),
+        ]);
     }
 
-    public static function table(Table $table): Table
+    public function table(Table $table): Table
     {
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('ci')
+                    ->label('CI')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('nombres')
+                Tables\Columns\TextColumn::make('full_name')
+                    ->label('Participante')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('apellido_paterno'),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('group.course.nombre')
-                    ->label('Curso')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('group.nombre')
-                    ->label('Grupo'),
                 Tables\Columns\TextColumn::make('tipo_participante')
-                    ->label('Tipo participante')
+                    ->label('Tipo')
                     ->badge(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
@@ -93,8 +75,8 @@ class PreinscriptionResource extends Resource
                     ->dateTime()
                     ->sortable(),
             ])
-            ->filters([
-                //
+            ->headerActions([
+                Tables\Actions\CreateAction::make(),
             ])
             ->actions([
                 Tables\Actions\Action::make('registrarPago')
@@ -120,7 +102,7 @@ class PreinscriptionResource extends Resource
                         app(PaymentService::class)->registerAndVerify(
                             $record,
                             $data['metodo'],
-                            $data['numero_comprobante'] ?? null,
+                            $data['numero_comprobante'] ?? null
                         );
 
                         Notification::make()
@@ -136,15 +118,5 @@ class PreinscriptionResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
-    }
-
-    public static function getPages(): array
-    {
-        return [
-            'index' => Pages\ListPreinscriptions::route('/'),
-            'create' => Pages\CreatePreinscription::route('/create'),
-            'view' => Pages\ViewPreinscription::route('/{record}'),
-            'edit' => Pages\EditPreinscription::route('/{record}/edit'),
-        ];
     }
 }

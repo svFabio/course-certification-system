@@ -17,6 +17,11 @@ class InstructorCourseResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
 
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('instructor');
+    }
+
     protected static ?string $navigationGroup = 'Mis Cursos';
 
     protected static ?int $navigationSort = 1;

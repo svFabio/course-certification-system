@@ -35,9 +35,10 @@
                     </label>
                     <select id="nivel" wire:model.live="nivel" class="input-umss w-full text-sm font-sans focus:border-umss-navy focus:ring-1 focus:ring-umss-navy">
                         <option value="">Todos los niveles</option>
-                        <option value="Básico">Básico</option>
-                        <option value="Intermedio">Intermedio</option>
-                        <option value="Avanzado">Avanzado</option>
+                        @foreach($this->niveles as $niv)
+                            <option value="{{ $niv }}">{{ $niv }}</option>
+                        @endforeach
+
                     </select>
                 </div>
                 <div>
@@ -46,8 +47,10 @@
                     </label>
                     <select id="cargaHoraria" wire:model.live="cargaHoraria" class="input-umss w-full text-sm font-sans focus:border-umss-navy focus:ring-1 focus:ring-umss-navy">
                         <option value="">Todas las cargas</option>
-                        <option value="20">20 horas</option>
-                        <option value="30">30 horas</option>
+                        @foreach($this->cargas as $c)
+                            <option value="{{ $c }}">{{ $c }} horas</option>
+                        @endforeach
+
                     </select>
                 </div>
             </div>
@@ -112,7 +115,7 @@
                                         <span class="text-umss-gray-700 ml-1 font-mono text-[11px]">({{ $inscritos }}/{{ $group->cupo_maximo }})</span>
                                     </div>
                                     @if ($full)
-                                        <span class="text-umss-red font-semibold text-xs px-2 py-0.5 rounded bg-red-50">Lleno</span>
+                                        <span class="text-umss-red font-semibold text-xs px-2 py-0.5 rounded bg-umss-red/10">Lleno</span>
                                     @else
                                         <a href="{{ route('preinscripcion', ['group' => $group->id]) }}"
                                             class="inline-flex items-center text-umss-navy hover:text-umss-navy-dark font-semibold text-xs transition">

@@ -34,9 +34,7 @@ class CertificateService
 
     public function calculateCertificateType(float $finalGrade): CertificateType
     {
-        return $finalGrade >= BusinessRules::MINIMUM_PASSING_GRADE
-            ? CertificateType::APROBACION
-            : CertificateType::ASISTENCIA;
+        return BusinessRules::determineCertificateType($finalGrade);
     }
 
     public function getSignatureStatus(Certificate $certificate): SignatureStatus

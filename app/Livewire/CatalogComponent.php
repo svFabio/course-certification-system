@@ -8,6 +8,7 @@ use App\Enums\CourseStatus;
 use App\Enums\GroupStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Models\Course;
+use App\Support\BusinessRules;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -41,6 +42,16 @@ class CatalogComponent extends Component
     public function updatingCargaHoraria(): void
     {
         $this->resetPage();
+    }
+
+    public function getNivelesProperty(): array
+    {
+        return Course::distinct()->orderBy('nivel')->pluck('nivel')->filter()->values()->toArray();
+    }
+
+    public function getCargasProperty(): array
+    {
+        return BusinessRules::VALID_HOURS;
     }
 
     public function render()

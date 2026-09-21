@@ -22,6 +22,11 @@ class InstructorSessionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar';
 
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('instructor');
+    }
+
     protected static ?string $navigationGroup = 'Mis Cursos';
 
     protected static ?int $navigationSort = 2;
@@ -41,7 +46,9 @@ class InstructorSessionResource extends Resource
                         ->get()
                         ->mapWithKeys(fn ($g) => [$g->id => "{$g->course->nombre} — {$g->nombre}"]))
                     ->searchable()
-                    ->required(),
+                    ->required()
+                    ->disabledOn('view'),
+
                 Forms\Components\DatePicker::make('fecha')
                     ->required(),
                 Forms\Components\TimePicker::make('hora_inicio')

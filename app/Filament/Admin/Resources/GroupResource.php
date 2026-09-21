@@ -71,7 +71,9 @@ class GroupResource extends Resource
                     }),
                 Forms\Components\TextInput::make('cupo_minimo')
                     ->numeric()
-                    ->default(BusinessRules::MIN_GROUP_CAPACITY),
+                    ->default(BusinessRules::MIN_GROUP_CAPACITY)
+                    ->required()
+                    ->minValue(1),
                 Forms\Components\TextInput::make('cupo_maximo')
                     ->numeric()
                     ->required()
@@ -165,6 +167,13 @@ class GroupResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            GroupResource\RelationManagers\PreinscriptionsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

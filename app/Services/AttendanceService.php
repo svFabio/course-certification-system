@@ -6,24 +6,42 @@ namespace App\Services;
 
 use App\Enums\AttendanceStatus;
 use App\Models\Attendance;
+use App\Models\Preinscription;
 use App\Models\Session;
 use App\Support\BusinessRules;
 use Illuminate\Support\Facades\Config;
 
 class AttendanceService
 {
-    public function findSession(?int $sessionId, ?string $sessionCode): ?Session
+    public function findSession(?int $sessionId, ?string $sessionCode = null): ?Session
     {
-        if ($sessionId) {
-            return Session::with('group')->find($sessionId);
+        $resolvedId = $sessionId
+            ?? (is_numeric($sessionCode) ? (int) $sessionCode : null)
+            ?? (preg_match('/(\d+)/', (string) $sessionCode, $m) ? (int) $m[1] : null);
+
+        return $resolvedId !== null
+            ? Session::with('group')->find($resolvedId)
+            : null;
+    }
+
+    public function findPreinscription(array $params, int $groupId): ?Preinscription
+    {
+        if (! empty($params['preinscription_id'])) {
+            return Preinscription::where('group_id', $groupId)
+                ->where('id', $params['preinscription_id'])
+                ->first();
         }
 
-        if ($sessionCode && is_numeric($sessionCode)) {
-            return Session::with('group')->find((int) $sessionCode);
+        if (! empty($params['ci'])) {
+            return Preinscription::where('group_id', $groupId)
+                ->where('ci', $params['ci'])
+                ->first();
         }
 
-        if ($sessionCode && preg_match('/(\d+)/', $sessionCode, $matches)) {
-            return Session::with('group')->find((int) $matches[1]);
+        if (! empty($params['email'])) {
+            return Preinscription::where('group_id', $groupId)
+                ->where('email', $params['email'])
+                ->first();
         }
 
         return null;

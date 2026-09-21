@@ -8,14 +8,14 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Filament\Admin\Resources\PaymentResource\Pages;
 use App\Models\Payment;
-use App\Models\Preinscription;
-use App\Support\BusinessRules;
+use App\Services\PaymentService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Validation\ValidationException;
 
 class PaymentResource extends Resource
 {
@@ -47,15 +47,10 @@ class PaymentResource extends Resource
                         return function ($attribute, $value, $fail) use ($get) {
                             $preinscriptionId = $get('preinscription_id');
                             if ($preinscriptionId && $value) {
-                                $preinscription = Preinscription::with('group.course')->find($preinscriptionId);
-                                if ($preinscription) {
-                                    $expected = BusinessRules::calculatePrice(
-                                        (int) $preinscription->group->course->carga_horaria,
-                                        $preinscription->tipo_participante
-                                    );
-                                    if ((float) $value !== $expected) {
-                                        $fail("El monto correcto para este participante es Bs. {$expected}");
-                                    }
+                                try {
+                                    app(PaymentService::class)->verifyAmount((int) $preinscriptionId, (float) $value);
+                                } catch (ValidationException $e) {
+                                    $fail($e->getMessage());
                                 }
                             }
                         };
@@ -72,8 +67,14 @@ class PaymentResource extends Resource
                 Forms\Components\Select::make('verificado_por')
                     ->relationship('verifier', 'name')
                     ->searchable()
-                    ->nullable(),
-                Forms\Components\DateTimePicker::make('verificado_en'),
+                    ->nullable()
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->visibleOn('edit'),
+                Forms\Components\DateTimePicker::make('verificado_en')
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->visibleOn('edit'),
             ]);
     }
 
@@ -140,7 +141,7 @@ class PaymentResource extends Resource
                     ->visible(fn (Payment $record) => $record->estado === PaymentStatus::PENDIENTE)
                     ->requiresConfirmation()
                     ->modalHeading('Rechazar pago')
-                    ->modalSubdescription('El pago no fue recibido o presento problemas')
+                    ->modalSubHeading('El pago no fue recibido o presento problemas')
                     ->form([
                         Forms\Components\TextInput::make('motivo_rechazo')
                             ->label('Motivo del rechazo')
