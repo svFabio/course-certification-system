@@ -10,33 +10,36 @@ use App\Models\Group;
 use App\Models\Preinscription;
 use App\Support\BusinessRules;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PreinscriptionService
 {
     public function register(array $data): Preinscription
     {
-        $group = Group::findOrFail($data['group_id']);
+        return DB::transaction(function () use ($data) {
+            $group = Group::where('id', $data['group_id'])->lockForUpdate()->firstOrFail();
 
-        if (! $this->hasAvailableCapacity($group)) {
-            throw ValidationException::withMessages([
-                'group_id' => 'El grupo seleccionado ha alcanzado su capacidad máxima.',
+            if (! $this->hasAvailableCapacity($group)) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El grupo seleccionado ha alcanzado su capacidad máxima.',
+                ]);
+            }
+
+            return Preinscription::create([
+                'group_id' => $group->id,
+                'ci' => $data['ci'],
+                'cod_sis' => $data['cod_sis'] ?? null,
+                'nombres' => $data['nombres'],
+                'apellido_paterno' => $data['apellido_paterno'],
+                'apellido_materno' => $data['apellido_materno'] ?? null,
+                'celular' => $data['celular'] ?? null,
+                'email' => $data['email'],
+                'tipo_participante' => $data['tipo_participante'],
+                'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+                'fotocopia_ci' => (bool) ($data['fotocopia_ci'] ?? false),
             ]);
-        }
-
-        return Preinscription::create([
-            'group_id' => $group->id,
-            'ci' => $data['ci'],
-            'cod_sis' => $data['cod_sis'] ?? null,
-            'nombres' => $data['nombres'],
-            'apellido_paterno' => $data['apellido_paterno'],
-            'apellido_materno' => $data['apellido_materno'] ?? null,
-            'celular' => $data['celular'] ?? null,
-            'email' => $data['email'],
-            'tipo_participante' => $data['tipo_participante'],
-            'status' => PreinscriptionStatus::PENDIENTE_PAGO,
-            'fotocopia_ci' => (bool) ($data['fotocopia_ci'] ?? false),
-        ]);
+        });
     }
 
     public function evaluateCupoMinimo(Group $group): bool

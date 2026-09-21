@@ -31,9 +31,16 @@ class GoogleSheetsSettings extends Page implements HasForms
 
     public ?string $oauthUserEmail = null;
 
+    public bool $isOAuthConnected = false;
+
+    public string $oauthRedirectUrl = '';
+
     public function mount(): void
     {
-        $this->oauthUserEmail = GoogleSheetsService::isOAuthConnected()
+        $this->isOAuthConnected = GoogleSheetsService::isOAuthConnected();
+        $this->oauthRedirectUrl = GoogleSheetsService::getOAuthRedirectUrl();
+
+        $this->oauthUserEmail = $this->isOAuthConnected
             ? app(GoogleSheetsService::class)->getOAuthUserEmail()
             : null;
 
