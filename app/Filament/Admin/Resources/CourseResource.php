@@ -68,7 +68,18 @@ class CourseResource extends Resource
                                     $set('precio_auxiliar', $prices['auxiliar'] ?? 0);
                                 }),
                             Forms\Components\TextInput::make('nivel'),
-                            Forms\Components\TextInput::make('periodo'),
+                            Forms\Components\Select::make('periodo')
+                                ->options(function (): array {
+                                    $year = now()->year;
+
+                                    return [
+                                        "I-{$year}" => "I-{$year}",
+                                        "II-{$year}" => "II-{$year}",
+                                        'Invierno' => 'Invierno',
+                                        'Verano' => 'Verano',
+                                    ];
+                                })
+                                ->required(),
                             Forms\Components\Select::make('instructor_id')
                                 ->relationship('instructor', 'name')
                                 ->searchable()

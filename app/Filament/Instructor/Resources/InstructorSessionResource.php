@@ -102,7 +102,7 @@ class InstructorSessionResource extends Resource
                             ->required(),
                         Forms\Components\Textarea::make('motivo')
                             ->label('Motivo de reprogramación')
-                            ->placeholder('Ej. Feriado sobrevenido, duelo institucional, emergencia del docente...')
+                            ->placeholder('Ej. Feriado sobrevenido, duelo institucional, emergencia del instructor...')
                             ->required()
                             ->rows(3),
                     ])

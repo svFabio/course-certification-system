@@ -44,15 +44,10 @@ class GroupsRelationManager extends RelationManager
                     }
                 }),
             Forms\Components\TimePicker::make('hora_fin')
-                ->required()
-                ->rules(function ($get) {
-                    return function ($attribute, $value, $fail) use ($get) {
-                        $horaInicio = $get('hora_inicio');
-                        if ($horaInicio && $value && $value <= $horaInicio) {
-                            $fail('La hora de fin debe ser posterior a la hora de inicio.');
-                        }
-                    };
-                }),
+                ->label('Hora de fin (calculada automáticamente)')
+                ->disabled()
+                ->dehydrated(false)
+                ->helperText('Se calcula automáticamente según la carga horaria del curso.'),
             Forms\Components\TextInput::make('cupo_minimo')
                 ->numeric()
                 ->default(BusinessRules::MIN_GROUP_CAPACITY),

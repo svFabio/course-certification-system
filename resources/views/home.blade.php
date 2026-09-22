@@ -29,7 +29,7 @@
                 📚
             </div>
             <h3 class="font-bold text-base mb-2 text-umss-navy">Cursos Actualizados</h3>
-            <p class="text-umss-gray-700 text-xs leading-relaxed">Programas de formación en áreas técnicas, científicas y profesionales con docentes calificados.</p>
+            <p class="text-umss-gray-700 text-xs leading-relaxed">Programas de formación en áreas técnicas, científicas y profesionales con instructores calificados.</p>
         </div>
         <div class="card-umss p-6 bg-white border border-umss-gray-100 hover:border-umss-navy/30 transition shadow-sm hover:shadow-md">
             <div class="w-10 h-10 rounded-lg bg-umss-navy/10 flex items-center justify-center text-umss-navy mb-4 font-bold text-lg">
