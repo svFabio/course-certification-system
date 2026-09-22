@@ -33,7 +33,9 @@ class InstructorSessionResource extends Resource
 
     protected static ?string $modelLabel = 'Sesión';
 
-    protected static ?string $modelLabelPlural = 'Sesiones';
+    protected static ?string $pluralModelLabel = 'Sesiones';
+
+    protected static ?string $navigationLabel = 'Sesiones';
 
     public static function form(Form $form): Form
     {

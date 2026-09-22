@@ -25,7 +25,9 @@ class GradeResource extends Resource
 
     protected static ?string $modelLabel = 'Calificación';
 
-    protected static ?string $modelLabelPlural = 'Calificaciones';
+    protected static ?string $pluralModelLabel = 'Calificaciones';
+
+    protected static ?string $navigationLabel = 'Calificaciones';
 
     public static function form(Form $form): Form
     {

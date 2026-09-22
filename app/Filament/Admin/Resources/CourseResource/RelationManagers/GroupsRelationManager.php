@@ -54,7 +54,7 @@ class GroupsRelationManager extends RelationManager
             Forms\Components\TextInput::make('cupo_maximo')
                 ->numeric()
                 ->required()
-                ->rules(function ($get) {
+                ->rules(function (Forms\Get $get) {
                     return function ($attribute, $value, $fail) use ($get) {
                         $min = (int) $get('cupo_minimo');
                         if ($min > 0 && (int) $value < $min) {

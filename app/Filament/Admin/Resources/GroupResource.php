@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\ExportType;
 use App\Enums\GroupStatus;
 use App\Filament\Admin\Resources\GroupResource\Pages;
 use App\Models\Course;
@@ -80,7 +81,7 @@ class GroupResource extends Resource
                 Forms\Components\TextInput::make('cupo_maximo')
                     ->numeric()
                     ->required()
-                    ->rules(function ($get) {
+                    ->rules(function (Forms\Get $get) {
                         return function ($attribute, $value, $fail) use ($get) {
                             $min = (int) $get('cupo_minimo');
                             if ($min > 0 && (int) $value < $min) {
@@ -173,12 +174,8 @@ class GroupResource extends Resource
                     ->form([
                         Forms\Components\Radio::make('export_type')
                             ->label('Tipo de planilla')
-                            ->options([
-                                'cash' => 'Planilla de Caja / Inscripción',
-                                'teacher' => 'Planilla Docente (Notas y Asistencia)',
-                                'both' => 'Ambas planillas',
-                            ])
-                            ->default('both')
+                            ->options(ExportType::class)
+                            ->default(ExportType::BOTH)
                             ->required(),
                     ])
                     ->action(function (Group $record, array $data) {
@@ -195,11 +192,11 @@ class GroupResource extends Resource
                         $builder = new SheetExportBuilder($record);
                         $sheetsService = app(GoogleSheetsService::class);
                         $spreadsheetId = SystemSetting::get('google_sheets_spreadsheet_id');
-                        $exportType = $data['export_type'];
+                        $exportType = ExportType::from($data['export_type']);
                         $tabsCreated = [];
 
                         try {
-                            if ($exportType === 'cash' || $exportType === 'both') {
+                            if (in_array($exportType, [ExportType::CASH, ExportType::BOTH], true)) {
                                 $tabName = $builder->getCashSheetTabName();
                                 if (! $sheetsService->checkTabExists($tabName)) {
                                     $sheetsService->createTab($tabName);
@@ -208,7 +205,7 @@ class GroupResource extends Resource
                                 $tabsCreated[] = $tabName;
                             }
 
-                            if ($exportType === 'teacher' || $exportType === 'both') {
+                            if (in_array($exportType, [ExportType::TEACHER, ExportType::BOTH], true)) {
                                 $tabName = $builder->getTeacherSheetTabName();
                                 if (! $sheetsService->checkTabExists($tabName)) {
                                     $sheetsService->createTab($tabName);

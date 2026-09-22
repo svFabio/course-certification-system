@@ -43,7 +43,7 @@ class PaymentResource extends Resource
                     ->numeric()
                     ->prefix('Bs.')
                     ->required()
-                    ->rules(function ($get) {
+                    ->rules(function (Forms\Get $get) {
                         return function ($attribute, $value, $fail) use ($get) {
                             $preinscriptionId = $get('preinscription_id');
                             if ($preinscriptionId && $value) {
