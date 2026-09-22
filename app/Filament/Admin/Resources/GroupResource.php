@@ -192,7 +192,9 @@ class GroupResource extends Resource
                         $builder = new SheetExportBuilder($record);
                         $sheetsService = app(GoogleSheetsService::class);
                         $spreadsheetId = SystemSetting::get('google_sheets_spreadsheet_id');
-                        $exportType = ExportType::from($data['export_type']);
+                        $exportType = $data['export_type'] instanceof ExportType
+                            ? $data['export_type']
+                            : ExportType::from($data['export_type']);
                         $tabsCreated = [];
 
                         try {
