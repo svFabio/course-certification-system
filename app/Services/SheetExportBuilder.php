@@ -92,10 +92,14 @@ class SheetExportBuilder
         $rows[] = ['Instructor: '.$instructor->name, '', 'Horario: '.$this->group->hora_inicio->format('H:i').' - '.$this->group->hora_fin->format('H:i')];
         $rows[] = [];
 
+        $sessionCount = $sessions->count();
+        $criteriaCount = $criteria->count();
+
+        // Columns layout (0-indexed): A-E = identity (5 cols), then sessions, then Asistencia, Puntaje, criteria, NOTA FINAL
         $headerRow5 = array_merge(
             ['Nro', 'CI', 'APE_PAT', 'APE_MAT', 'NOMBRES'],
             $sessions->map(fn ($s) => $s->fecha->format('d/m'))->toArray(),
-            ['TOTAL ASIST'],
+            ['Asistencia', 'Puntaje /50'],
             $criteria->pluck('nombre')->toArray(),
             ['NOTA FINAL']
         );
@@ -104,21 +108,42 @@ class SheetExportBuilder
         $headerRow6 = array_merge(
             ['', '', '', '', ''],
             $sessions->pluck('fecha')->map(fn () => '')->toArray(),
-            ['50%'],
+            ['', '50%'],
             $criteria->pluck('ponderacion')->map(fn ($p) => $p.'%')->toArray(),
-            ['']
+            ['100']
         );
         $rows[] = $headerRow6;
 
         $preinscriptions = $this->getTeacherPreinscriptions();
-        $sessionsCount = $sessions->count();
         $nro = 1;
 
-        foreach ($preinscriptions as $preinscription) {
+        // Row 1-4: header info, Row 5: column headers, Row 6: weights => data starts at Row 7
+        $dataStartRow = 7;
+
+        foreach ($preinscriptions as $index => $preinscription) {
+            $currentRow = $dataStartRow + $index;
             $attendanceMarks = $this->buildAttendanceMarks($preinscription, $sessions);
-            $attendanceTotal = $this->calculateAttendanceTotal($preinscription, $sessionsCount);
+
+            // Attendance marks: columns F through (F + sessionCount - 1), i.e. index 5...(5+sessionCount-1)
+            $firstAttendanceCol = $this->columnLetter(5);
+            $lastAttendanceCol = $this->columnLetter(5 + $sessionCount - 1);
+
+            // Asistencia = count of 1s (PRESENTE or JUSTIFICADO)
+            $asistenciaCol = $this->columnLetter(5 + $sessionCount);
+            $puntajeCol = $this->columnLetter(5 + $sessionCount + 1);
+
+            $asistenciaFormula = "=COUNTIF({$firstAttendanceCol}{$currentRow}:{$lastAttendanceCol}{$currentRow},1)";
+            $puntajeFormula = "=ROUND(({$asistenciaCol}{$currentRow}/{$sessionCount})*50,2)";
+
+            // Criteria grade columns
+            $gradeStartIndex = 5 + $sessionCount + 2;
+            $gradeEndIndex = $gradeStartIndex + $criteriaCount - 1;
+            $gradeStartCol = $this->columnLetter($gradeStartIndex);
+            $gradeEndCol = $this->columnLetter($gradeEndIndex);
+
+            $notaFinalFormula = "=ROUND({$puntajeCol}{$currentRow}+SUM({$gradeStartCol}{$currentRow}:{$gradeEndCol}{$currentRow}),2)";
+
             $grades = $this->buildGradesRow($preinscription, $criteria);
-            $finalGrade = $attendanceTotal + array_sum($grades);
 
             $rows[] = array_merge(
                 [
@@ -129,9 +154,9 @@ class SheetExportBuilder
                     $preinscription->nombres,
                 ],
                 $attendanceMarks,
-                [$attendanceTotal],
+                [$asistenciaFormula, $puntajeFormula],
                 $grades,
-                [round($finalGrade, 2)]
+                [$notaFinalFormula]
             );
         }
 
@@ -239,16 +264,34 @@ class SheetExportBuilder
         $sessions = $this->group->sessions;
         $criteria = $this->group->course->evaluationCriteria;
         $sessionsCount = $sessions->count();
+        $criteriaCount = $criteria->count();
         $preinscriptions = $this->getTeacherPreinscriptions();
         $rows = [];
         $nro = 1;
 
-        foreach ($preinscriptions as $preinscription) {
+        // Data starts at row 7 (rows 1-4 header, 5 col headers, 6 weights)
+        $dataStartRow = 7;
+
+        foreach ($preinscriptions as $index => $preinscription) {
+            $currentRow = $dataStartRow + $index;
             $attendanceMarks = $this->buildAttendanceMarks($preinscription, $sessions);
-            $attendanceTotal = $this->calculateAttendanceTotal($preinscription, $sessionsCount);
-            $attendanceScore = $this->calculateAttendanceScore($attendanceTotal, $sessionsCount);
+
+            $firstAttendanceCol = $this->columnLetter(5);
+            $lastAttendanceCol = $this->columnLetter(5 + $sessionsCount - 1);
+            $asistenciaCol = $this->columnLetter(5 + $sessionsCount);
+            $puntajeCol = $this->columnLetter(5 + $sessionsCount + 1);
+
+            $asistenciaFormula = "=COUNTIF({$firstAttendanceCol}{$currentRow}:{$lastAttendanceCol}{$currentRow},1)";
+            $puntajeFormula = "=ROUND(({$asistenciaCol}{$currentRow}/{$sessionsCount})*50,2)";
+
+            $gradeStartIndex = 5 + $sessionsCount + 2;
+            $gradeEndIndex = $gradeStartIndex + $criteriaCount - 1;
+            $gradeStartCol = $this->columnLetter($gradeStartIndex);
+            $gradeEndCol = $this->columnLetter($gradeEndIndex);
+
+            $notaFinalFormula = "=ROUND({$puntajeCol}{$currentRow}+SUM({$gradeStartCol}{$currentRow}:{$gradeEndCol}{$currentRow}),2)";
+
             $grades = $this->buildGradesRow($preinscription, $criteria);
-            $finalGrade = $attendanceScore + array_sum($grades);
 
             $rows[] = array_merge(
                 [
@@ -259,13 +302,28 @@ class SheetExportBuilder
                     $preinscription->nombres,
                 ],
                 $attendanceMarks,
-                [$attendanceTotal],
-                [$attendanceScore],
+                [$asistenciaFormula, $puntajeFormula],
                 $grades,
-                [round($finalGrade, 2)]
+                [$notaFinalFormula]
             );
         }
 
         return $rows;
+    }
+
+    /**
+     * Convert a 0-indexed column number to a Google Sheets column letter (A, B, ..., Z, AA, AB, ...).
+     */
+    private function columnLetter(int $index): string
+    {
+        $letter = '';
+        $n = $index;
+
+        while ($n >= 0) {
+            $letter = chr($n % 26 + 65).$letter;
+            $n = intdiv($n, 26) - 1;
+        }
+
+        return $letter;
     }
 }

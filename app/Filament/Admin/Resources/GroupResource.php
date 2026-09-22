@@ -12,7 +12,6 @@ use App\Models\SystemSetting;
 use App\Services\GoogleSheetsService;
 use App\Services\HolidayService;
 use App\Services\SheetExportBuilder;
-use App\Services\TemplateSheetBuilder;
 use App\Support\BusinessRules;
 use Carbon\Carbon;
 use Filament\Forms;
@@ -205,9 +204,7 @@ class GroupResource extends Resource
                                 if (! $sheetsService->checkTabExists($tabName)) {
                                     $sheetsService->createTab($tabName);
                                 }
-                                $templateBuilder = app(TemplateSheetBuilder::class);
-                                $sheetsService->writeCells($tabName.'!A1', $templateBuilder->buildCashTemplate());
-                                $sheetsService->writeCells($tabName.'!A7', $builder->buildCashDataRows());
+                                $sheetsService->writeCells($tabName.'!A1', $builder->buildCashSheetRows());
                                 $tabsCreated[] = $tabName;
                             }
 
@@ -216,9 +213,7 @@ class GroupResource extends Resource
                                 if (! $sheetsService->checkTabExists($tabName)) {
                                     $sheetsService->createTab($tabName);
                                 }
-                                $templateBuilder = app(TemplateSheetBuilder::class);
-                                $sheetsService->writeCells($tabName.'!A1', $templateBuilder->buildTeacherTemplate());
-                                $sheetsService->writeCells($tabName.'!A7', $builder->buildTeacherDataRows());
+                                $sheetsService->writeCells($tabName.'!A1', $builder->buildTeacherSheetRows());
                                 $tabsCreated[] = $tabName;
                             }
 
