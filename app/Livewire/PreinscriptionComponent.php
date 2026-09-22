@@ -9,6 +9,7 @@ use App\Models\Group;
 use App\Models\Preinscription;
 use App\Services\PreinscriptionService;
 use App\Support\BusinessRules;
+use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -103,16 +104,21 @@ class PreinscriptionComponent extends Component
     {
         $this->validate();
 
-        $exists = Preinscription::where('ci', $this->ci)
+        $existing = Preinscription::where('ci', $this->ci)
             ->whereHas('group', fn ($q) => $q->where('course_id', $this->group->course_id))
             ->whereIn('status', [
                 PreinscriptionStatus::PENDIENTE_PAGO,
                 PreinscriptionStatus::INSCRITO,
             ])
-            ->exists();
+            ->latest('id')
+            ->first();
 
-        if ($exists) {
-            $this->addError('ci', 'Ya cuenta con una preinscripción activa o inscripción confirmada en este curso.');
+        if ($existing) {
+            $message = $existing->status === PreinscriptionStatus::INSCRITO
+                ? 'Ya estás inscrito(a) en este curso. Revisa tu correo o contacta a la coordinación para más información.'
+                : 'Ya enviaste tu preinscripción para este curso. Por favor realiza el pago y mantente atento(a) a tu teléfono o correo para confirmar tu inscripción.';
+
+            $this->addError('ci', $message);
 
             return;
         }
@@ -129,6 +135,16 @@ class PreinscriptionComponent extends Component
     {
         $validated = $this->validate();
 
+        $ciKey = 'preinscripcion:ci:'.mb_strtolower((string) $validated['ci']);
+        $ipKey = 'preinscripcion:ip:'.request()->ip();
+
+        if (RateLimiter::tooManyAttempts($ciKey, 3) || RateLimiter::tooManyAttempts($ipKey, 10)) {
+            $this->addError('ci', 'Has realizado demasiados intentos. Por favor espera unos minutos e intenta nuevamente.');
+            $this->stepConfirmation = false;
+
+            return;
+        }
+
         $preinscription = $service->register([
             'group_id' => $validated['groupId'],
             'ci' => $validated['ci'],
@@ -140,6 +156,9 @@ class PreinscriptionComponent extends Component
             'email' => $validated['email'],
             'tipo_participante' => $validated['tipoParticipante'],
         ]);
+
+        RateLimiter::hit($ciKey, 3600);
+        RateLimiter::hit($ipKey, 3600);
 
         $this->registeredData = [
             'nombres' => "{$this->nombres} {$this->apellidoPaterno} {$this->apellidoMaterno}",

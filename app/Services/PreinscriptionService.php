@@ -20,6 +20,17 @@ class PreinscriptionService
         return DB::transaction(function () use ($data) {
             $group = Group::where('id', $data['group_id'])->lockForUpdate()->firstOrFail();
 
+            $activeExists = Preinscription::where('ci', $data['ci'])
+                ->whereHas('group', fn ($q) => $q->where('course_id', $group->course_id))
+                ->whereIn('status', [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO])
+                ->exists();
+
+            if ($activeExists) {
+                throw ValidationException::withMessages([
+                    'ci' => 'Ya enviaste tu preinscripción para este curso. Por favor realiza el pago y mantente atento(a) a tu teléfono o correo para confirmar tu inscripción.',
+                ]);
+            }
+
             if (! $this->hasAvailableCapacity($group)) {
                 throw ValidationException::withMessages([
                     'group_id' => 'El grupo seleccionado ha alcanzado su capacidad máxima.',
