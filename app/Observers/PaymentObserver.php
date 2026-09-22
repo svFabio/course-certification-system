@@ -8,14 +8,18 @@ use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Mail\PaymentConfirmedNotification;
 use App\Models\Payment;
-use App\Services\PreinscriptionService;
 use Illuminate\Support\Facades\Mail;
 
 class PaymentObserver
 {
-    public function __construct(
-        protected PreinscriptionService $preinscriptionService,
-    ) {}
+    public function created(Payment $payment): void
+    {
+        match ($payment->estado) {
+            PaymentStatus::VERIFICADO => $this->handleVerified($payment),
+            PaymentStatus::RECHAZADO => $this->handleRejected($payment),
+            default => null,
+        };
+    }
 
     public function updated(Payment $payment): void
     {
@@ -30,12 +34,11 @@ class PaymentObserver
 
     protected function handleVerified(Payment $payment): void
     {
+        $payment->loadMissing('preinscription.group.course');
         $preinscription = $payment->preinscription;
 
         if ($preinscription->status !== PreinscriptionStatus::INSCRITO) {
             $preinscription->update(['status' => PreinscriptionStatus::INSCRITO]);
-
-            $payment->loadMissing('preinscription.group.course');
 
             Mail::to($preinscription->email)
                 ->queue(new PaymentConfirmedNotification($payment));
@@ -44,6 +47,7 @@ class PaymentObserver
 
     protected function handleRejected(Payment $payment): void
     {
+        $payment->loadMissing('preinscription');
         $preinscription = $payment->preinscription;
 
         if ($preinscription->status === PreinscriptionStatus::PENDIENTE_PAGO) {

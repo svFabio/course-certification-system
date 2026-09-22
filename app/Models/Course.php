@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Course extends Model
 {
@@ -18,6 +19,7 @@ class Course extends Model
     protected $fillable = [
         'nombre',
         'contenido',
+        'portada_path',
         'carga_horaria',
         'nivel',
         'periodo',
@@ -57,5 +59,18 @@ class Course extends Model
     public function certificates(): HasMany
     {
         return $this->hasMany(Certificate::class);
+    }
+
+    public function getPortadaUrlAttribute(): ?string
+    {
+        if (! $this->portada_path) {
+            return null;
+        }
+
+        if (str_starts_with($this->portada_path, 'http://') || str_starts_with($this->portada_path, 'https://')) {
+            return $this->portada_path;
+        }
+
+        return Storage::disk('cloudinary')->url($this->portada_path);
     }
 }

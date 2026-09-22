@@ -27,7 +27,5 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $instructor = Role::firstOrCreate(['name' => 'instructor']);
         $instructor->givePermissionTo(['manage-sessions', 'manage-attendances', 'manage-evaluations']);
-
-        Role::firstOrCreate(['name' => 'student']);
     }
 }

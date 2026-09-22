@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages\Auth;
 
+use App\Enums\UserRole;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Filament\Actions\Action;
 use Filament\Http\Responses\Auth\Contracts\LoginResponse;
@@ -48,7 +49,7 @@ class Login extends BaseLogin
 
         $user = auth()->user();
 
-        if (! $user->hasRole('admin') && ! $user->hasRole('instructor')) {
+        if (! $user->hasRole(UserRole::ADMIN->value) && ! $user->hasRole(UserRole::INSTRUCTOR->value)) {
             auth()->logout();
 
             throw ValidationException::withMessages([
@@ -64,11 +65,11 @@ class Login extends BaseLogin
             {
                 $user = auth()->user();
 
-                if ($user->hasRole('admin')) {
+                if ($user->hasRole(UserRole::ADMIN->value)) {
                     return redirect()->to('/admin');
                 }
 
-                if ($user->hasRole('instructor')) {
+                if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
                     return redirect()->to('/instructor');
                 }
 

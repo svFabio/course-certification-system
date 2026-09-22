@@ -19,13 +19,15 @@ class GradeResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
 
-    protected static ?string $navigationGroup = 'Evaluación';
+    protected static ?string $navigationGroup = 'Evaluación & Certificados';
 
     protected static ?int $navigationSort = 2;
 
     protected static ?string $modelLabel = 'Calificación';
 
-    protected static ?string $modelLabelPlural = 'Calificaciones';
+    protected static ?string $pluralModelLabel = 'Calificaciones';
+
+    protected static ?string $navigationLabel = 'Calificaciones';
 
     public static function form(Form $form): Form
     {
@@ -52,12 +54,16 @@ class GradeResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('evaluationCriteria.nombre')
+                    ->label('Criterio de evaluación')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('preinscription.nombres')
-                    ->searchable(),
+                Tables\Columns\TextColumn::make('preinscription.full_name')
+                    ->label('Participante')
+                    ->searchable(['preinscription.nombres', 'preinscription.apellido_paterno', 'preinscription.apellido_materno']),
                 Tables\Columns\TextColumn::make('nota')
+                    ->label('Nota')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de registro')
                     ->dateTime()
                     ->sortable(),
             ])

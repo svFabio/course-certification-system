@@ -19,13 +19,20 @@ class InstructorGradeResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
 
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('instructor');
+    }
+
     protected static ?string $navigationGroup = 'Mis Cursos';
 
     protected static ?int $navigationSort = 4;
 
     protected static ?string $modelLabel = 'Calificación';
 
-    protected static ?string $modelLabelPlural = 'Calificaciones';
+    protected static ?string $pluralModelLabel = 'Calificaciones';
+
+    protected static ?string $navigationLabel = 'Calificaciones';
 
     public static function form(Form $form): Form
     {
@@ -52,12 +59,16 @@ class InstructorGradeResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('evaluationCriteria.nombre')
+                    ->label('Criterio de evaluación')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('preinscription.nombres')
-                    ->searchable(),
+                Tables\Columns\TextColumn::make('preinscription.full_name')
+                    ->label('Participante')
+                    ->searchable(['preinscription.nombres', 'preinscription.apellido_paterno', 'preinscription.apellido_materno']),
                 Tables\Columns\TextColumn::make('nota')
+                    ->label('Nota')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de registro')
                     ->dateTime()
                     ->sortable(),
             ])

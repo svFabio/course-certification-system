@@ -6,8 +6,11 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\SessionResource\Pages;
 use App\Models\Session;
+use App\Services\HolidayService;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -24,7 +27,9 @@ class SessionResource extends Resource
 
     protected static ?string $modelLabel = 'Sesión';
 
-    protected static ?string $modelLabelPlural = 'Sesiones';
+    protected static ?string $pluralModelLabel = 'Sesiones';
+
+    protected static ?string $navigationLabel = 'Sesiones';
 
     public static function form(Form $form): Form
     {
@@ -61,8 +66,13 @@ class SessionResource extends Resource
                 Tables\Columns\TextColumn::make('hora_fin')
                     ->time(),
                 Tables\Columns\IconColumn::make('dictada')
+                    ->label('Dictada')
+                    ->boolean(),
+                Tables\Columns\IconColumn::make('es_pospuesta')
+                    ->label('Reprogramada')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de registro')
                     ->dateTime()
                     ->sortable(),
             ])
@@ -70,6 +80,34 @@ class SessionResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\Action::make('postpone')
+                    ->label('Reprogramar / Posponer')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->form([
+                        Forms\Components\DatePicker::make('nueva_fecha')
+                            ->label('Nueva fecha para la clase')
+                            ->default(fn (Session $record) => $record->fecha->addDays(1))
+                            ->required(),
+                        Forms\Components\Textarea::make('motivo')
+                            ->label('Motivo de reprogramación')
+                            ->placeholder('Ej. Feriado sobrevenido, duelo institucional, emergencia del instructor...')
+                            ->required()
+                            ->rows(3),
+                    ])
+                    ->action(function (Session $record, array $data) {
+                        $holidayService = app(HolidayService::class);
+                        $holidayService->postponeSession(
+                            $record,
+                            Carbon::parse($data['nueva_fecha']),
+                            $data['motivo']
+                        );
+
+                        Notification::make()
+                            ->title('Clase reprogramada correctamente.')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

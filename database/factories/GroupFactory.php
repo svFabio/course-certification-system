@@ -22,6 +22,7 @@ class GroupFactory extends Factory
         return [
             'course_id' => Course::factory(),
             'nombre' => 'Grupo '.fake()->unique()->numberBetween(1, 999),
+            'aula' => 'Laboratorio '.fake()->numberBetween(1, 5),
             'hora_inicio' => '08:00',
             'hora_fin' => '10:00',
             'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,

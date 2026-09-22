@@ -43,6 +43,17 @@ class CourseResource extends Resource
                                 ->unique(ignoreRecord: true),
                             Forms\Components\Textarea::make('contenido')
                                 ->rows(4),
+                            Forms\Components\FileUpload::make('portada_path')
+                                ->label('Imagen de portada')
+                                ->image()
+                                ->disk('cloudinary')
+                                ->directory('courses')
+                                ->imageResizeMode('cover')
+                                ->imageCropAspectRatio('16:9')
+                                ->imageResizeTargetWidth('1200')
+                                ->imageResizeTargetHeight('675')
+                                ->maxSize(5120)
+                                ->helperText('Imagen de cabecera para el catálogo público (máx. 5MB).'),
                             Forms\Components\Select::make('carga_horaria')
                                 ->options(array_combine(
                                     BusinessRules::VALID_HOURS,
@@ -57,7 +68,18 @@ class CourseResource extends Resource
                                     $set('precio_auxiliar', $prices['auxiliar'] ?? 0);
                                 }),
                             Forms\Components\TextInput::make('nivel'),
-                            Forms\Components\TextInput::make('periodo'),
+                            Forms\Components\Select::make('periodo')
+                                ->options(function (): array {
+                                    $year = now()->year;
+
+                                    return [
+                                        "I-{$year}" => "I-{$year}",
+                                        "II-{$year}" => "II-{$year}",
+                                        'Invierno' => 'Invierno',
+                                        'Verano' => 'Verano',
+                                    ];
+                                })
+                                ->required(),
                             Forms\Components\Select::make('instructor_id')
                                 ->relationship('instructor', 'name')
                                 ->searchable()
@@ -98,12 +120,16 @@ class CourseResource extends Resource
                 Tables\Columns\TextColumn::make('nivel'),
                 Tables\Columns\TextColumn::make('periodo'),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Estado')
                     ->badge(),
-                Tables\Columns\TextColumn::make('instructor.name'),
+                Tables\Columns\TextColumn::make('instructor.name')
+                    ->label('Docente'),
                 Tables\Columns\TextColumn::make('precio_umss')
+                    ->label('Precio UMSS')
                     ->numeric()
                     ->prefix('Bs.'),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de creación')
                     ->dateTime()
                     ->sortable(),
             ])

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Enums\UserRole;
 use App\Models\Attendance;
 use App\Models\User;
 
@@ -11,21 +12,17 @@ class AttendancePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('admin') || $user->hasRole('instructor');
+        return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
     }
 
     public function view(User $user, Attendance $attendance): bool
     {
-        if ($user->hasRole('admin')) {
+        if ($user->hasRole(UserRole::ADMIN->value)) {
             return true;
         }
 
-        if ($user->hasRole('instructor')) {
+        if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
             return $user->id === $attendance->session->group->course->instructor_id;
-        }
-
-        if ($user->hasRole('student')) {
-            return $user->email === $attendance->preinscription->email;
         }
 
         return false;
@@ -33,16 +30,16 @@ class AttendancePolicy
 
     public function create(User $user): bool
     {
-        return $user->hasRole('admin') || $user->hasRole('instructor');
+        return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
     }
 
     public function update(User $user, Attendance $attendance): bool
     {
-        if ($user->hasRole('admin')) {
+        if ($user->hasRole(UserRole::ADMIN->value)) {
             return true;
         }
 
-        if ($user->hasRole('instructor')) {
+        if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
             return $user->id === $attendance->session->group->course->instructor_id;
         }
 
@@ -51,16 +48,16 @@ class AttendancePolicy
 
     public function delete(User $user, Attendance $attendance): bool
     {
-        return $user->hasRole('admin') || $user->hasRole('instructor');
+        return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
     }
 
     public function restore(User $user, Attendance $attendance): bool
     {
-        return $user->hasRole('admin') || $user->hasRole('instructor');
+        return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
     }
 
     public function forceDelete(User $user, Attendance $attendance): bool
     {
-        return $user->hasRole('admin') || $user->hasRole('instructor');
+        return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
     }
 }

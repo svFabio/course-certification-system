@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\AttendanceStatus;
-use App\Models\Preinscription;
 use App\Services\AttendanceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -46,7 +45,14 @@ class AttendanceController extends Controller
             ], 404);
         }
 
-        $preinscription = $this->findPreinscription($request, $group);
+        $preinscription = $this->attendanceService->findPreinscription(
+            [
+                'preinscription_id' => $request->input('preinscription_id'),
+                'ci' => $request->input('ci'),
+                'email' => $request->user()?->email,
+            ],
+            $group->id
+        );
 
         if (! $preinscription) {
             return response()->json([
@@ -73,28 +79,5 @@ class AttendanceController extends Controller
             'max_distance' => Config::get('attendance.radius_meters'),
             'attendance' => $attendance,
         ]);
-    }
-
-    private function findPreinscription(Request $request, $group): ?Preinscription
-    {
-        if ($request->filled('preinscription_id')) {
-            return Preinscription::where('group_id', $group->id)
-                ->where('id', $request->input('preinscription_id'))
-                ->first();
-        }
-
-        if ($request->filled('ci')) {
-            return Preinscription::where('group_id', $group->id)
-                ->where('ci', $request->input('ci'))
-                ->first();
-        }
-
-        if ($request->user()) {
-            return Preinscription::where('group_id', $group->id)
-                ->where('email', $request->user()->email)
-                ->first();
-        }
-
-        return null;
     }
 }

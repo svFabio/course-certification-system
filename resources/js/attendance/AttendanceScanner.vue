@@ -2,7 +2,7 @@
   <div class="attendance-scanner card-umss p-8">
     <!-- Idle state -->
     <div v-if="state === 'idle'" class="text-center py-8">
-      <p class="text-sm text-[#4A4A4A] mb-6">Escanee el código QR provisto en la sesión y verifique su ubicación geográfica.</p>
+      <p class="text-sm text-umss-gray-700 mb-6">Escanee el código QR provisto en la sesión y verifique su ubicación geográfica.</p>
       <button @click="startScanning" class="btn-primary !h-12 !px-8 text-base">
         Iniciar Escaneo
       </button>
@@ -10,21 +10,21 @@
 
     <!-- Scanning state -->
     <div v-if="state === 'scanning'" class="relative">
-      <div id="qr-reader" class="w-full rounded-lg overflow-hidden border border-[#E5E5E5]"></div>
-      <p class="text-center mt-4 text-xs font-medium text-[#4A4A4A]">Apunte la cámara al código QR de la sesión</p>
+      <div id="qr-reader" class="w-full rounded-lg overflow-hidden border border-umss-gray-200"></div>
+      <p class="text-center mt-4 text-xs font-medium text-umss-gray-700">Apunte la cámara al código QR de la sesión</p>
     </div>
 
     <!-- Loading state -->
     <div v-if="state === 'loading'" class="text-center py-8">
-      <div class="animate-spin h-10 w-10 border-4 border-[#0E2E5F] border-t-transparent rounded-full mx-auto"></div>
-      <p class="mt-4 text-sm font-medium text-[#4A4A4A]">Validando ubicación y registrando asistencia...</p>
+      <div class="animate-spin h-10 w-10 border-4 border-umss-navy border-t-transparent rounded-full mx-auto"></div>
+      <p class="mt-4 text-sm font-medium text-umss-gray-700">Validando ubicación y registrando asistencia...</p>
     </div>
 
     <!-- Success state -->
     <div v-if="state === 'success'" class="text-center py-8">
-      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 text-emerald-700 text-2xl font-bold mb-4">✓</div>
-      <h2 class="text-lg font-semibold text-emerald-800">Asistencia Registrada</h2>
-      <p class="mt-2 text-sm text-[#4A4A4A]">Distancia al laboratorio: <strong class="text-[#121212]">{{ result.distance }} metros</strong></p>
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-umss-green-light text-umss-green-dark text-2xl font-bold mb-4">✓</div>
+      <h2 class="text-lg font-semibold text-umss-green-dark">Asistencia Registrada</h2>
+      <p class="mt-2 text-sm text-umss-gray-700">Distancia al laboratorio: <strong class="text-umss-black">{{ result.distance }} metros</strong></p>
       <div class="mt-6">
         <button @click="reset" class="btn-secondary">
           Escanear otro código
@@ -34,8 +34,8 @@
 
     <!-- Error state -->
     <div v-if="state === 'error'" class="text-center py-8">
-      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-rose-100 text-[#E01D2E] text-2xl font-bold mb-4">✕</div>
-      <h2 class="text-lg font-semibold text-[#8B0000]">{{ errorMessage }}</h2>
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-umss-red/10 text-umss-red text-2xl font-bold mb-4">✕</div>
+      <h2 class="text-lg font-semibold text-umss-red-dark">{{ errorMessage }}</h2>
       <div class="mt-6">
         <button @click="reset" class="btn-secondary">
           Intentar de nuevo
@@ -45,10 +45,10 @@
 
     <!-- Out of range state -->
     <div v-if="state === 'out-of-range'" class="text-center py-8">
-      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 text-amber-800 text-2xl font-bold mb-4">!</div>
-      <h2 class="text-lg font-semibold text-amber-900">Ubicación fuera del radio permitido</h2>
-      <p class="mt-2 text-sm text-[#4A4A4A]">Límite permitido: {{ maxDistance }}m. Distancia detectada: <strong class="text-[#121212]">{{ result.distance }}m</strong>.</p>
-      <p class="text-xs text-[#4A4A4A] mt-1 bg-amber-50 border border-amber-200 rounded-md p-2 inline-block">El registro fue enviado a revisión manual del docente.</p>
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-umss-amber-light text-umss-amber-dark text-2xl font-bold mb-4">!</div>
+      <h2 class="text-lg font-semibold text-umss-amber-dark">Ubicación fuera del radio permitido</h2>
+      <p class="mt-2 text-sm text-umss-gray-700">Límite permitido: {{ maxDistance }}m. Distancia detectada: <strong class="text-umss-black">{{ result.distance }}m</strong>.</p>
+      <p class="text-xs text-umss-gray-700 mt-1 bg-umss-amber-light border border-umss-amber rounded-md p-2 inline-block">El registro fue enviado a revisión manual del instructor.</p>
       <div class="mt-6">
         <button @click="reset" class="btn-secondary">
           Intentar de nuevo
@@ -101,7 +101,6 @@ const onScanSuccess = async (decodedText) => {
 
     const response = await fetch('/api/asistencia/registrar', {
       method: 'POST',
-
       headers: {
         'Content-Type': 'application/json',
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),

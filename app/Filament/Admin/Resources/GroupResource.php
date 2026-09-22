@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\ExportType;
 use App\Enums\GroupStatus;
 use App\Filament\Admin\Resources\GroupResource\Pages;
 use App\Models\Course;
 use App\Models\Group;
+use App\Models\SystemSetting;
+use App\Services\GoogleSheetsService;
+use App\Services\HolidayService;
+use App\Services\SheetExportBuilder;
 use App\Support\BusinessRules;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -39,9 +45,16 @@ class GroupResource extends Resource
                     ->searchable()
                     ->required(),
                 Forms\Components\TextInput::make('nombre')
+                    ->label('Nombre del grupo')
                     ->required()
                     ->maxLength(255),
+                Forms\Components\TextInput::make('aula')
+                    ->label('Aula / Laboratorio')
+                    ->placeholder('Ej. Laboratorio 1')
+                    ->maxLength(100),
                 Forms\Components\TimePicker::make('hora_inicio')
+                    ->label('Hora de inicio (Formatos UMSS: 06:45, 08:15, 09:45, 11:15, 14:15, 15:45, 17:15, 18:45)')
+                    ->datalist(array_keys(BusinessRules::UMSS_SCHEDULE_BLOCKS))
                     ->required()
                     ->live()
                     ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, $state) {
@@ -56,22 +69,19 @@ class GroupResource extends Resource
                         }
                     }),
                 Forms\Components\TimePicker::make('hora_fin')
-                    ->required()
-                    ->rules(function ($get) {
-                        return function ($attribute, $value, $fail) use ($get) {
-                            $horaInicio = $get('hora_inicio');
-                            if ($horaInicio && $value && $value <= $horaInicio) {
-                                $fail('La hora de fin debe ser posterior a la hora de inicio.');
-                            }
-                        };
-                    }),
+                    ->label('Hora de fin (calculada automáticamente)')
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->helperText('Se calcula automáticamente según la carga horaria del curso.'),
                 Forms\Components\TextInput::make('cupo_minimo')
                     ->numeric()
-                    ->default(BusinessRules::MIN_GROUP_CAPACITY),
+                    ->default(BusinessRules::MIN_GROUP_CAPACITY)
+                    ->required()
+                    ->minValue(1),
                 Forms\Components\TextInput::make('cupo_maximo')
                     ->numeric()
                     ->required()
-                    ->rules(function ($get) {
+                    ->rules(function (Forms\Get $get) {
                         return function ($attribute, $value, $fail) use ($get) {
                             $min = (int) $get('cupo_minimo');
                             if ($min > 0 && (int) $value < $min) {
@@ -95,14 +105,21 @@ class GroupResource extends Resource
                 Tables\Columns\TextColumn::make('nombre')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('aula')
+                    ->label('Aula')
+                    ->placeholder('—')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('hora_inicio')
                     ->time(),
                 Tables\Columns\TextColumn::make('hora_fin')
                     ->time(),
-                Tables\Columns\TextColumn::make('cupo_maximo'),
+                Tables\Columns\TextColumn::make('cupo_maximo')
+                    ->label('Cupo máximo'),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Estado')
                     ->badge(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de creación')
                     ->dateTime()
                     ->sortable(),
             ])
@@ -110,6 +127,108 @@ class GroupResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\Action::make('generateSessions')
+                    ->label('Programar 10 Clases')
+                    ->icon('heroicon-o-calendar-days')
+                    ->color('primary')
+                    ->form([
+                        Forms\Components\DatePicker::make('fecha_inicio')
+                            ->label('Fecha de inicio del curso')
+                            ->default(now()->addDay())
+                            ->required(),
+                        Forms\Components\CheckboxList::make('dias_semana')
+                            ->label('Días de clase')
+                            ->options([
+                                1 => 'Lunes',
+                                2 => 'Martes',
+                                3 => 'Miércoles',
+                                4 => 'Jueves',
+                                5 => 'Viernes',
+                                6 => 'Sábado',
+                            ])
+                            ->default([1, 2, 3, 4, 5])
+                            ->required(),
+                        Forms\Components\Toggle::make('respetar_feriados')
+                            ->label('Respetar y saltar feriados (Cochabamba / UMSS)')
+                            ->helperText('Si se activa, los feriados se reemplazan y se programa en el siguiente día hábil disponible.')
+                            ->default(true),
+                    ])
+                    ->action(function (Group $record, array $data) {
+                        $holidayService = app(HolidayService::class);
+                        $created = $holidayService->generateSessionsForGroup(
+                            $record,
+                            Carbon::parse($data['fecha_inicio']),
+                            $data['dias_semana'],
+                            (bool) $data['respetar_feriados']
+                        );
+
+                        Notification::make()
+                            ->title("Se han programado exitosamente {$created->count()} clases para el grupo.")
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('exportToSheets')
+                    ->label('Exportar a Google Sheets')
+                    ->icon('heroicon-o-document-arrow-up')
+                    ->color('success')
+                    ->form([
+                        Forms\Components\Radio::make('export_type')
+                            ->label('Tipo de planilla')
+                            ->options(ExportType::class)
+                            ->default(ExportType::BOTH)
+                            ->required(),
+                    ])
+                    ->action(function (Group $record, array $data) {
+                        if (! GoogleSheetsService::isConfigured()) {
+                            Notification::make()
+                                ->title('Google Sheets no configurado')
+                                ->body('Configure las credenciales en Admin > Configuración > Google Sheets')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
+                        $builder = new SheetExportBuilder($record);
+                        $sheetsService = app(GoogleSheetsService::class);
+                        $spreadsheetId = SystemSetting::get('google_sheets_spreadsheet_id');
+                        $exportType = ExportType::from($data['export_type']);
+                        $tabsCreated = [];
+
+                        try {
+                            if (in_array($exportType, [ExportType::CASH, ExportType::BOTH], true)) {
+                                $tabName = $builder->getCashSheetTabName();
+                                if (! $sheetsService->checkTabExists($tabName)) {
+                                    $sheetsService->createTab($tabName);
+                                }
+                                $sheetsService->writeCells($tabName.'!A1', $builder->buildCashSheetRows());
+                                $tabsCreated[] = $tabName;
+                            }
+
+                            if (in_array($exportType, [ExportType::TEACHER, ExportType::BOTH], true)) {
+                                $tabName = $builder->getTeacherSheetTabName();
+                                if (! $sheetsService->checkTabExists($tabName)) {
+                                    $sheetsService->createTab($tabName);
+                                }
+                                $sheetsService->writeCells($tabName.'!A1', $builder->buildTeacherSheetRows());
+                                $tabsCreated[] = $tabName;
+                            }
+
+                            $sheetUrl = "https://docs.google.com/spreadsheets/d/{$spreadsheetId}";
+
+                            Notification::make()
+                                ->title('Exportación exitosa')
+                                ->body('Se exportaron '.count($tabsCreated).' pestaña(s): '.implode(', ', $tabsCreated).'. <a href="'.$sheetUrl.'" target="_blank" class="underline">Abrir en Google Sheets</a>')
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Error en la exportación')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -118,6 +237,13 @@ class GroupResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            GroupResource\RelationManagers\PreinscriptionsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

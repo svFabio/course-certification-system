@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\GroupStatus;
 use App\Enums\PreinscriptionStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +19,7 @@ class Group extends Model
     protected $fillable = [
         'course_id',
         'nombre',
+        'aula',
         'hora_inicio',
         'hora_fin',
         'cupo_minimo',
@@ -51,13 +53,18 @@ class Group extends Model
         return $this->hasMany(Preinscription::class);
     }
 
+    public function scopeWithConfirmedCount(Builder $query): Builder
+    {
+        return $query->withCount(['preinscriptions as confirmed_count' => fn ($q) => $q->where('status', PreinscriptionStatus::INSCRITO)]);
+    }
+
     public function getCapacityPercentageAttribute(): float
     {
         if (! $this->cupo_maximo || $this->cupo_maximo === 0) {
             return 0.0;
         }
 
-        $confirmed = $this->preinscriptions()
+        $confirmed = $this->confirmed_count ?? $this->preinscriptions()
             ->where('status', PreinscriptionStatus::INSCRITO)
             ->count();
 

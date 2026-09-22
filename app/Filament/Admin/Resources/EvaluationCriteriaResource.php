@@ -18,7 +18,7 @@ class EvaluationCriteriaResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-star';
 
-    protected static ?string $navigationGroup = 'Evaluación';
+    protected static ?string $navigationGroup = 'Evaluación & Certificados';
 
     protected static ?int $navigationSort = 1;
 
@@ -56,6 +56,7 @@ class EvaluationCriteriaResource extends Resource
                 Tables\Columns\TextColumn::make('ponderacion')
                     ->suffix('%'),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de registro')
                     ->dateTime()
                     ->sortable(),
             ])

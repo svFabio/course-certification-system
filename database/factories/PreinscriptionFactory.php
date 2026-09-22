@@ -32,7 +32,9 @@ class PreinscriptionFactory extends Factory
                 TipoParticipante::EXTERNO->value,
                 TipoParticipante::AUXILIAR->value,
             ]),
+            'cod_sis' => fake()->boolean(60) ? fake()->numerify('202######') : null,
             'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+            'fotocopia_ci' => false,
         ];
     }
 

@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('preinscription_id')->constrained()->cascadeOnDelete();
             $table->foreignId('course_id')->constrained()->cascadeOnDelete();
             $table->enum('tipo', ['aprobacion', 'asistencia']);
-            $table->string('codigo_unico')->unique()->index();
+            $table->string('codigo_unico')->unique();
             $table->string('pdf_path')->nullable();
             $table->enum('signature_status', [
                 'pendiente',

@@ -19,6 +19,11 @@ class InstructorAttendanceResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-check-circle';
 
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('instructor');
+    }
+
     protected static ?string $navigationGroup = 'Mis Cursos';
 
     protected static ?int $navigationSort = 3;
@@ -52,11 +57,14 @@ class InstructorAttendanceResource extends Resource
                 Tables\Columns\TextColumn::make('session.fecha')
                     ->date()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('preinscription.nombres')
-                    ->searchable(),
+                Tables\Columns\TextColumn::make('preinscription.full_name')
+                    ->label('Participante')
+                    ->searchable(['preinscription.nombres', 'preinscription.apellido_paterno', 'preinscription.apellido_materno']),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Estado')
                     ->badge(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de registro')
                     ->dateTime()
                     ->sortable(),
             ])

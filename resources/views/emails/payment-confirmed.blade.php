@@ -35,9 +35,9 @@
             Recibirá notificaciones sobre el inicio del curso y la programacion de sesiones.
         </p>
 
-        <hr style="border: none; border-top: 1px solid #E5E5E5; margin: 20px 0;">
+        <hr style="border: none; border-top: 1px solid #F5F5F5; margin: 20px 0;">
 
-        <p style="color: #999; font-size: 11px; text-align: center;">
+        <p style="color: #4A4A4A; font-size: 11px; text-align: center;">
             Universidad Mayor de San Simon — Cursos
         </p>
     </div>

@@ -17,6 +17,11 @@ class InstructorCourseResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
 
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('instructor');
+    }
+
     protected static ?string $navigationGroup = 'Mis Cursos';
 
     protected static ?int $navigationSort = 1;
@@ -44,8 +49,10 @@ class InstructorCourseResource extends Resource
                 Tables\Columns\TextColumn::make('nivel'),
                 Tables\Columns\TextColumn::make('periodo'),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Estado')
                     ->badge(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de creación')
                     ->dateTime()
                     ->sortable(),
             ])

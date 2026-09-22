@@ -18,7 +18,9 @@ class CertificateVerificationComponent extends Component
     public function verify(): void
     {
         $this->validate([
-            'codigo' => 'required|string|max:50',
+            'codigo' => ['required', 'string', 'min:5', 'max:50', 'regex:/^[a-zA-Z0-9\-_]+$/'],
+        ], [
+            'codigo.regex' => 'El código solo debe contener caracteres alfanuméricos y guiones (ej. CERT-XXXXXXXX).',
         ]);
 
         $this->searched = true;

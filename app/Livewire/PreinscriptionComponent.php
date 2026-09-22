@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
+use App\Enums\PreinscriptionStatus;
 use App\Models\Group;
 use App\Models\Preinscription;
 use App\Services\PreinscriptionService;
@@ -18,6 +19,8 @@ class PreinscriptionComponent extends Component
 
     public ?string $ci = null;
 
+    public ?string $codSis = null;
+
     public ?string $nombres = null;
 
     public ?string $apellidoPaterno = null;
@@ -31,6 +34,10 @@ class PreinscriptionComponent extends Component
     public ?string $tipoParticipante = null;
 
     public bool $stepConfirmation = false;
+
+    public bool $isSubmitted = false;
+
+    public ?array $registeredData = null;
 
     public ?Group $group = null;
 
@@ -53,7 +60,7 @@ class PreinscriptionComponent extends Component
 
     public function getPrecioCalculadoProperty(): ?float
     {
-        if (! $this->tipoParticipante || ! $this->group) {
+        if (! $this->tipoParticipante || ! $this->group || ! in_array($this->tipoParticipante, ['umss', 'externo', 'auxiliar'], true)) {
             return null;
         }
 
@@ -63,25 +70,49 @@ class PreinscriptionComponent extends Component
         );
     }
 
+    protected function rules(): array
+    {
+        return [
+            'groupId' => ['required', 'integer', 'exists:groups,id'],
+            'ci' => ['required', 'string', 'regex:/^[0-9]{4,10}(-[0-9A-Z]{1,2})?$/i'],
+            'codSis' => ['nullable', 'string', 'regex:/^[0-9]{7,10}$/'],
+            'nombres' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/'],
+            'apellidoPaterno' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/'],
+            'apellidoMaterno' => ['nullable', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/'],
+            'celular' => ['nullable', 'string', 'regex:/^[67][0-9]{7}$/'],
+            'email' => ['required', 'email:rfc,dns', 'max:150'],
+            'tipoParticipante' => ['required', 'in:umss,externo,auxiliar'],
+        ];
+    }
+
+    protected function messages(): array
+    {
+        return [
+            'ci.regex' => 'El CI debe contener entre 4 y 10 dígitos numéricos (ej. 7894561 o 7894561-1A).',
+            'codSis.regex' => 'El Código SIS debe ser numérico entre 7 y 10 dígitos (ej. 202002515).',
+            'nombres.regex' => 'Los nombres solo deben contener letras, espacios y tildes.',
+            'apellidoPaterno.regex' => 'El apellido paterno solo debe contener letras, espacios y tildes.',
+            'apellidoMaterno.regex' => 'El apellido materno solo debe contener letras, espacios y tildes.',
+            'celular.regex' => 'El celular debe ser un número boliviano válido de 8 dígitos (iniciando con 6 o 7).',
+            'email.email' => 'Ingrese una dirección de correo electrónico válida.',
+            'tipoParticipante.in' => 'Seleccione un tipo de participante válido.',
+        ];
+    }
+
     public function goToConfirmation(): void
     {
-        $this->validate([
-            'groupId' => 'required|integer|exists:groups,id',
-            'ci' => 'required|string|max:20',
-            'nombres' => 'required|string|max:100',
-            'apellidoPaterno' => 'required|string|max:100',
-            'apellidoMaterno' => 'nullable|string|max:100',
-            'celular' => 'nullable|string|max:20',
-            'email' => 'required|email|max:150',
-            'tipoParticipante' => 'required|in:umss,externo,auxiliar',
-        ]);
+        $this->validate();
 
         $exists = Preinscription::where('ci', $this->ci)
-            ->where('group_id', $this->groupId)
+            ->whereHas('group', fn ($q) => $q->where('course_id', $this->group->course_id))
+            ->whereIn('status', [
+                PreinscriptionStatus::PENDIENTE_PAGO,
+                PreinscriptionStatus::INSCRITO,
+            ])
             ->exists();
 
         if ($exists) {
-            $this->addError('ci', 'Ya cuentas con una preinscripcion activa para este curso.');
+            $this->addError('ci', 'Ya cuenta con una preinscripción activa o inscripción confirmada en este curso.');
 
             return;
         }
@@ -96,20 +127,12 @@ class PreinscriptionComponent extends Component
 
     public function submit(PreinscriptionService $service): void
     {
-        $validated = $this->validate([
-            'groupId' => 'required|integer|exists:groups,id',
-            'ci' => 'required|string|max:20',
-            'nombres' => 'required|string|max:100',
-            'apellidoPaterno' => 'required|string|max:100',
-            'apellidoMaterno' => 'nullable|string|max:100',
-            'celular' => 'nullable|string|max:20',
-            'email' => 'required|email|max:150',
-            'tipoParticipante' => 'required|in:umss,externo,auxiliar',
-        ]);
+        $validated = $this->validate();
 
-        $service->register([
+        $preinscription = $service->register([
             'group_id' => $validated['groupId'],
             'ci' => $validated['ci'],
+            'cod_sis' => in_array($validated['tipoParticipante'], ['umss', 'auxiliar'], true) ? ($validated['codSis'] ?? null) : null,
             'nombres' => $validated['nombres'],
             'apellido_paterno' => $validated['apellidoPaterno'],
             'apellido_materno' => $validated['apellidoMaterno'] ?? null,
@@ -118,9 +141,17 @@ class PreinscriptionComponent extends Component
             'tipo_participante' => $validated['tipoParticipante'],
         ]);
 
-        session()->flash('success', 'Preinscripcion registrada correctamente. Siga las instrucciones de pago en caja facultativa.');
+        $this->registeredData = [
+            'nombres' => "{$this->nombres} {$this->apellidoPaterno} {$this->apellidoMaterno}",
+            'ci' => $this->ci,
+            'curso' => $this->group->course->nombre,
+            'grupo' => "{$this->group->nombre} ({$this->group->hora_inicio->format('H:i')} - {$this->group->hora_fin->format('H:i')})",
+            'monto' => $this->precioCalculado,
+            'email' => $this->email,
+        ];
 
-        $this->reset(['ci', 'nombres', 'apellidoPaterno', 'apellidoMaterno', 'celular', 'email', 'tipoParticipante', 'stepConfirmation']);
+        $this->isSubmitted = true;
+        $this->stepConfirmation = false;
     }
 
     public function render()

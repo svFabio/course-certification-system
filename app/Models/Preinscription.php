@@ -19,6 +19,7 @@ class Preinscription extends Model
     protected $fillable = [
         'group_id',
         'ci',
+        'cod_sis',
         'nombres',
         'apellido_paterno',
         'apellido_materno',
@@ -26,12 +27,14 @@ class Preinscription extends Model
         'email',
         'tipo_participante',
         'status',
+        'fotocopia_ci',
     ];
 
     protected function casts(): array
     {
         return [
             'status' => PreinscriptionStatus::class,
+            'fotocopia_ci' => 'boolean',
         ];
     }
 
