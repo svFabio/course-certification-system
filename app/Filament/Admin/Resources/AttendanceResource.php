@@ -42,15 +42,6 @@ class AttendanceResource extends Resource
                 Forms\Components\Select::make('status')
                     ->options(AttendanceStatus::class)
                     ->required(),
-                Forms\Components\TextInput::make('lat')
-                    ->numeric()
-                    ->label('Latitud'),
-                Forms\Components\TextInput::make('lng')
-                    ->numeric()
-                    ->label('Longitud'),
-                Forms\Components\TextInput::make('distancia_metros')
-                    ->numeric()
-                    ->suffix('m'),
             ]);
     }
 
@@ -67,9 +58,6 @@ class AttendanceResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge(),
-                Tables\Columns\TextColumn::make('distancia_metros')
-                    ->label('Distancia')
-                    ->suffix('m'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Fecha de registro')
                     ->dateTime()

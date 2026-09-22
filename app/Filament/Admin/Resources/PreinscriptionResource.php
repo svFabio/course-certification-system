@@ -91,13 +91,25 @@ class PreinscriptionResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('cod_sis')
                     ->label('Cód. SIS')
-                    ->placeholder('—')
+                    ->getStateUsing(fn ($record) => match (true) {
+                        empty($record->cod_sis) => 'EXTERNO',
+                        strlen($record->cod_sis) !== 9 => "⚠ {$record->cod_sis}",
+                        default => $record->cod_sis,
+                    })
+                    ->color(fn ($record) => match (true) {
+                        empty($record->cod_sis) => 'gray',
+                        strlen($record->cod_sis) !== 9 => 'warning',
+                        default => null,
+                    })
                     ->searchable(),
                 Tables\Columns\TextColumn::make('nombres')
                     ->label('Nombres')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('apellido_paterno')
                     ->label('Ap. Paterno'),
+                Tables\Columns\TextColumn::make('apellido_materno')
+                    ->label('Ap. Materno')
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('celular')
                     ->label('Celular')
                     ->placeholder('—'),
