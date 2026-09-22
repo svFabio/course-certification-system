@@ -168,9 +168,9 @@ class SheetExportBuilder
             $attendance = $attendanceMap->get($session->id);
 
             return match ($attendance?->status) {
-                AttendanceStatus::PRESENTE => 'P',
-                AttendanceStatus::AUSENTE => 'A',
-                AttendanceStatus::JUSTIFICADO => 'J',
+                AttendanceStatus::PRESENTE => 1,
+                AttendanceStatus::JUSTIFICADO => 1,
+                AttendanceStatus::AUSENTE => 0,
                 default => '',
             };
         })->toArray();
@@ -183,10 +183,19 @@ class SheetExportBuilder
         }
 
         $presentCount = $preinscription->attendances
-            ->filter(fn (mixed $a) => $a->status === AttendanceStatus::PRESENTE)
+            ->filter(fn (mixed $a) => in_array($a->status, [AttendanceStatus::PRESENTE, AttendanceStatus::JUSTIFICADO]))
             ->count();
 
-        return round(($presentCount / $sessionsCount) * 50, 2);
+        return (float) $presentCount;
+    }
+
+    private function calculateAttendanceScore(float $attendanceTotal, int $sessionsCount): float
+    {
+        if ($sessionsCount === 0) {
+            return 0.0;
+        }
+
+        return round(($attendanceTotal / $sessionsCount) * 50, 2);
     }
 
     private function buildGradesRow(Preinscription $preinscription, Collection $criteria): array
@@ -237,8 +246,9 @@ class SheetExportBuilder
         foreach ($preinscriptions as $preinscription) {
             $attendanceMarks = $this->buildAttendanceMarks($preinscription, $sessions);
             $attendanceTotal = $this->calculateAttendanceTotal($preinscription, $sessionsCount);
+            $attendanceScore = $this->calculateAttendanceScore($attendanceTotal, $sessionsCount);
             $grades = $this->buildGradesRow($preinscription, $criteria);
-            $finalGrade = $attendanceTotal + array_sum($grades);
+            $finalGrade = $attendanceScore + array_sum($grades);
 
             $rows[] = array_merge(
                 [
@@ -250,6 +260,7 @@ class SheetExportBuilder
                 ],
                 $attendanceMarks,
                 [$attendanceTotal],
+                [$attendanceScore],
                 $grades,
                 [round($finalGrade, 2)]
             );

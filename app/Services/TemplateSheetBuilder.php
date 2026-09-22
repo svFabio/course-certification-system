@@ -26,8 +26,8 @@ class TemplateSheetBuilder
         $rows[] = ['Curso:', '', 'Aula:', '', 'Período:'];
         $rows[] = ['Instructor:', '', 'Horario:'];
         $rows[] = [];
-        $rows[] = ['Nro', 'CI', 'APE_PAT', 'APE_MAT', 'NOMBRES', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'TOTAL ASIST', 'CRITERIO 1', 'CRITERIO 2', 'NOTA FINAL'];
-        $rows[] = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '50%', '30%', '70%', ''];
+        $rows[] = ['Nro', 'CI', 'APE_PAT', 'APE_MAT', 'NOMBRES', 'DÍA 1', 'DÍA 2', 'DÍA 3', 'DÍA 4', 'DÍA 5', 'DÍA 6', 'DÍA 7', 'DÍA 8', 'DÍA 9', 'DÍA 10', 'Asistencia', 'Puntaje Asistencia S/ 5', 'CRITERIO 1', 'CRITERIO 2', 'NOTA FINAL'];
+        $rows[] = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '50%', '30%', '70%', '100'];
 
         return $rows;
     }
