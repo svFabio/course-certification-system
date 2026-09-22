@@ -10,6 +10,8 @@ use Spatie\Permission\Models\Role;
 uses(RefreshDatabase::class);
 
 it('renders the login page with UMSS institutional design and return link', function () {
+    $this->withoutVite();
+
     $response = $this->get('/login');
 
     $response->assertOk()
