@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Filament\Instructor\Pages\MarkAttendance;
 use App\Filament\Instructor\Resources;
 use App\Http\Middleware\EnsureUserIsInstructor;
 use App\Support\DesignTokens;
@@ -52,6 +53,7 @@ class InstructorPanelProvider extends PanelProvider
             ])
             ->pages([
                 Pages\Dashboard::class,
+                MarkAttendance::class,
             ])
             ->middleware([
                 EncryptCookies::class,
