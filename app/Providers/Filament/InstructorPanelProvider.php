@@ -48,7 +48,6 @@ class InstructorPanelProvider extends PanelProvider
             ->resources([
                 Resources\InstructorCourseResource::class,
                 Resources\InstructorSessionResource::class,
-                Resources\InstructorAttendanceResource::class,
                 Resources\InstructorGradeResource::class,
             ])
             ->pages([
