@@ -78,6 +78,7 @@
 
         {{-- Attendance Grid --}}
         @else
+            @php $ev = $this->enumValues; @endphp
             <div class="overflow-hidden rounded-xl border border-umss-gray-200 bg-white shadow-sm">
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse text-left text-xs">
@@ -101,7 +102,7 @@
                                         <div class="mt-1">
                                             <button
                                                 type="button"
-                                                wire:click="markAllForSession({{ $session['id'] }}, 'presente')"
+                                                wire:click="markAllForSession({{ $session['id'] }}, '{{ $ev['presente'] }}')"
                                                 class="inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-umss-green-light text-umss-green-dark border border-umss-green/30 hover:bg-umss-green hover:text-white transition"
                                                 title="Marcar todos Presentes en esta sesión"
                                             >
@@ -133,9 +134,9 @@
                                             <select
                                                 wire:change="markAttendance('{{ $key }}', $event.target.value)"
                                                 class="w-full rounded-md border px-1.5 py-1 text-center text-xs font-semibold transition focus:outline-none focus:ring-1 focus:ring-umss-navy
-                                                    @if($currentStatus === 'presente') border-umss-green/40 bg-umss-green-light text-umss-green-dark
-                                                    @elseif($currentStatus === 'ausente') border-umss-red/40 bg-umss-red/10 text-umss-red
-                                                    @elseif($currentStatus === 'justificado') border-umss-amber/40 bg-umss-amber-light text-umss-amber-dark
+                                                    @if($currentStatus === $ev['presente']) border-umss-green/40 bg-umss-green-light text-umss-green-dark
+                                                    @elseif($currentStatus === $ev['ausente']) border-umss-red/40 bg-umss-red/10 text-umss-red
+                                                    @elseif($currentStatus === $ev['justificado']) border-umss-amber/40 bg-umss-amber-light text-umss-amber-dark
                                                     @else border-umss-gray-300 bg-white text-umss-gray-700
                                                     @endif"
                                             >

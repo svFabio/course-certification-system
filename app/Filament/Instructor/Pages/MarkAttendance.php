@@ -94,6 +94,20 @@ class MarkAttendance extends Page
         return $options;
     }
 
+    /**
+     * Enum case values exposed to Blade so the view never references magic strings.
+     *
+     * @return array<string, string>
+     */
+    public function getEnumValuesProperty(): array
+    {
+        return [
+            'presente' => AttendanceStatus::PRESENTE->value,
+            'ausente' => AttendanceStatus::AUSENTE->value,
+            'justificado' => AttendanceStatus::JUSTIFICADO->value,
+        ];
+    }
+
     public function updatedSelectedGroupId(): void
     {
         $this->loadGroupData();
