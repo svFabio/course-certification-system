@@ -27,11 +27,7 @@ class PreinscriptionFactory extends Factory
             'apellido_materno' => fake()->lastName(),
             'celular' => '7'.fake()->numerify('#######'),
             'email' => fake()->safeEmail(),
-            'tipo_participante' => fake()->randomElement([
-                TipoParticipante::UMSS->value,
-                TipoParticipante::EXTERNO->value,
-                TipoParticipante::AUXILIAR->value,
-            ]),
+            'tipo_participante' => TipoParticipante::UMSS->value,
             'cod_sis' => fake()->boolean(60) ? fake()->numerify('202######') : null,
             'status' => PreinscriptionStatus::PENDIENTE_PAGO,
             'fotocopia_ci' => false,
@@ -77,6 +73,16 @@ class PreinscriptionFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'tipo_participante' => TipoParticipante::AUXILIAR->value,
+        ]);
+    }
+
+    public function auxiliarWithApprovedCertificate(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'tipo_participante' => TipoParticipante::AUXILIAR->value,
+            'auxiliar_certificado_path' => 'auxiliar-certificados/test-certificado.pdf',
+            'auxiliar_certificado_aprobado' => true,
+            'auxiliar_certificado_aprobado_en' => now(),
         ]);
     }
 }

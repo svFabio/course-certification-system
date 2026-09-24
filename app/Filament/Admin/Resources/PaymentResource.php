@@ -112,6 +112,14 @@ class PaymentResource extends Resource
                     ->label('Fecha de verificación')
                     ->dateTime()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('motivo_devolucion')
+                    ->label('Motivo devolución')
+                    ->placeholder('—'),
+                Tables\Columns\TextColumn::make('reembolsado_en')
+                    ->label('Fecha de reembolso')
+                    ->dateTime()
+                    ->placeholder('—')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Fecha de pago')
                     ->dateTime()
@@ -131,7 +139,17 @@ class PaymentResource extends Resource
                     ->modalHeading('¿Confirmar recepción del pago?')
                     ->modalDescription('Se validará el pago inmediatamente y el estudiante quedará inscrito con notificación por correo.')
                     ->action(function (Payment $record, PaymentService $service) {
-                        $service->verify($record);
+                        try {
+                            $service->verify($record);
+                        } catch (ValidationException $e) {
+                            Notification::make()
+                                ->title('No se pudo verificar el pago.')
+                                ->body(collect($e->errors())->flatten()->implode(' '))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
 
                         Notification::make()
                             ->title('Pago verificado y estudiante inscrito correctamente.')
@@ -158,6 +176,64 @@ class PaymentResource extends Resource
                         Notification::make()
                             ->title('Pago rechazado correctamente.')
                             ->warning()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('marcarDevolucion')
+                    ->label('Marcar devolución pendiente')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('warning')
+                    ->visible(fn (Payment $record) => $record->estado === PaymentStatus::VERIFICADO)
+                    ->requiresConfirmation()
+                    ->modalHeading('Solicitar devolución de este pago')
+                    ->modalDescription('El participante pasará a "devolución pendiente".')
+                    ->form([
+                        Forms\Components\TextInput::make('motivo_devolucion')
+                            ->label('Motivo de la devolución')
+                            ->required()
+                            ->maxLength(500),
+                    ])
+                    ->action(function (Payment $record, array $data, PaymentService $service) {
+                        try {
+                            $service->requestRefund($record->preinscription, $data['motivo_devolucion']);
+                        } catch (ValidationException $e) {
+                            Notification::make()
+                                ->title('No se pudo marcar la devolución.')
+                                ->body(collect($e->errors())->flatten()->implode(' '))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title('Devolución pendiente registrada.')
+                            ->warning()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('confirmarReembolso')
+                    ->label('Confirmar reembolso')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('success')
+                    ->visible(fn (Payment $record) => $record->estado === PaymentStatus::DEVOLUCION_PENDIENTE)
+                    ->requiresConfirmation()
+                    ->modalHeading('Confirmar reembolso')
+                    ->modalDescription('El participante pasará a "reembolsado" y liberará su cupo.')
+                    ->action(function (Payment $record, PaymentService $service) {
+                        try {
+                            $service->confirmRefund($record->preinscription);
+                        } catch (ValidationException $e) {
+                            Notification::make()
+                                ->title('No se pudo confirmar el reembolso.')
+                                ->body(collect($e->errors())->flatten()->implode(' '))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title('Reembolso confirmado.')
+                            ->success()
                             ->send();
                     }),
                 Tables\Actions\EditAction::make(),

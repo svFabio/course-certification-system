@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\GroupStatus;
 use App\Enums\PreinscriptionStatus;
+use App\Events\GroupSheetsNeedRefresh;
 use App\Models\Group;
 use App\Models\Preinscription;
 use App\Support\BusinessRules;
@@ -49,6 +50,7 @@ class PreinscriptionService
                 'tipo_participante' => $data['tipo_participante'],
                 'status' => PreinscriptionStatus::PENDIENTE_PAGO,
                 'fotocopia_ci' => (bool) ($data['fotocopia_ci'] ?? false),
+                'auxiliar_certificado_path' => $data['auxiliar_certificado_path'] ?? null,
             ]);
         });
     }
@@ -69,6 +71,56 @@ class PreinscriptionService
             ->count();
 
         return $confirmed < $group->cupo_maximo;
+    }
+
+    public function moveToGroup(Preinscription $preinscription, Group $destination): Preinscription
+    {
+        if ($preinscription->group_id === $destination->id) {
+            throw ValidationException::withMessages([
+                'group_id' => 'El participante ya está asignado a ese grupo.',
+            ]);
+        }
+
+        if ($preinscription->group->course_id !== $destination->course_id) {
+            throw ValidationException::withMessages([
+                'group_id' => 'El grupo de destino debe pertenecer al mismo curso.',
+            ]);
+        }
+
+        if ($destination->status !== GroupStatus::HABILITADO) {
+            throw ValidationException::withMessages([
+                'group_id' => 'El grupo de destino no está habilitado.',
+            ]);
+        }
+
+        if (! $this->hasAvailableCapacity($destination)) {
+            throw ValidationException::withMessages([
+                'group_id' => 'El grupo de destino ha alcanzado su capacidad máxima.',
+            ]);
+        }
+
+        $duplicate = Preinscription::where('ci', $preinscription->ci)
+            ->where('group_id', $destination->id)
+            ->where('id', '!=', $preinscription->id)
+            ->exists();
+
+        if ($duplicate) {
+            throw ValidationException::withMessages([
+                'group_id' => 'El participante ya está preinscrito en el grupo de destino.',
+            ]);
+        }
+
+        $previousGroupId = $preinscription->group_id;
+
+        $preinscription->update(['group_id' => $destination->id]);
+
+        if ($previousGroupId !== null) {
+            GroupSheetsNeedRefresh::dispatch($previousGroupId);
+        }
+
+        GroupSheetsNeedRefresh::dispatch($destination->id);
+
+        return $preinscription->fresh();
     }
 
     public function getAvailableGroups(int $courseId): Collection

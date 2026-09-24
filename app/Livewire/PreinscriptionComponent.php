@@ -10,11 +10,15 @@ use App\Models\Preinscription;
 use App\Services\PreinscriptionService;
 use App\Support\BusinessRules;
 use Illuminate\Support\Facades\RateLimiter;
+use Livewire\Attributes\Rule;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class PreinscriptionComponent extends Component
 {
+    use WithFileUploads;
+
     #[Url]
     public ?int $groupId = null;
 
@@ -33,6 +37,9 @@ class PreinscriptionComponent extends Component
     public ?string $email = null;
 
     public ?string $tipoParticipante = null;
+
+    #[Rule(['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'])]
+    public $auxiliarCertificado = null;
 
     public bool $stepConfirmation = false;
 
@@ -65,9 +72,25 @@ class PreinscriptionComponent extends Component
             return null;
         }
 
+        $participantType = $this->tipoParticipante === 'auxiliar'
+            ? 'umss'
+            : $this->tipoParticipante;
+
         return BusinessRules::calculatePrice(
             (int) $this->group->course->carga_horaria,
-            $this->tipoParticipante
+            $participantType
+        );
+    }
+
+    public function getPrecioDescuentoAuxiliarProperty(): ?float
+    {
+        if (! $this->group) {
+            return null;
+        }
+
+        return BusinessRules::calculatePrice(
+            (int) $this->group->course->carga_horaria,
+            'auxiliar'
         );
     }
 
@@ -83,6 +106,12 @@ class PreinscriptionComponent extends Component
             'celular' => ['nullable', 'string', 'regex:/^[67][0-9]{7}$/'],
             'email' => ['required', 'email:rfc,dns', 'max:150'],
             'tipoParticipante' => ['required', 'in:umss,externo,auxiliar'],
+            'auxiliarCertificado' => [
+                'nullable',
+                'file',
+                'mimes:pdf,jpg,jpeg,png',
+                'max:5120',
+            ],
         ];
     }
 
@@ -97,6 +126,8 @@ class PreinscriptionComponent extends Component
             'celular.regex' => 'El celular debe ser un número boliviano válido de 8 dígitos (iniciando con 6 o 7).',
             'email.email' => 'Ingrese una dirección de correo electrónico válida.',
             'tipoParticipante.in' => 'Seleccione un tipo de participante válido.',
+            'auxiliarCertificado.mimes' => 'El certificado debe ser un archivo PDF o imagen (jpg/png).',
+            'auxiliarCertificado.max' => 'El certificado no debe superar los 5 MB.',
         ];
     }
 
@@ -145,6 +176,14 @@ class PreinscriptionComponent extends Component
             return;
         }
 
+        $certificatePath = null;
+        if ($validated['tipoParticipante'] === 'auxiliar' && $this->auxiliarCertificado) {
+            $certificatePath = $this->auxiliarCertificado->store(
+                preg_replace('/[^a-zA-Z0-9]+/', '-', mb_strtolower((string) $validated['ci'])),
+                'cloudinary'
+            );
+        }
+
         $preinscription = $service->register([
             'group_id' => $validated['groupId'],
             'ci' => $validated['ci'],
@@ -155,6 +194,7 @@ class PreinscriptionComponent extends Component
             'celular' => $validated['celular'] ?? null,
             'email' => $validated['email'],
             'tipo_participante' => $validated['tipoParticipante'],
+            'auxiliar_certificado_path' => $certificatePath,
         ]);
 
         RateLimiter::hit($ciKey, 3600);

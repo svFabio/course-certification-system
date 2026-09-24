@@ -126,10 +126,22 @@
                     </div>
                 @endif
 
+                @if($tipoParticipante === 'auxiliar')
+                    <div class="bg-umss-sky-light border border-umss-sky rounded-lg p-4">
+                        <label class="block text-xs font-medium text-umss-sky-dark mb-1 uppercase tracking-wide">Certificado de auxiliar practicante (Jefatura)</label>
+                        <input type="file" wire:model="auxiliarCertificado" accept="application/pdf,image/jpeg,image/png" class="block w-full text-sm text-umss-gray-700 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-umss-navy file:text-umss-white hover:file:bg-umss-navy-dark">
+                        <p class="text-xs text-umss-sky-dark mt-2">Adjunte el certificado emitido por Jefatura de su Facultad. El 50% de descuento (Bs. {{ number_format($this->precioDescuentoAuxiliar, 2) }}) se aplicará tras su verificación y aprobación.</p>
+                        @error('auxiliarCertificado') <p class="text-umss-red text-xs mt-1 font-medium">{{ $message }}</p> @enderror
+                    </div>
+                @endif
+
                 @if($this->precioCalculado !== null)
                     <div class="bg-umss-gray-100 border border-umss-gray-100 rounded-lg p-4">
                         <p class="text-xs text-umss-gray-700 uppercase tracking-wide mb-1">Costo de inscripcion</p>
                         <p class="text-2xl font-bold text-umss-navy">Bs. {{ number_format($this->precioCalculado, 2) }}</p>
+                        @if($tipoParticipante === 'auxiliar')
+                            <p class="text-xs text-umss-gray-700 mt-1">Tarifa de comunidad UMSS. Con certificado auxiliar aprobado pagará Bs. {{ number_format($this->precioDescuentoAuxiliar, 2) }}.</p>
+                        @endif
                     </div>
                 @endif
 
