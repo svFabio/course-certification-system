@@ -46,7 +46,6 @@ class GroupsRelationManager extends RelationManager
             Forms\Components\TimePicker::make('hora_fin')
                 ->label('Hora de fin (calculada automáticamente)')
                 ->disabled()
-                ->dehydrated(false)
                 ->helperText('Se calcula automáticamente según la carga horaria del curso.'),
             Forms\Components\TextInput::make('cupo_minimo')
                 ->numeric()
@@ -64,7 +63,7 @@ class GroupsRelationManager extends RelationManager
                 }),
             Forms\Components\Select::make('status')
                 ->options(GroupStatus::class)
-                ->default(GroupStatus::HABILITADO),
+                ->default(GroupStatus::NO_HABILITADO),
         ]);
     }
 

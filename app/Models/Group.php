@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\GroupStatus;
 use App\Enums\PreinscriptionStatus;
+use App\Support\BusinessRules;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +27,19 @@ class Group extends Model
         'cupo_maximo',
         'status',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Group $group): void {
+            if ($group->hora_inicio === null || $group->course === null) {
+                return;
+            }
+
+            $duration = BusinessRules::SESSION_DURATION_HOURS[$group->course->carga_horaria] ?? 1.5;
+
+            $group->hora_fin = $group->hora_inicio->copy()->addMinutes((int) round($duration * 60));
+        });
+    }
 
     protected function casts(): array
     {
@@ -55,7 +69,10 @@ class Group extends Model
 
     public function scopeWithConfirmedCount(Builder $query): Builder
     {
-        return $query->withCount(['preinscriptions as confirmed_count' => fn ($q) => $q->where('status', PreinscriptionStatus::INSCRITO)]);
+        return $query->withCount(['preinscriptions as confirmed_count' => fn ($q) => $q->whereIn('status', [
+            PreinscriptionStatus::PENDIENTE_PAGO,
+            PreinscriptionStatus::INSCRITO,
+        ])]);
     }
 
     public function getCapacityPercentageAttribute(): float
@@ -65,7 +82,10 @@ class Group extends Model
         }
 
         $confirmed = $this->confirmed_count ?? $this->preinscriptions()
-            ->where('status', PreinscriptionStatus::INSCRITO)
+            ->whereIn('status', [
+                PreinscriptionStatus::PENDIENTE_PAGO,
+                PreinscriptionStatus::INSCRITO,
+            ])
             ->count();
 
         return round(($confirmed / $this->cupo_maximo) * 100, 1);

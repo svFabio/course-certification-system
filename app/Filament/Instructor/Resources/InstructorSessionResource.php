@@ -9,6 +9,7 @@ use App\Models\Group;
 use App\Models\Session;
 use App\Services\HolidayService;
 use Carbon\Carbon;
+use Closure;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -101,7 +102,21 @@ class InstructorSessionResource extends Resource
                         Forms\Components\DatePicker::make('nueva_fecha')
                             ->label('Nueva fecha para la clase')
                             ->default(fn (Session $record) => $record->fecha->addDays(1))
-                            ->required(),
+                            ->required()
+                            ->afterOrEqual(today())
+                            ->rules([
+                                function (string $attribute, mixed $value, Closure $fail): void {
+                                    if (blank($value)) {
+                                        return;
+                                    }
+
+                                    $date = Carbon::parse($value);
+
+                                    if ($date->isWeekend() || app(HolidayService::class)->isHoliday($date)) {
+                                        $fail('La nueva fecha no puede caer en feriado ni en fin de semana.');
+                                    }
+                                },
+                            ]),
                         Forms\Components\Textarea::make('motivo')
                             ->label('Motivo de reprogramación')
                             ->placeholder('Ej. Feriado sobrevenido, duelo institucional, emergencia del instructor...')

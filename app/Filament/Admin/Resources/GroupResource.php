@@ -6,13 +6,15 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\ExportType;
 use App\Enums\GroupStatus;
+use App\Enums\PreinscriptionStatus;
 use App\Filament\Admin\Resources\GroupResource\Pages;
+use App\Mail\GroupMergedNotification;
 use App\Models\Course;
 use App\Models\Group;
 use App\Models\SystemSetting;
 use App\Services\GoogleSheetsService;
 use App\Services\HolidayService;
-use App\Services\SheetExportBuilder;
+use App\Services\SheetExportService;
 use App\Support\BusinessRules;
 use Carbon\Carbon;
 use Filament\Forms;
@@ -21,6 +23,9 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 
 class GroupResource extends Resource
 {
@@ -71,7 +76,6 @@ class GroupResource extends Resource
                 Forms\Components\TimePicker::make('hora_fin')
                     ->label('Hora de fin (calculada automáticamente)')
                     ->disabled()
-                    ->dehydrated(false)
                     ->helperText('Se calcula automáticamente según la carga horaria del curso.'),
                 Forms\Components\TextInput::make('cupo_minimo')
                     ->numeric()
@@ -91,7 +95,7 @@ class GroupResource extends Resource
                     }),
                 Forms\Components\Select::make('status')
                     ->options(GroupStatus::class)
-                    ->default(GroupStatus::HABILITADO),
+                    ->default(GroupStatus::NO_HABILITADO),
             ]);
     }
 
@@ -115,6 +119,19 @@ class GroupResource extends Resource
                     ->time(),
                 Tables\Columns\TextColumn::make('cupo_maximo')
                     ->label('Cupo máximo'),
+                Tables\Columns\TextColumn::make('ocupacion')
+                    ->label('Ocupación')
+                    ->badge()
+                    ->state(fn (Group $record): string => ((int) ($record->confirmados ?? 0)).'/'.$record->cupo_maximo)
+                    ->color(function (Group $record): string {
+                        $confirmed = (int) ($record->confirmados ?? 0);
+
+                        if ($confirmed >= $record->cupo_maximo) {
+                            return 'danger';
+                        }
+
+                        return $confirmed < $record->cupo_minimo ? 'warning' : 'success';
+                    }),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge(),
@@ -189,33 +206,14 @@ class GroupResource extends Resource
                             return;
                         }
 
-                        $builder = new SheetExportBuilder($record);
-                        $sheetsService = app(GoogleSheetsService::class);
-                        $spreadsheetId = SystemSetting::get('google_sheets_spreadsheet_id');
                         $exportType = $data['export_type'] instanceof ExportType
                             ? $data['export_type']
                             : ExportType::from($data['export_type']);
-                        $tabsCreated = [];
 
                         try {
-                            if (in_array($exportType, [ExportType::CASH, ExportType::BOTH], true)) {
-                                $tabName = $builder->getCashSheetTabName();
-                                if (! $sheetsService->checkTabExists($tabName)) {
-                                    $sheetsService->createTab($tabName);
-                                }
-                                $sheetsService->writeCells($tabName.'!A1', $builder->buildCashSheetRows());
-                                $tabsCreated[] = $tabName;
-                            }
+                            $tabsCreated = app(SheetExportService::class)->exportGroup($record, $exportType);
 
-                            if (in_array($exportType, [ExportType::TEACHER, ExportType::BOTH], true)) {
-                                $tabName = $builder->getTeacherSheetTabName();
-                                if (! $sheetsService->checkTabExists($tabName)) {
-                                    $sheetsService->createTab($tabName);
-                                }
-                                $sheetsService->writeCells($tabName.'!A1', $builder->buildTeacherSheetRows());
-                                $tabsCreated[] = $tabName;
-                            }
-
+                            $spreadsheetId = SystemSetting::get('google_sheets_spreadsheet_id');
                             $sheetUrl = "https://docs.google.com/spreadsheets/d/{$spreadsheetId}";
 
                             Notification::make()
@@ -230,6 +228,78 @@ class GroupResource extends Resource
                                 ->danger()
                                 ->send();
                         }
+                    }),
+                Tables\Actions\Action::make('fusionarGrupo')
+                    ->label('Fusión')
+                    ->icon('heroicon-o-arrows-right-left')
+                    ->color('warning')
+                    ->visible(fn (Group $record): bool => $record->status === GroupStatus::NO_HABILITADO)
+                    ->form([
+                        Forms\Components\Select::make('grupo_destino_id')
+                            ->label('Grupo destino')
+                            ->options(function (Group $record): array {
+                                return Group::query()
+                                    ->where('course_id', $record->course_id)
+                                    ->where('id', '!=', $record->getKey())
+                                    ->where('status', '!=', GroupStatus::CERRADO->value)
+                                    ->orderBy('nombre')
+                                    ->pluck('nombre', 'id')
+                                    ->all();
+                            })
+                            ->required(),
+                    ])
+                    ->action(function (Group $record, array $data): void {
+                        [$toMove, $destination, $movedCount] = DB::transaction(function () use ($record, $data): array {
+                            $origin = Group::query()->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
+                            $destination = Group::query()->whereKey((int) $data['grupo_destino_id'])->lockForUpdate()->firstOrFail();
+
+                            if ($destination->getKey() === $origin->getKey()
+                                || $destination->course_id !== $origin->course_id
+                                || $destination->status === GroupStatus::CERRADO
+                            ) {
+                                throw ValidationException::withMessages([
+                                    'grupo_destino_id' => 'Seleccione un grupo destino válido del mismo curso que no esté cerrado.',
+                                ]);
+                            }
+
+                            $activeStatuses = [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO];
+
+                            $toMove = $origin->preinscriptions()->whereIn('status', $activeStatuses)->get();
+                            $movedCount = $toMove->count();
+
+                            $destinationConfirmed = $destination->preinscriptions()
+                                ->whereIn('status', $activeStatuses)
+                                ->count();
+
+                            if (($destination->cupo_maximo - $destinationConfirmed) < $movedCount) {
+                                throw ValidationException::withMessages([
+                                    'grupo_destino_id' => "El grupo destino no tiene cupo disponible para {$movedCount} participante(s).",
+                                ]);
+                            }
+
+                            if ($movedCount > 0) {
+                                $origin->preinscriptions()
+                                    ->whereIn('status', $activeStatuses)
+                                    ->update(['group_id' => $destination->getKey()]);
+                            }
+
+                            $origin->status = GroupStatus::CERRADO;
+                            $origin->save();
+
+                            return [$toMove, $destination, $movedCount];
+                        });
+
+                        foreach ($toMove as $preinscription) {
+                            if (filled($preinscription->email)) {
+                                Mail::to($preinscription->email)
+                                    ->queue(new GroupMergedNotification($record, $destination, $preinscription));
+                            }
+                        }
+
+                        Notification::make()
+                            ->title("Grupo fusionado: {$movedCount} participante(s) trasladado(s) al grupo destino.")
+                            ->success()
+                            ->send();
                     }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
