@@ -1,4 +1,4 @@
-<div>
+<div wire:poll.10s>
     <div class="card-umss p-6 mb-8">
         <h1 class="text-2xl font-semibold text-umss-navy mb-4">Catalogo de Cursos</h1>
         <div class="mb-4">
@@ -80,7 +80,8 @@
                             @foreach ($course->groups as $group)
                                 @php
                                     $inscritos = $group->inscritos_count ?? 0;
-                                    $full = $inscritos >= $group->cupo_maximo;
+                                    $disponibles = max(0, $group->cupo_maximo - $inscritos);
+                                    $full = $disponibles === 0;
                                 @endphp
                                 <div class="flex justify-between items-center text-xs">
                                     <div>
@@ -91,10 +92,13 @@
                                     @if ($full)
                                         <span class="text-umss-red font-medium">Lleno</span>
                                     @else
-                                        <a href="{{ route('preinscripcion', ['group' => $group->id]) }}"
-                                            class="text-umss-navy font-medium hover:underline">
-                                            Preinscribirse
-                                        </a>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-umss-gray-700">{{ $disponibles }} {{ Str::plural('cupo', $disponibles) }} disponibles</span>
+                                            <a href="{{ route('preinscripcion', ['group' => $group->id]) }}"
+                                                class="text-umss-navy font-medium hover:underline">
+                                                Preinscribirse
+                                            </a>
+                                        </div>
                                     @endif
                                 </div>
                             @endforeach
