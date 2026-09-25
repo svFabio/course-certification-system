@@ -9,12 +9,15 @@ use App\Enums\PreinscriptionStatus;
 use App\Enums\TipoParticipante;
 use App\Models\Preinscription;
 use App\Services\PaymentService;
+use App\Services\PreinscriptionService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 
 class PreinscriptionsRelationManager extends RelationManager
 {
@@ -26,8 +29,17 @@ class PreinscriptionsRelationManager extends RelationManager
     {
         return $form->schema([
             Forms\Components\TextInput::make('ci')
+                ->label('Cédula de Identidad (CI)')
                 ->required()
-                ->maxLength(20),
+                ->maxLength(20)
+                ->rules([
+                    fn (?Preinscription $record, RelationManager $livewire): Unique => Rule::unique('preinscriptions', 'ci')
+                        ->where('group_id', $livewire->getOwnerRecord()->id)
+                        ->ignore($record?->id),
+                ])
+                ->validationMessages([
+                    'unique' => 'Este participante (CI) ya se encuentra registrado en este grupo.',
+                ]),
             Forms\Components\TextInput::make('nombres')
                 ->required()
                 ->maxLength(255),
@@ -47,8 +59,11 @@ class PreinscriptionsRelationManager extends RelationManager
                 ->options(TipoParticipante::class)
                 ->required(),
             Forms\Components\Select::make('status')
+                ->label('Estado')
                 ->options(PreinscriptionStatus::class)
-                ->default(PreinscriptionStatus::PENDIENTE_PAGO),
+                ->default(PreinscriptionStatus::PENDIENTE_PAGO)
+                ->disabled()
+                ->dehydrated(),
         ]);
     }
 
@@ -60,8 +75,7 @@ class PreinscriptionsRelationManager extends RelationManager
                     ->label('CI')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('full_name')
-                    ->label('Participante')
-                    ->searchable(),
+                    ->label('Participante'),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('tipo_participante')
@@ -76,7 +90,13 @@ class PreinscriptionsRelationManager extends RelationManager
                     ->sortable(),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                    ->using(function (array $data): Preinscription {
+                        return app(PreinscriptionService::class)->register(
+                            [...$data, 'group_id' => $this->getOwnerRecord()->id],
+                            enforceEnabledGroup: false,
+                        );
+                    }),
             ])
             ->actions([
                 Tables\Actions\Action::make('registrarPago')
@@ -86,7 +106,7 @@ class PreinscriptionsRelationManager extends RelationManager
                     ->visible(fn (Preinscription $record) => $record->status === PreinscriptionStatus::PENDIENTE_PAGO)
                     ->requiresConfirmation()
                     ->modalHeading('Registrar y Validar Pago en Caja')
-                    ->modalDescription(fn (Preinscription $record) => "¿Confirmar cobro de Bs. {$record->price} a {$record->full_name} e inscribirlo automáticamente?")
+                    ->modalDescription(fn (Preinscription $record) => "¿Confirmar cobro de Bs. {$record->chargeable_price} a {$record->full_name} e inscribirlo automáticamente?")
                     ->form([
                         Forms\Components\Select::make('metodo')
                             ->label('Método de pago')
@@ -97,12 +117,16 @@ class PreinscriptionsRelationManager extends RelationManager
                             ->label('Número de comprobante / recibo')
                             ->placeholder('Opcional')
                             ->maxLength(100),
+                        Forms\Components\Toggle::make('fotocopia_ci')
+                            ->label('Fotocopia de C.I. entregada físicamente')
+                            ->default(fn (Preinscription $record) => (bool) $record->fotocopia_ci),
                     ])
                     ->action(function (Preinscription $record, array $data) {
                         app(PaymentService::class)->registerAndVerify(
                             $record,
                             $data['metodo'],
-                            $data['numero_comprobante'] ?? null
+                            $data['numero_comprobante'] ?? null,
+                            (bool) ($data['fotocopia_ci'] ?? false),
                         );
 
                         Notification::make()
@@ -110,13 +134,25 @@ class PreinscriptionsRelationManager extends RelationManager
                             ->success()
                             ->send();
                     }),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                Tables\Actions\Action::make('marcarRetirado')
+                    ->label('Marcar retirado')
+                    ->icon('heroicon-o-user-minus')
+                    ->color('gray')
+                    ->visible(fn (Preinscription $record) => in_array($record->status, [
+                        PreinscriptionStatus::PENDIENTE_PAGO,
+                        PreinscriptionStatus::INSCRITO,
+                    ], true))
+                    ->requiresConfirmation()
+                    ->modalHeading('Marcar al participante como retirado')
+                    ->modalDescription('El participante liberará su cupo en el grupo. Su registro se conserva con estado "retirado".')
+                    ->action(function (Preinscription $record, PreinscriptionService $service): void {
+                        $service->markAsWithdrawn($record);
+
+                        Notification::make()
+                            ->title('Participante marcado como retirado.')
+                            ->status('gray')
+                            ->send();
+                    }),
             ]);
     }
 }

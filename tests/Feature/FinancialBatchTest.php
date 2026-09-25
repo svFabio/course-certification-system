@@ -15,7 +15,6 @@ use App\Models\User;
 use App\Services\BoletaService;
 use App\Services\PaymentService;
 use App\Services\PreinscriptionService;
-use App\Support\BusinessRules;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -43,19 +42,22 @@ function makeAuxiliarPreinscription(string $approved = 'pending', int $courseId 
     return Preinscription::factory()->{$state}()->create([
         'group_id' => $group->id,
         'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+        'fotocopia_ci' => true,
     ]);
 }
 
 it('charges umss price to an auxiliar whose certificate has not been approved', function () {
     $preinscription = makeAuxiliarPreinscription('pending');
 
-    expect($preinscription->chargeable_price)->toBe((float) BusinessRules::PRICING['20']['umss']);
+    expect($preinscription->chargeable_price)
+        ->toBe((float) $preinscription->group->course->precio_umss);
 });
 
 it('charges the auxiliar discounted price once the certificate is approved', function () {
     $preinscription = makeAuxiliarPreinscription('approved');
 
-    expect($preinscription->chargeable_price)->toBe((float) BusinessRules::PRICING['20']['auxiliar']);
+    expect($preinscription->chargeable_price)
+        ->toBe((float) $preinscription->group->course->precio_auxiliar);
 });
 
 it('blocks payment verification when auxiliar certificate has not been approved', function () {
@@ -80,14 +82,56 @@ it('registers and verifies payment at auxiliar price once the certificate is app
         'QR-2026-AUX',
     );
 
-    expect((float) $payment->monto)->toBe((float) BusinessRules::PRICING['20']['auxiliar']);
+    expect((float) $payment->monto)->toBe((float) $preinscription->group->course->precio_auxiliar);
     expect($payment->estado)->toBe(PaymentStatus::VERIFICADO);
     expect($preinscription->fresh()->status)->toBe(PreinscriptionStatus::INSCRITO);
 });
 
+it('blocks inscription when the CI photocopy has not been delivered', function () {
+    $course = Course::factory()->create(['status' => CourseStatus::PUBLICADO]);
+    $group = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::HABILITADO,
+        'cupo_maximo' => 30,
+    ]);
+    $preinscription = Preinscription::factory()->umss()->create([
+        'group_id' => $group->id,
+        'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+        'fotocopia_ci' => false,
+    ]);
+
+    expect(fn () => app(PaymentService::class)->registerAndVerify(
+        $preinscription,
+        PaymentMethod::EFECTIVO->value,
+        'R-CI-01',
+    ))->toThrow(ValidationException::class);
+
+    expect($preinscription->fresh()->status)->toBe(PreinscriptionStatus::PENDIENTE_PAGO);
+    expect(Payment::where('preinscription_id', $preinscription->id)->count())->toBe(0);
+});
+
+it('blocks verifying a payment when the CI photocopy has not been delivered', function () {
+    $course = Course::factory()->create(['status' => CourseStatus::PUBLICADO]);
+    $group = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::HABILITADO,
+        'cupo_maximo' => 30,
+    ]);
+    $preinscription = Preinscription::factory()->umss()->create([
+        'group_id' => $group->id,
+        'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+        'fotocopia_ci' => false,
+    ]);
+    $payment = Payment::factory()->pending()->create(['preinscription_id' => $preinscription->id]);
+
+    expect(fn () => app(PaymentService::class)->verify($payment))->toThrow(ValidationException::class);
+
+    expect($payment->fresh()->estado)->toBe(PaymentStatus::PENDIENTE);
+    expect($preinscription->fresh()->status)->toBe(PreinscriptionStatus::PENDIENTE_PAGO);
+});
+
 it('requests a refund on an enrolled preinscription', function () {
     $preinscription = makeAuxiliarPreinscription('approved');
-    $user = User::factory()->create();
     app(PaymentService::class)->registerAndVerify($preinscription, PaymentMethod::EFECTIVO->value, 'R-1');
 
     app(PaymentService::class)->requestRefund($preinscription, 'No alcanzó el cupo mínimo');

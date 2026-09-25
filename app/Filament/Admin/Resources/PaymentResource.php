@@ -29,7 +29,7 @@ class PaymentResource extends Resource
 
     protected static ?string $modelLabel = 'Pago';
 
-    protected static ?string $modelLabelPlural = 'Pagos';
+    protected static ?string $pluralModelLabel = 'Pagos';
 
     public static function form(Form $form): Form
     {
@@ -57,10 +57,6 @@ class PaymentResource extends Resource
                     }),
                 Forms\Components\Select::make('metodo')
                     ->options(PaymentMethod::class)
-                    ->required(),
-                Forms\Components\Select::make('estado')
-                    ->options(PaymentStatus::class)
-                    ->default(PaymentStatus::PENDIENTE)
                     ->required(),
                 Forms\Components\TextInput::make('numero_comprobante')
                     ->regex('/^[a-zA-Z0-9\-_]+$/')
@@ -178,64 +174,6 @@ class PaymentResource extends Resource
                             ->warning()
                             ->send();
                     }),
-                Tables\Actions\Action::make('marcarDevolucion')
-                    ->label('Marcar devolución pendiente')
-                    ->icon('heroicon-o-arrow-uturn-left')
-                    ->color('warning')
-                    ->visible(fn (Payment $record) => $record->estado === PaymentStatus::VERIFICADO)
-                    ->requiresConfirmation()
-                    ->modalHeading('Solicitar devolución de este pago')
-                    ->modalDescription('El participante pasará a "devolución pendiente".')
-                    ->form([
-                        Forms\Components\TextInput::make('motivo_devolucion')
-                            ->label('Motivo de la devolución')
-                            ->required()
-                            ->maxLength(500),
-                    ])
-                    ->action(function (Payment $record, array $data, PaymentService $service) {
-                        try {
-                            $service->requestRefund($record->preinscription, $data['motivo_devolucion']);
-                        } catch (ValidationException $e) {
-                            Notification::make()
-                                ->title('No se pudo marcar la devolución.')
-                                ->body(collect($e->errors())->flatten()->implode(' '))
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
-                        Notification::make()
-                            ->title('Devolución pendiente registrada.')
-                            ->warning()
-                            ->send();
-                    }),
-                Tables\Actions\Action::make('confirmarReembolso')
-                    ->label('Confirmar reembolso')
-                    ->icon('heroicon-o-banknotes')
-                    ->color('success')
-                    ->visible(fn (Payment $record) => $record->estado === PaymentStatus::DEVOLUCION_PENDIENTE)
-                    ->requiresConfirmation()
-                    ->modalHeading('Confirmar reembolso')
-                    ->modalDescription('El participante pasará a "reembolsado" y liberará su cupo.')
-                    ->action(function (Payment $record, PaymentService $service) {
-                        try {
-                            $service->confirmRefund($record->preinscription);
-                        } catch (ValidationException $e) {
-                            Notification::make()
-                                ->title('No se pudo confirmar el reembolso.')
-                                ->body(collect($e->errors())->flatten()->implode(' '))
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
-                        Notification::make()
-                            ->title('Reembolso confirmado.')
-                            ->success()
-                            ->send();
-                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -250,7 +188,6 @@ class PaymentResource extends Resource
     {
         return [
             'index' => Pages\ListPayments::route('/'),
-            'create' => Pages\CreatePayment::route('/create'),
             'view' => Pages\ViewPayment::route('/{record}'),
             'edit' => Pages\EditPayment::route('/{record}/edit'),
         ];
