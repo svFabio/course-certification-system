@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    .btn-primary {
+        background-color: #0E2E5F;
+        color: #FFFFFF;
+        border-radius: 8px;
+        height: 42px;
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+        font-size: 0.875rem;
+        transition: background-color 150ms ease-in-out;
+    }
+    .btn-primary:hover {
+        background-color: #0A2247;
+    }
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .btn-secondary {
+        background-color: #FFFFFF;
+        color: #0E2E5F;
+        border: 1px solid #0E2E5F;
+        border-radius: 8px;
+        height: 42px;
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+        font-size: 0.875rem;
+        transition: background-color 150ms ease-in-out;
+    }
+    .btn-secondary:hover {
+        background-color: #F5F5F5;
+    }
+
+    .card-umss {
+        background-color: #FFFFFF;
+        border: 1px solid #E5E5E5;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+    }
+
+    .input-umss {
+        background-color: #FFFFFF;
+        border: 1px solid #D6D6D6;
+        border-radius: 8px;
+        height: 42px;
+        padding-left: 0.875rem;
+        padding-right: 0.875rem;
+        color: #121212;
+        font-size: 0.875rem;
+        width: 100%;
+        transition: border-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
+    }
+    .input-umss:focus {
+        border-color: #0E2E5F;
+        outline: none;
+        box-shadow: 0 0 0 1px #0E2E5F;
+    }
+}
