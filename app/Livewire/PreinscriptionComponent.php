@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
+use App\Enums\CourseStatus;
+use App\Enums\GroupStatus;
 use App\Enums\PreinscriptionStatus;
+use App\Enums\TipoParticipante;
 use App\Models\Group;
 use App\Models\Preinscription;
 use App\Services\PreinscriptionService;
-use App\Support\BusinessRules;
 use Illuminate\Support\Facades\RateLimiter;
-use Livewire\Attributes\Rule;
+use Illuminate\Validation\Rule;
+use Livewire\Attributes\Rule as LivewireRule;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -38,7 +41,7 @@ class PreinscriptionComponent extends Component
 
     public ?string $tipoParticipante = null;
 
-    #[Rule(['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'])]
+    #[LivewireRule(['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'])]
     public $auxiliarCertificado = null;
 
     public bool $stepConfirmation = false;
@@ -54,6 +57,16 @@ class PreinscriptionComponent extends Component
     public function mount(Group|int $group): void
     {
         $groupModel = $group instanceof Group ? $group : Group::with('course')->findOrFail($group);
+
+        if ($groupModel->status !== GroupStatus::HABILITADO
+            || $groupModel->course?->status !== CourseStatus::PUBLICADO) {
+            session()->flash('error', 'El grupo seleccionado ya no está disponible para preinscripciones. Explore el catálogo para ver las opciones vigentes.');
+
+            $this->redirectRoute('home');
+
+            return;
+        }
+
         $this->groupId = $groupModel->id;
         $this->group = $groupModel;
         $this->availableGroups = app(PreinscriptionService::class)->getAvailableGroups($this->group->course_id);
@@ -61,25 +74,49 @@ class PreinscriptionComponent extends Component
 
     public function updatedGroupId(): void
     {
-        if ($this->groupId) {
-            $this->group = Group::with('course')->find($this->groupId);
+        if (! $this->groupId) {
+            return;
         }
+
+        $allowedIds = array_map(
+            'intval',
+            collect($this->availableGroups)->pluck('id')->all()
+        );
+
+        if (! in_array((int) $this->groupId, $allowedIds, true)) {
+            $this->groupId = $this->group?->id;
+            $this->addError('groupId', 'El grupo seleccionado no pertenece a este curso o ya no está disponible.');
+
+            return;
+        }
+
+        $resolved = Group::with('course')->find($this->groupId);
+
+        if ($resolved === null) {
+            $this->groupId = $this->group?->id;
+            $this->addError('groupId', 'El grupo seleccionado ya no está disponible.');
+
+            return;
+        }
+
+        $this->group = $resolved;
     }
 
     public function getPrecioCalculadoProperty(): ?float
     {
-        if (! $this->tipoParticipante || ! $this->group || ! in_array($this->tipoParticipante, ['umss', 'externo', 'auxiliar'], true)) {
+        $tipoParticipante = $this->tipoParticipante
+            ? TipoParticipante::tryFrom($this->tipoParticipante)
+            : null;
+
+        if ($tipoParticipante === null || ! $this->group) {
             return null;
         }
 
-        $participantType = $this->tipoParticipante === 'auxiliar'
-            ? 'umss'
-            : $this->tipoParticipante;
+        $preinscription = new Preinscription;
+        $preinscription->tipo_participante = $tipoParticipante->value;
+        $preinscription->setRelation('group', $this->group);
 
-        return BusinessRules::calculatePrice(
-            (int) $this->group->course->carga_horaria,
-            $participantType
-        );
+        return $preinscription->chargeable_price;
     }
 
     public function getPrecioDescuentoAuxiliarProperty(): ?float
@@ -88,10 +125,7 @@ class PreinscriptionComponent extends Component
             return null;
         }
 
-        return BusinessRules::calculatePrice(
-            (int) $this->group->course->carga_horaria,
-            'auxiliar'
-        );
+        return (float) $this->group->course->precio_auxiliar;
     }
 
     protected function rules(): array
@@ -105,7 +139,7 @@ class PreinscriptionComponent extends Component
             'apellidoMaterno' => ['nullable', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/'],
             'celular' => ['nullable', 'string', 'regex:/^[67][0-9]{7}$/'],
             'email' => ['required', 'email:rfc,dns', 'max:150'],
-            'tipoParticipante' => ['required', 'in:umss,externo,auxiliar'],
+            'tipoParticipante' => ['required', Rule::enum(TipoParticipante::class)],
             'auxiliarCertificado' => [
                 'nullable',
                 'file',
@@ -125,7 +159,7 @@ class PreinscriptionComponent extends Component
             'apellidoMaterno.regex' => 'El apellido materno solo debe contener letras, espacios y tildes.',
             'celular.regex' => 'El celular debe ser un número boliviano válido de 8 dígitos (iniciando con 6 o 7).',
             'email.email' => 'Ingrese una dirección de correo electrónico válida.',
-            'tipoParticipante.in' => 'Seleccione un tipo de participante válido.',
+            'tipoParticipante' => 'Seleccione un tipo de participante válido.',
             'auxiliarCertificado.mimes' => 'El certificado debe ser un archivo PDF o imagen (jpg/png).',
             'auxiliarCertificado.max' => 'El certificado no debe superar los 5 MB.',
         ];
@@ -177,7 +211,7 @@ class PreinscriptionComponent extends Component
         }
 
         $certificatePath = null;
-        if ($validated['tipoParticipante'] === 'auxiliar' && $this->auxiliarCertificado) {
+        if ($validated['tipoParticipante'] === TipoParticipante::AUXILIAR->value && $this->auxiliarCertificado) {
             $certificatePath = $this->auxiliarCertificado->store(
                 preg_replace('/[^a-zA-Z0-9]+/', '-', mb_strtolower((string) $validated['ci'])),
                 'cloudinary'
@@ -187,7 +221,7 @@ class PreinscriptionComponent extends Component
         $preinscription = $service->register([
             'group_id' => $validated['groupId'],
             'ci' => $validated['ci'],
-            'cod_sis' => in_array($validated['tipoParticipante'], ['umss', 'auxiliar'], true) ? ($validated['codSis'] ?? null) : null,
+            'cod_sis' => in_array($validated['tipoParticipante'], [TipoParticipante::UMSS->value, TipoParticipante::AUXILIAR->value], true) ? ($validated['codSis'] ?? null) : null,
             'nombres' => $validated['nombres'],
             'apellido_paterno' => $validated['apellidoPaterno'],
             'apellido_materno' => $validated['apellidoMaterno'] ?? null,
@@ -205,7 +239,7 @@ class PreinscriptionComponent extends Component
             'ci' => $this->ci,
             'curso' => $this->group->course->nombre,
             'grupo' => "{$this->group->nombre} ({$this->group->hora_inicio->format('H:i')} - {$this->group->hora_fin->format('H:i')})",
-            'monto' => $this->precioCalculado,
+            'monto' => $preinscription->chargeable_price,
             'email' => $this->email,
         ];
 
@@ -215,6 +249,8 @@ class PreinscriptionComponent extends Component
 
     public function render()
     {
+        $this->group?->loadMissing('course');
+
         return view('livewire.preinscription-component', [
             'group' => $this->group,
             'availableGroups' => $this->availableGroups,

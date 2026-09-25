@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\PaymentStatus;
+use App\Enums\TipoParticipante;
 use App\Models\Payment;
 use App\Models\Preinscription;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -32,12 +33,7 @@ class BoletaService
                 'participante' => $preinscription->full_name,
                 'ci' => $preinscription->ci,
                 'cod_sis' => $preinscription->cod_sis,
-                'tipo_participante' => match ($preinscription->tipo_participante) {
-                    'umss' => 'Comunidad UMSS',
-                    'externo' => 'Participante Externo',
-                    'auxiliar' => 'Auxiliar de Docencia',
-                    default => $preinscription->tipo_participante,
-                },
+                'tipo_participante' => TipoParticipante::tryFrom($preinscription->tipo_participante)?->getLabel() ?? $preinscription->tipo_participante,
                 'curso' => $course->nombre,
                 'carga_horaria' => $course->carga_horaria,
                 'grupo' => $group->nombre,

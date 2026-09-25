@@ -54,6 +54,8 @@ final class BusinessRules
     */
     public const EVALUATION_TOTAL_PERCENT = 100;
 
+    public const DEFAULT_ATTENDANCE_WEIGHT = 50;
+
     /*
     |--------------------------------------------------------------------------
     | Course hours

@@ -65,7 +65,8 @@
     @else
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach ($courses as $course)
-                <div class="card-umss bg-white border border-umss-gray-100 hover:border-umss-navy transition-all duration-200 rounded-xl shadow-sm hover:shadow-md flex flex-col justify-between overflow-hidden group">
+                <div class="card-umss bg-white border border-umss-gray-100 hover:border-umss-navy transition-all duration-200 rounded-xl shadow-sm hover:shadow-md flex flex-col justify-between overflow-hidden group"
+                    x-data="{ open: false }">
                     {{-- Cover image header (approx. top 1/4 of card) --}}
                     <div class="relative h-36 w-full overflow-hidden bg-gradient-to-br from-umss-navy via-umss-navy to-umss-navy-dark flex items-center justify-center">
                         @if ($course->portada_url)
@@ -73,7 +74,7 @@
                                 alt="Portada de {{ $course->nombre }}"
                                 class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                                 loading="lazy">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-umss-black/50 via-transparent to-transparent"></div>
                         @else
                             <div class="flex flex-col items-center justify-center text-white/70 select-none p-4 text-center">
                                 <svg class="w-9 h-9 mb-1 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,49 +104,87 @@
                             <p><span class="font-medium text-umss-black">Docente:</span> {{ $course->instructor->name ?? 'Por asignar' }}</p>
                             <p><span class="font-medium text-umss-black">Carga horaria:</span> {{ $course->carga_horaria }} horas</p>
                         </div>
-
-                        <div class="mt-4 pt-4 border-t border-umss-gray-100">
-                            <div class="flex justify-between text-xs mb-1">
-                                <span class="text-umss-gray-700">UMSS</span>
-                                <span class="font-semibold text-umss-navy">Bs. {{ number_format($course->precio_umss, 2) }}</span>
-                            </div>
-                            <div class="flex justify-between text-xs mb-1">
-                                <span class="text-umss-gray-700">Externo</span>
-                                <span class="font-medium text-umss-gray-700">Bs. {{ number_format($course->precio_externo, 2) }}</span>
-                            </div>
-                            <div class="flex justify-between text-xs">
-                                <span class="text-umss-gray-700">Auxiliar</span>
-                                <span class="font-medium text-umss-gray-700">Bs. {{ number_format($course->precio_auxiliar, 2) }}</span>
-                            </div>
-                        </div>
                     </div>
 
-                    <div class="p-4 bg-umss-gray-100/60 border-t border-umss-gray-100 space-y-2.5">
-                        @if ($course->groups->isEmpty())
-                            <p class="text-xs text-umss-gray-700 text-center py-1">Sin grupos disponibles</p>
-                        @else
-                            @foreach ($course->groups as $group)
-                                @php
-                                    $inscritos = $group->inscritos_count ?? 0;
-                                    $full = $inscritos >= $group->cupo_maximo;
-                                @endphp
-                                <div class="flex justify-between items-center text-xs">
-                                    <div>
-                                        <span class="font-semibold text-umss-black">{{ $group->nombre }}</span>
-                                        <span class="text-umss-gray-700 ml-1">{{ $group->hora_inicio->format('H:i') }} - {{ $group->hora_fin->format('H:i') }}</span>
-                                        <span class="text-umss-gray-700 ml-1 font-mono text-[11px]">({{ $inscritos }}/{{ $group->cupo_maximo }})</span>
-                                    </div>
-                                    @if ($full)
-                                        <span class="text-umss-red font-semibold text-xs px-2 py-0.5 rounded bg-umss-red/10">Lleno</span>
-                                    @else
-                                        <a href="{{ route('preinscripcion', ['group' => $group->id]) }}"
-                                            class="inline-flex items-center text-umss-navy hover:text-umss-navy-dark font-semibold text-xs transition">
-                                            Preinscribirse &rarr;
-                                        </a>
-                                    @endif
+                    <div class="p-4 bg-umss-gray-100/60 border-t border-umss-gray-100">
+                        <button type="button" @click="open = true" aria-haspopup="dialog"
+                            class="btn-primary w-full">
+                            Preinscribirse
+                        </button>
+                    </div>
+
+                    {{-- Preinscription details modal (prices and available groups) --}}
+                    <div x-show="open" x-cloak
+                        @keydown.escape.window="open = false"
+                        class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+                        role="dialog" aria-modal="true" aria-label="Preinscripción en {{ $course->nombre }}">
+                        <div class="fixed inset-0 bg-umss-black/60 backdrop-blur-md" @click="open = false" aria-hidden="true"></div>
+
+                        <div class="relative flex w-full max-w-xl flex-col overflow-hidden rounded-xl border border-umss-gray-200 bg-white shadow-xl max-h-[85vh]">
+                            <div class="flex items-start justify-between gap-4 border-b border-umss-gray-200 px-6 py-4">
+                                <div>
+                                    <p class="text-[11px] font-semibold uppercase tracking-wider text-umss-red">Preinscripción</p>
+                                    <h3 class="text-base font-semibold leading-snug text-umss-black">{{ $course->nombre }}</h3>
                                 </div>
-                            @endforeach
-                        @endif
+                                <button type="button" @click="open = false" aria-label="Cerrar"
+                                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-umss-gray-700 transition hover:bg-umss-gray-100 hover:text-umss-navy focus:outline-none focus:ring-2 focus:ring-umss-navy">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="space-y-6 overflow-y-auto px-6 py-5">
+                                <section aria-label="Precios">
+                                    <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-umss-gray-700">Precios</h4>
+                                    <div class="space-y-1.5 rounded-lg border border-umss-gray-200 bg-umss-gray-100/60 p-4">
+                                        <div class="flex justify-between text-xs">
+                                             <span class="text-umss-gray-700">UMSS</span>
+                                             <span class="font-semibold text-umss-navy">Bs. {{ number_format((float) $course->precio_umss, 2) }}</span>
+                                        </div>
+                                        <div class="flex justify-between text-xs">
+                                             <span class="text-umss-gray-700">Externo</span>
+                                             <span class="font-medium text-umss-gray-700">Bs. {{ number_format((float) $course->precio_externo, 2) }}</span>
+                                        </div>
+                                        <div class="flex justify-between text-xs">
+                                             <span class="text-umss-gray-700">Auxiliar</span>
+                                             <span class="font-medium text-umss-gray-700">Bs. {{ number_format((float) $course->precio_auxiliar, 2) }}</span>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section aria-label="Grupos disponibles">
+                                    <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-umss-gray-700">Grupos disponibles</h4>
+                                    @if ($course->groups->isEmpty())
+                                        <p class="text-xs text-umss-gray-700 text-center py-2 rounded-lg border border-umss-gray-200 bg-umss-gray-100/60">Sin grupos disponibles</p>
+                                    @else
+                                        <div class="rounded-lg border border-umss-gray-200 bg-umss-gray-100/60 divide-y divide-umss-gray-200">
+                                            @foreach ($course->groups as $group)
+                                                @php
+                                                    $inscritos = $group->inscritos_count ?? 0;
+                                                    $full = $inscritos >= $group->cupo_maximo;
+                                                @endphp
+                                                <div class="flex justify-between items-center gap-3 px-4 py-3 text-xs">
+                                                    <div>
+                                                        <span class="font-semibold text-umss-black">{{ $group->nombre }}</span>
+                                                        <span class="text-umss-gray-700 ml-1">{{ $group->hora_inicio->format('H:i') }} - {{ $group->hora_fin->format('H:i') }}</span>
+                                                        <span class="text-umss-gray-700 ml-1 font-mono text-[11px]">({{ $inscritos }}/{{ $group->cupo_maximo }})</span>
+                                                    </div>
+                                                    @if ($full)
+                                                        <span class="text-umss-red font-semibold text-xs px-2 py-0.5 rounded bg-umss-red/10 shrink-0">Lleno</span>
+                                                    @else
+                                                        <a href="{{ route('preinscripcion', ['group' => $group->id]) }}"
+                                                            class="inline-flex items-center shrink-0 text-umss-navy hover:text-umss-navy-dark font-semibold text-xs transition">
+                                                            Preinscribirse
+                                                        </a>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </section>
+                            </div>
+                        </div>
                     </div>
                 </div>
             @endforeach

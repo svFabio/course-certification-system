@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\CertificateType;
+use App\Enums\CourseLevel;
 use App\Models\Course;
 use App\Models\EvaluationCriteria;
 use App\Models\Group;
@@ -24,7 +25,7 @@ it('creates a course with correct automatic pricing for 20h', function () {
     $course = Course::create([
         'nombre' => 'Curso de Laravel',
         'carga_horaria' => '20',
-        'nivel' => 'Básico',
+        'nivel' => CourseLevel::BASICO->value,
         'periodo' => '2024-II',
         'precio_umss' => BusinessRules::calculatePrice(20, 'umss'),
         'precio_externo' => BusinessRules::calculatePrice(20, 'externo'),
@@ -178,6 +179,10 @@ it('calculates weighted final grade correctly via EvaluationService', function (
     $group = Group::factory()->create(['course_id' => $course->id]);
     $preinscription = Preinscription::factory()->create(['group_id' => $group->id]);
 
+    // Combined-sum invariant: attendance_weight + criteria sum must equal 100.
+    // attendance_weight = 0 keeps this fixture's criteria-only weights valid.
+    $course->update(['attendance_weight' => 0]);
+
     $service = app(EvaluationService::class);
     $service->setCriteria($course, [
         ['nombre' => 'Examen Parcial', 'ponderacion' => 40.0],
@@ -190,8 +195,9 @@ it('calculates weighted final grade correctly via EvaluationService', function (
         $criteria[1]->id => 90.0,
     ]);
 
-    $finalGrade = $service->calculateFinalGrade($preinscription);
+    // Group has no sessions → attendanceScore 0.0, so criteria-only math still holds:
     // (80 * 0.4) + (90 * 0.6) = 32 + 54 = 86.0
+    $finalGrade = $service->finalGrade($preinscription);
     expect($finalGrade)->toBe(86.0);
 });
 
@@ -199,6 +205,9 @@ it('generates certificate with correct type and matching course_id via Certifica
     $course = Course::factory()->create();
     $group = Group::factory()->create(['course_id' => $course->id]);
     $preinscription = Preinscription::factory()->create(['group_id' => $group->id]);
+
+    // Combined-sum invariant: attendance_weight + criteria sum must equal 100.
+    $course->update(['attendance_weight' => 0]);
 
     $evalService = app(EvaluationService::class);
     $evalService->setCriteria($course, [
