@@ -49,7 +49,11 @@ class Login extends BaseLogin
 
         $user = auth()->user();
 
-        if (! $user->hasRole(UserRole::ADMIN->value) && ! $user->hasRole(UserRole::INSTRUCTOR->value)) {
+        if (
+            ! $user->hasRole(UserRole::ADMIN->value)
+            && ! $user->hasRole(UserRole::INSTRUCTOR->value)
+            && ! $user->hasRole(UserRole::STUDENT->value)
+        ) {
             auth()->logout();
 
             throw ValidationException::withMessages([
@@ -73,8 +77,13 @@ class Login extends BaseLogin
                     return redirect()->to('/instructor');
                 }
 
+                if ($user->hasRole(UserRole::STUDENT->value)) {
+                    return redirect()->to('/estudiante');
+                }
+
                 return redirect()->to('/');
             }
         };
     }
 }
+

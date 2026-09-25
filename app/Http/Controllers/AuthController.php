@@ -38,7 +38,11 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
-        if (! $user->hasRole(UserRole::ADMIN->value) && ! $user->hasRole(UserRole::INSTRUCTOR->value)) {
+        if (
+            ! $user->hasRole(UserRole::ADMIN->value)
+            && ! $user->hasRole(UserRole::INSTRUCTOR->value)
+            && ! $user->hasRole(UserRole::STUDENT->value)
+        ) {
             Auth::logout();
 
             throw ValidationException::withMessages([
@@ -70,6 +74,11 @@ class AuthController extends Controller
             return redirect('/instructor');
         }
 
+        if ($user->hasRole(UserRole::STUDENT->value)) {
+            return redirect('/estudiante');
+        }
+
         return redirect('/');
     }
 }
+

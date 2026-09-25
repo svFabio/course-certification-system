@@ -52,5 +52,16 @@ class UsersSeeder extends Seeder
             );
             $inst->syncRoles(['instructor']);
         }
+
+        $student = User::firstOrCreate(
+            ['email' => 'student@umss.edu.bo'],
+            [
+                'name' => 'Estudiante Demo',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
+        $student->syncRoles(['student']);
     }
 }
+

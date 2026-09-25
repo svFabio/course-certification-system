@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Builder;
@@ -67,6 +68,10 @@ class User extends Authenticatable implements FilamentUser
 
         if ($panel->getId() === 'instructor') {
             return $this->hasRole('instructor') || $this->hasRole('admin');
+        }
+
+        if ($panel->getId() === 'student') {
+            return $this->hasRole(UserRole::STUDENT->value);
         }
 
         return false;

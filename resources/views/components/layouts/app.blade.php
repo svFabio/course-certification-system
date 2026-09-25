@@ -30,7 +30,10 @@
                             <a href="/admin" class="btn-primary !h-9 !px-3 !text-xs">Panel Admin</a>
                         @elserole(\App\Enums\UserRole::INSTRUCTOR->value)
                             <a href="/instructor" class="btn-primary !h-9 !px-3 !text-xs">Panel Docente</a>
+                        @elserole(\App\Enums\UserRole::STUDENT->value)
+                            <a href="/estudiante" class="btn-primary !h-9 !px-3 !text-xs">Mi panel</a>
                         @endrole
+
                         <form method="POST" action="{{ route('logout') }}" class="inline">
                             @csrf
                             <button type="submit" class="text-umss-gray-700 hover:text-umss-navy transition text-xs font-medium">Salir</button>
