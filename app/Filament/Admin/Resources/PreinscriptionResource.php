@@ -65,7 +65,7 @@ class PreinscriptionResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('ci')
                     ->searchable(),
@@ -88,8 +88,16 @@ class PreinscriptionResource extends Resource
                     ->sortable(),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('group_id')
+                    ->relationship('group', 'nombre')
+                    ->label('Grupo')
+                    ->searchable(),
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Estado')
+                    ->options(PreinscriptionStatus::class)
+                    ->default(PreinscriptionStatus::INSCRITO->value),
             ])
+            ->defaultSort('apellido_paterno')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
