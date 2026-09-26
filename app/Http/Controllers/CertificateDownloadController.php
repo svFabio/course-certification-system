@@ -18,14 +18,18 @@ class CertificateDownloadController extends Controller
 
         abort_unless($user !== null, 401);
 
-        $certificate->loadMissing('preinscription');
+        $certificate->loadMissing(['preinscription', 'instructor']);
 
-        $ownsCertificate = $user->hasRole(UserRole::STUDENT->value)
+        $ownsAsStudent = $user->hasRole(UserRole::STUDENT->value)
             && $certificate->preinscription?->email === $user->email;
+
+        $ownsAsInstructor = $user->hasRole(UserRole::INSTRUCTOR->value)
+            && $certificate->instructor_id !== null
+            && (int) $certificate->instructor_id === (int) $user->id;
 
         $isAdmin = $user->hasRole(UserRole::ADMIN->value);
 
-        abort_unless($ownsCertificate || $isAdmin, 403);
+        abort_unless($ownsAsStudent || $ownsAsInstructor || $isAdmin, 403);
 
         return $service->download($certificate);
     }

@@ -158,7 +158,7 @@ it('computes attendance score and final grade with attendance included', functio
 it('includes attendance in the certificate grade path', function () {
     $course = Course::factory()->create(['attendance_weight' => 50]);
     $group = Group::factory()->create(['course_id' => $course->id]);
-    $preinscription = Preinscription::factory()->create(['group_id' => $group->id]);
+    $preinscription = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
 
     $sessions = Session::factory()->count(4)->create(['group_id' => $group->id]);
     Attendance::factory()->presente()->create([

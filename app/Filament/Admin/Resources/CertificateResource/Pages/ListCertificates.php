@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\CertificateResource\Pages;
 
 use App\Filament\Admin\Resources\CertificateResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListCertificates extends ListRecords
@@ -14,8 +13,7 @@ class ListCertificates extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            Actions\CreateAction::make(),
-        ];
+        // HU-28: los certificados se generan al cerrar el curso (ViewCourse), no manualmente.
+        return [];
     }
 }

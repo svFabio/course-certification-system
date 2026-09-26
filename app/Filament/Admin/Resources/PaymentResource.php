@@ -82,7 +82,7 @@ class PaymentResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('preinscription.full_name')
                     ->label('Participante')
-                    ->searchable(),
+                    ->searchable(['nombres', 'apellido_paterno', 'apellido_materno', 'ci']),
                 Tables\Columns\TextColumn::make('preinscription.cod_sis')
                     ->label('Cód. SIS')
                     ->placeholder('—')

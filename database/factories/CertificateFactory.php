@@ -9,6 +9,7 @@ use App\Enums\SignatureStatus;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\Preinscription;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -23,12 +24,15 @@ class CertificateFactory extends Factory
     {
         return [
             'preinscription_id' => Preinscription::factory(),
+            'instructor_id' => null,
             'course_id' => fn (array $attributes) => Preinscription::find($attributes['preinscription_id'])?->group?->course_id ?? Course::factory(),
             'tipo' => CertificateType::APROBACION,
-            'codigo_unico' => 'CERT-'.strtoupper(Str::random(8)),
+            'grupos_detalle' => null,
+            'codigo_unico' => 'CERT-'.now()->year.'-'.strtoupper(Str::random(8)),
             'pdf_path' => 'certificates/'.fake()->uuid().'.pdf',
             'signature_status' => SignatureStatus::PENDIENTE,
             'emitido_en' => now(),
+            'listo_en' => null,
         ];
     }
 
@@ -46,10 +50,28 @@ class CertificateFactory extends Factory
         ]);
     }
 
+    public function instructor(): static
+    {
+        return $this->state(function (array $attributes) {
+            $course = isset($attributes['course_id'])
+                ? Course::find($attributes['course_id'])
+                : Course::factory()->create();
+
+            return [
+                'preinscription_id' => null,
+                'instructor_id' => $attributes['instructor_id'] ?? $course?->instructor_id ?? User::factory(),
+                'course_id' => $course?->id ?? Course::factory(),
+                'tipo' => CertificateType::INSTRUCTOR,
+                'grupos_detalle' => $attributes['grupos_detalle'] ?? 'Grupo A',
+            ];
+        });
+    }
+
     public function signed(): static
     {
         return $this->state(fn (array $attributes) => [
             'signature_status' => SignatureStatus::LISTO,
+            'listo_en' => now(),
         ]);
     }
 }
