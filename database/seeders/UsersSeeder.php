@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -12,56 +13,45 @@ class UsersSeeder extends Seeder
 {
     public function run(): void
     {
+        $password = Hash::make(config('app.seed_password'));
+
         $admin = User::firstOrCreate(
             ['email' => 'admin@umss.edu.bo'],
             [
                 'name' => 'Administrador',
-                'password' => Hash::make('password'),
+                'password' => $password,
                 'email_verified_at' => now(),
             ]
         );
-        $admin->assignRole('admin');
+        $admin->assignRole(UserRole::ADMIN->value);
 
         $instructors = [
-            [
-                'name' => 'Adan Alberto Llanos Zela',
-                'email' => 'instructor@umss.edu.bo',
-            ],
-            [
-                'name' => 'Santos Flores Apaza',
-                'email' => 'santos.flores@umss.edu.bo',
-            ],
-            [
-                'name' => 'Beatriz Murillo Rojas',
-                'email' => 'beatriz.murillo@umss.edu.bo',
-            ],
-            [
-                'name' => 'Carlos Eduardo Vargas Torrico',
-                'email' => 'carlos.vargas@umss.edu.bo',
-            ],
+            ['email' => 'instructor@umss.edu.bo'],
+            ['email' => 'instructor2@umss.edu.bo'],
+            ['email' => 'instructor3@umss.edu.bo'],
+            ['email' => 'instructor4@umss.edu.bo'],
         ];
 
         foreach ($instructors as $instData) {
             $inst = User::firstOrCreate(
                 ['email' => $instData['email']],
                 [
-                    'name' => $instData['name'],
-                    'password' => Hash::make('password'),
+                    'name' => fake()->name(),
+                    'password' => $password,
                     'email_verified_at' => now(),
                 ]
             );
-            $inst->syncRoles(['instructor']);
+            $inst->syncRoles([UserRole::INSTRUCTOR->value]);
         }
 
         $student = User::firstOrCreate(
             ['email' => 'student@umss.edu.bo'],
             [
                 'name' => 'Estudiante Demo',
-                'password' => Hash::make('password'),
+                'password' => $password,
                 'email_verified_at' => now(),
             ]
         );
-        $student->syncRoles(['student']);
+        $student->syncRoles([UserRole::STUDENT->value]);
     }
 }
-

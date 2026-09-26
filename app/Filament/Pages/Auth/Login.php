@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages\Auth;
 
-use App\Enums\UserRole;
+use App\Services\Auth\RedirectByRole;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Filament\Actions\Action;
 use Filament\Http\Responses\Auth\Contracts\LoginResponse;
 use Filament\Pages\Auth\Login as BaseLogin;
+use Illuminate\Support\Facades\App;
 use Illuminate\Validation\ValidationException;
 
 class Login extends BaseLogin
@@ -49,11 +50,7 @@ class Login extends BaseLogin
 
         $user = auth()->user();
 
-        if (
-            ! $user->hasRole(UserRole::ADMIN->value)
-            && ! $user->hasRole(UserRole::INSTRUCTOR->value)
-            && ! $user->hasRole(UserRole::STUDENT->value)
-        ) {
+        if (! App::make(RedirectByRole::class)->hasAccess($user)) {
             auth()->logout();
 
             throw ValidationException::withMessages([
@@ -67,23 +64,9 @@ class Login extends BaseLogin
         {
             public function toResponse($request)
             {
-                $user = auth()->user();
-
-                if ($user->hasRole(UserRole::ADMIN->value)) {
-                    return redirect()->to('/admin');
-                }
-
-                if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-                    return redirect()->to('/instructor');
-                }
-
-                if ($user->hasRole(UserRole::STUDENT->value)) {
-                    return redirect()->to('/estudiante');
-                }
-
-                return redirect()->to('/');
+                return App::make(RedirectByRole::class)
+                    ->redirect(auth()->user());
             }
         };
     }
 }
-

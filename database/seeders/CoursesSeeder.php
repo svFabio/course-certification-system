@@ -14,6 +14,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Enums\SignatureStatus;
 use App\Enums\TipoParticipante;
+use App\Enums\UserRole;
 use App\Models\Attendance;
 use App\Models\Certificate;
 use App\Models\Course;
@@ -34,16 +35,16 @@ class CoursesSeeder extends Seeder
     public function run(): void
     {
         $admin = User::where('email', 'admin@umss.edu.bo')->first();
-        $instructors = User::role('instructor')->get();
+        $instructors = User::role(UserRole::INSTRUCTOR->value)->get();
 
         if ($instructors->isEmpty()) {
             return;
         }
 
-        $inst1 = $instructors[0]; // Adan Llanos
-        $inst2 = $instructors[1] ?? $inst1; // Santos Flores
-        $inst3 = $instructors[2] ?? $inst1; // Beatriz Murillo
-        $inst4 = $instructors[3] ?? $inst1; // Carlos Vargas
+        $inst1 = $instructors[0];
+        $inst2 = $instructors[1] ?? $inst1;
+        $inst3 = $instructors[2] ?? $inst1;
+        $inst4 = $instructors[3] ?? $inst1;
 
         $coursesData = [
             [
