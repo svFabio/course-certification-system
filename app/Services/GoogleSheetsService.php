@@ -264,7 +264,7 @@ class GoogleSheetsService
 
     private function getCredentialsPath(): string
     {
-        $path = storage_path('app/google/credentials.json');
+        $path = config('services.google.sheets.credentials_path', storage_path('app/google/credentials.json'));
 
         if (! file_exists($path)) {
             throw new \RuntimeException(
@@ -288,7 +288,7 @@ class GoogleSheetsService
                 && self::isOAuthConnected();
         }
 
-        $credentialsPath = storage_path('app/google/credentials.json');
+        $credentialsPath = config('services.google.sheets.credentials_path', storage_path('app/google/credentials.json'));
 
         return $enabled
             && ! empty($spreadsheetId)

@@ -93,7 +93,6 @@ class SheetExportBuilder
         $rows[] = [];
 
         $sessionCount = $sessions->count();
-        $criteriaCount = $criteria->count();
 
         // Columns layout (0-indexed): A-E = identity (5 cols), then sessions, then Asistencia, Puntaje, criteria, NOTA FINAL
         $headerRow5 = array_merge(
@@ -108,7 +107,7 @@ class SheetExportBuilder
         $headerRow6 = array_merge(
             ['', '', '', '', ''],
             $sessions->pluck('fecha')->map(fn () => '')->toArray(),
-            ['', '50%'],
+            ['', ''],
             $criteria->pluck('ponderacion')->map(fn ($p) => $p.'%')->toArray(),
             ['100']
         );
@@ -130,18 +129,12 @@ class SheetExportBuilder
 
             // Asistencia = count of 1s (PRESENTE or JUSTIFICADO)
             $asistenciaCol = $this->columnLetter(5 + $sessionCount);
-            $puntajeCol = $this->columnLetter(5 + $sessionCount + 1);
 
-            $asistenciaFormula = "=COUNTIF({$firstAttendanceCol}{$currentRow}:{$lastAttendanceCol}{$currentRow},1)";
-            $puntajeFormula = "=ROUND(({$asistenciaCol}{$currentRow}/{$sessionCount})*50,2)";
+            $asistenciaFormula = "=COUNTIF({$firstAttendanceCol}{$currentRow}:{$lastAttendanceCol}{$currentRow};1)";
+            $puntajeFormula = "=ROUND(({$asistenciaCol}{$currentRow}/{$sessionCount})*50;2)";
 
-            // Criteria grade columns
             $gradeStartIndex = 5 + $sessionCount + 2;
-            $gradeEndIndex = $gradeStartIndex + $criteriaCount - 1;
-            $gradeStartCol = $this->columnLetter($gradeStartIndex);
-            $gradeEndCol = $this->columnLetter($gradeEndIndex);
-
-            $notaFinalFormula = "=ROUND({$puntajeCol}{$currentRow}+SUM({$gradeStartCol}{$currentRow}:{$gradeEndCol}{$currentRow}),2)";
+            $notaFinalFormula = $this->buildWeightedFinalGradeFormula($criteria, $gradeStartIndex, $currentRow);
 
             $grades = $this->buildGradesRow($preinscription, $criteria);
 
@@ -234,6 +227,21 @@ class SheetExportBuilder
         })->toArray();
     }
 
+    /**
+     * NOTA FINAL = sum(nota * ponderacion / 100) — same formula as EvaluationService.
+     * Uses ';' as argument separator for Spanish/Es Google Sheets locales.
+     */
+    private function buildWeightedFinalGradeFormula(Collection $criteria, int $gradeStartIndex, int $currentRow): string
+    {
+        $terms = $criteria->map(function (mixed $criterion, int $index) use ($gradeStartIndex, $currentRow): string {
+            $col = $this->columnLetter($gradeStartIndex + $index);
+
+            return "{$col}{$currentRow}*{$criterion->ponderacion}/100";
+        })->implode('+');
+
+        return "=ROUND({$terms};2)";
+    }
+
     public function buildCashDataRows(): array
     {
         $preinscriptions = $this->getCashPreinscriptions();
@@ -264,7 +272,6 @@ class SheetExportBuilder
         $sessions = $this->group->sessions;
         $criteria = $this->group->course->evaluationCriteria;
         $sessionsCount = $sessions->count();
-        $criteriaCount = $criteria->count();
         $preinscriptions = $this->getTeacherPreinscriptions();
         $rows = [];
         $nro = 1;
@@ -279,17 +286,12 @@ class SheetExportBuilder
             $firstAttendanceCol = $this->columnLetter(5);
             $lastAttendanceCol = $this->columnLetter(5 + $sessionsCount - 1);
             $asistenciaCol = $this->columnLetter(5 + $sessionsCount);
-            $puntajeCol = $this->columnLetter(5 + $sessionsCount + 1);
 
-            $asistenciaFormula = "=COUNTIF({$firstAttendanceCol}{$currentRow}:{$lastAttendanceCol}{$currentRow},1)";
-            $puntajeFormula = "=ROUND(({$asistenciaCol}{$currentRow}/{$sessionsCount})*50,2)";
+            $asistenciaFormula = "=COUNTIF({$firstAttendanceCol}{$currentRow}:{$lastAttendanceCol}{$currentRow};1)";
+            $puntajeFormula = "=ROUND(({$asistenciaCol}{$currentRow}/{$sessionsCount})*50;2)";
 
             $gradeStartIndex = 5 + $sessionsCount + 2;
-            $gradeEndIndex = $gradeStartIndex + $criteriaCount - 1;
-            $gradeStartCol = $this->columnLetter($gradeStartIndex);
-            $gradeEndCol = $this->columnLetter($gradeEndIndex);
-
-            $notaFinalFormula = "=ROUND({$puntajeCol}{$currentRow}+SUM({$gradeStartCol}{$currentRow}:{$gradeEndCol}{$currentRow}),2)";
+            $notaFinalFormula = $this->buildWeightedFinalGradeFormula($criteria, $gradeStartIndex, $currentRow);
 
             $grades = $this->buildGradesRow($preinscription, $criteria);
 

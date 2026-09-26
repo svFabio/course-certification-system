@@ -329,10 +329,10 @@ class CoursesSeeder extends Seeder
                             }
                         }
 
-                        // Calificaciones en criterios
-                        $grade1 = 50.0; // asistencia completa
-                        $grade2 = rand(15, 20);
-                        $grade3 = rand(22, 30);
+                        // Calificaciones en criterios (escala 0-100, igual que EvaluationService)
+                        $grade1 = 100.0; // asistencia completa
+                        $grade2 = rand(75, 100);
+                        $grade3 = rand(73, 100);
 
                         Grade::updateOrCreate(
                             ['evaluation_criteria_id' => $crit1->id, 'preinscription_id' => $preinscription->id],

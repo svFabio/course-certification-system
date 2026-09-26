@@ -20,9 +20,12 @@ class Payment extends Model
         'metodo',
         'estado',
         'motivo_rechazo',
+        'motivo_devolucion',
         'numero_comprobante',
         'verificado_por',
         'verificado_en',
+        'reembolsado_por',
+        'reembolsado_en',
     ];
 
     protected function casts(): array
@@ -32,6 +35,7 @@ class Payment extends Model
             'metodo' => PaymentMethod::class,
             'estado' => PaymentStatus::class,
             'verificado_en' => 'datetime',
+            'reembolsado_en' => 'datetime',
         ];
     }
 
@@ -43,5 +47,10 @@ class Payment extends Model
     public function verifier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'verificado_por');
+    }
+
+    public function reimbursementApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reembolsado_por');
     }
 }

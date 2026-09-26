@@ -9,11 +9,16 @@ use App\Models\Group;
 use App\Models\Preinscription;
 use App\Services\PreinscriptionService;
 use App\Support\BusinessRules;
+use Illuminate\Support\Facades\RateLimiter;
+use Livewire\Attributes\Rule;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class PreinscriptionComponent extends Component
 {
+    use WithFileUploads;
+
     #[Url]
     public ?int $groupId = null;
 
@@ -32,6 +37,9 @@ class PreinscriptionComponent extends Component
     public ?string $email = null;
 
     public ?string $tipoParticipante = null;
+
+    #[Rule(['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'])]
+    public $auxiliarCertificado = null;
 
     public bool $stepConfirmation = false;
 
@@ -64,9 +72,25 @@ class PreinscriptionComponent extends Component
             return null;
         }
 
+        $participantType = $this->tipoParticipante === 'auxiliar'
+            ? 'umss'
+            : $this->tipoParticipante;
+
         return BusinessRules::calculatePrice(
             (int) $this->group->course->carga_horaria,
-            $this->tipoParticipante
+            $participantType
+        );
+    }
+
+    public function getPrecioDescuentoAuxiliarProperty(): ?float
+    {
+        if (! $this->group) {
+            return null;
+        }
+
+        return BusinessRules::calculatePrice(
+            (int) $this->group->course->carga_horaria,
+            'auxiliar'
         );
     }
 
@@ -82,6 +106,12 @@ class PreinscriptionComponent extends Component
             'celular' => ['nullable', 'string', 'regex:/^[67][0-9]{7}$/'],
             'email' => ['required', 'email:rfc,dns', 'max:150'],
             'tipoParticipante' => ['required', 'in:umss,externo,auxiliar'],
+            'auxiliarCertificado' => [
+                'nullable',
+                'file',
+                'mimes:pdf,jpg,jpeg,png',
+                'max:5120',
+            ],
         ];
     }
 
@@ -96,6 +126,8 @@ class PreinscriptionComponent extends Component
             'celular.regex' => 'El celular debe ser un número boliviano válido de 8 dígitos (iniciando con 6 o 7).',
             'email.email' => 'Ingrese una dirección de correo electrónico válida.',
             'tipoParticipante.in' => 'Seleccione un tipo de participante válido.',
+            'auxiliarCertificado.mimes' => 'El certificado debe ser un archivo PDF o imagen (jpg/png).',
+            'auxiliarCertificado.max' => 'El certificado no debe superar los 5 MB.',
         ];
     }
 
@@ -103,16 +135,21 @@ class PreinscriptionComponent extends Component
     {
         $this->validate();
 
-        $exists = Preinscription::where('ci', $this->ci)
+        $existing = Preinscription::where('ci', $this->ci)
             ->whereHas('group', fn ($q) => $q->where('course_id', $this->group->course_id))
             ->whereIn('status', [
                 PreinscriptionStatus::PENDIENTE_PAGO,
                 PreinscriptionStatus::INSCRITO,
             ])
-            ->exists();
+            ->latest('id')
+            ->first();
 
-        if ($exists) {
-            $this->addError('ci', 'Ya cuenta con una preinscripción activa o inscripción confirmada en este curso.');
+        if ($existing) {
+            $message = $existing->status === PreinscriptionStatus::INSCRITO
+                ? 'Ya estás inscrito(a) en este curso. Revisa tu correo o contacta a la coordinación para más información.'
+                : 'Ya enviaste tu preinscripción para este curso. Por favor realiza el pago y mantente atento(a) a tu teléfono o correo para confirmar tu inscripción.';
+
+            $this->addError('ci', $message);
 
             return;
         }
@@ -129,6 +166,24 @@ class PreinscriptionComponent extends Component
     {
         $validated = $this->validate();
 
+        $ciKey = 'preinscripcion:ci:'.mb_strtolower((string) $validated['ci']);
+        $ipKey = 'preinscripcion:ip:'.request()->ip();
+
+        if (RateLimiter::tooManyAttempts($ciKey, 3) || RateLimiter::tooManyAttempts($ipKey, 10)) {
+            $this->addError('ci', 'Has realizado demasiados intentos. Por favor espera unos minutos e intenta nuevamente.');
+            $this->stepConfirmation = false;
+
+            return;
+        }
+
+        $certificatePath = null;
+        if ($validated['tipoParticipante'] === 'auxiliar' && $this->auxiliarCertificado) {
+            $certificatePath = $this->auxiliarCertificado->store(
+                preg_replace('/[^a-zA-Z0-9]+/', '-', mb_strtolower((string) $validated['ci'])),
+                'cloudinary'
+            );
+        }
+
         $preinscription = $service->register([
             'group_id' => $validated['groupId'],
             'ci' => $validated['ci'],
@@ -139,7 +194,11 @@ class PreinscriptionComponent extends Component
             'celular' => $validated['celular'] ?? null,
             'email' => $validated['email'],
             'tipo_participante' => $validated['tipoParticipante'],
+            'auxiliar_certificado_path' => $certificatePath,
         ]);
+
+        RateLimiter::hit($ciKey, 3600);
+        RateLimiter::hit($ipKey, 3600);
 
         $this->registeredData = [
             'nombres' => "{$this->nombres} {$this->apellidoPaterno} {$this->apellidoMaterno}",

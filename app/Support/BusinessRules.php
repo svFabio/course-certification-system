@@ -67,8 +67,8 @@ final class BusinessRules
     |--------------------------------------------------------------------------
     */
     public const SESSION_DURATION_HOURS = [
-        '20' => 2.0,
-        '30' => 3.0,
+        '20' => 1.5,
+        '30' => 2.5,
     ];
 
     public const SESSIONS_PER_COURSE = 10;

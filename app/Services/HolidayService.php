@@ -10,6 +10,7 @@ use App\Models\Session;
 use App\Support\BusinessRules;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 
 class HolidayService
 {
@@ -85,10 +86,16 @@ class HolidayService
 
     /**
      * Reschedule / postpone a session to a new date with a documented reason.
-     * Leaves full flexibility to reschedule exceptionally (e.g. death, emergency, teacher request).
+     * The destination date must not fall on a holiday or a weekend.
      */
     public function postponeSession(Session $session, Carbon $newDate, string $reason): Session
     {
+        if ($newDate->isWeekend() || $this->isHoliday($newDate)) {
+            throw ValidationException::withMessages([
+                'nueva_fecha' => 'La nueva fecha no puede caer en feriado ni en fin de semana.',
+            ]);
+        }
+
         $session->update([
             'fecha_original' => $session->fecha_original ?? $session->fecha,
             'fecha' => $newDate->toDateString(),

@@ -5,15 +5,24 @@ declare(strict_types=1);
 namespace App\Livewire;
 
 use App\Models\Certificate;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class CertificateVerificationComponent extends Component
 {
+    #[Url]
     public ?string $codigo = null;
 
     public ?array $certificate = null;
 
     public bool $searched = false;
+
+    public function mount(): void
+    {
+        if (filled($this->codigo)) {
+            $this->verify();
+        }
+    }
 
     public function verify(): void
     {

@@ -16,6 +16,13 @@
             Su pago ha sido verificado exitosamente. Su inscripcion al curso esta confirmada.
         </p>
 
+        <p style="margin: 20px 0;">
+            <a href="{{ URL::signedRoute('boleta.descargar', ['preinscription' => $payment->preinscription_id]) }}"
+               style="background-color: #0E2E5F; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; display: inline-block; font-size: 14px;">
+                Descargar boleta de inscripcion
+            </a>
+        </p>
+
         <div style="background: #F5F5F5; border-radius: 6px; padding: 15px; margin: 20px 0;">
             <p style="margin: 5px 0; font-size: 13px; color: #4A4A4A;">
                 <strong>Curso:</strong> {{ $payment->preinscription->group->course->nombre }}

@@ -13,6 +13,8 @@ enum PreinscriptionStatus: string implements HasColor, HasLabel
     case INSCRITO = 'inscrito';
     case RETIRADO = 'retirado';
     case RECHAZADO = 'rechazado';
+    case DEVOLUCION_PENDIENTE = 'devolucion_pendiente';
+    case REEMBOLSADO = 'reembolsado';
 
     public function getLabel(): ?string
     {
@@ -21,6 +23,8 @@ enum PreinscriptionStatus: string implements HasColor, HasLabel
             self::INSCRITO => 'Inscrito',
             self::RETIRADO => 'Retirado',
             self::RECHAZADO => 'Rechazado',
+            self::DEVOLUCION_PENDIENTE => 'Devolución pendiente',
+            self::REEMBOLSADO => 'Reembolsado',
         };
     }
 
@@ -31,6 +35,8 @@ enum PreinscriptionStatus: string implements HasColor, HasLabel
             self::INSCRITO => 'success',
             self::RETIRADO => 'gray',
             self::RECHAZADO => 'danger',
+            self::DEVOLUCION_PENDIENTE => 'amber',
+            self::REEMBOLSADO => 'sky',
         };
     }
 }

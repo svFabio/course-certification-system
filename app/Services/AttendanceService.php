@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\AttendanceStatus;
+use App\Events\GroupSheetsNeedRefresh;
 use App\Models\Attendance;
 use App\Models\Preinscription;
 use App\Models\Session;
@@ -49,7 +50,7 @@ class AttendanceService
 
     public function registerManual(Session $session, int $preinscriptionId, string $status): Attendance
     {
-        return Attendance::updateOrCreate(
+        $attendance = Attendance::updateOrCreate(
             [
                 'session_id' => $session->id,
                 'preinscription_id' => $preinscriptionId,
@@ -61,6 +62,12 @@ class AttendanceService
                 'distancia_metros' => null,
             ]
         );
+
+        if ($session->group_id !== null) {
+            GroupSheetsNeedRefresh::dispatch($session->group_id);
+        }
+
+        return $attendance;
     }
 
     public function registerFromQR(Session $session, int $preinscriptionId, float $lat, float $lng): Attendance
@@ -74,7 +81,7 @@ class AttendanceService
             ? AttendanceStatus::PRESENTE
             : AttendanceStatus::AUSENTE;
 
-        return Attendance::updateOrCreate(
+        $attendance = Attendance::updateOrCreate(
             [
                 'session_id' => $session->id,
                 'preinscription_id' => $preinscriptionId,
@@ -86,6 +93,12 @@ class AttendanceService
                 'distancia_metros' => round($distance, 2),
             ]
         );
+
+        if ($session->group_id !== null) {
+            GroupSheetsNeedRefresh::dispatch($session->group_id);
+        }
+
+        return $attendance;
     }
 
     public function calculateDistance(float $lat1, float $lng1, float $lat2, float $lng2): float

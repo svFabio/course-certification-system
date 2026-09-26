@@ -20,6 +20,10 @@ return [
 
             'app_name' => env('APP_NAME', 'UMSS Cursos'),
 
+            'export_cron' => env('SHEETS_EXPORT_CRON', '0 */3 * * *'),
+
+            'export_debounce_seconds' => env('SHEETS_EXPORT_DEBOUNCE_SECONDS', 60),
+
             'oauth' => [
                 'client_id' => env('GOOGLE_OAUTH_CLIENT_ID'),
                 'client_secret' => env('GOOGLE_OAUTH_CLIENT_SECRET'),
