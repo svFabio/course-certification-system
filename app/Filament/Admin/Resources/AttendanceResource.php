@@ -54,7 +54,7 @@ class AttendanceResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('preinscription.full_name')
                     ->label('Participante')
-                    ->searchable(['preinscription.nombres', 'preinscription.apellido_paterno', 'preinscription.apellido_materno']),
+                    ->searchable(['nombres', 'apellido_paterno', 'apellido_materno']),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge(),
