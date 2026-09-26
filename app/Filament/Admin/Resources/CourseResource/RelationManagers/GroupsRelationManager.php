@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\CourseResource\RelationManagers;
 
 use App\Enums\GroupStatus;
+use App\Models\Group;
 use App\Support\BusinessRules;
 use Carbon\Carbon;
 use Filament\Forms;
@@ -12,12 +13,14 @@ use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 
 class GroupsRelationManager extends RelationManager
 {
     protected static string $relationship = 'groups';
 
-    protected static ?string $title = 'Grupos';
+    protected static ?string $title = 'Grupos de este curso';
 
     public function form(Form $form): Form
     {
@@ -25,7 +28,15 @@ class GroupsRelationManager extends RelationManager
             Forms\Components\TextInput::make('nombre')
                 ->label('Nombre del grupo')
                 ->required()
-                ->maxLength(255),
+                ->maxLength(255)
+                ->rules([
+                    fn (?Group $record, RelationManager $livewire): Unique => Rule::unique('groups', 'nombre')
+                        ->where('course_id', $livewire->getOwnerRecord()->id)
+                        ->ignore($record?->id),
+                ])
+                ->validationMessages([
+                    'unique' => 'Ya existe un grupo con este nombre en este curso.',
+                ]),
             Forms\Components\TextInput::make('aula')
                 ->label('Aula / Laboratorio')
                 ->placeholder('Ej. Laboratorio 1')
@@ -62,8 +73,10 @@ class GroupsRelationManager extends RelationManager
                     };
                 }),
             Forms\Components\Select::make('status')
+                ->label('Estado')
                 ->options(GroupStatus::class)
-                ->default(GroupStatus::NO_HABILITADO),
+                ->default(GroupStatus::NO_HABILITADO)
+                ->hiddenOn('create'),
         ]);
     }
 

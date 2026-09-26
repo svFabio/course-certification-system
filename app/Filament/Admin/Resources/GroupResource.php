@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Resources;
 use App\Enums\ExportType;
 use App\Enums\GroupStatus;
 use App\Enums\PreinscriptionStatus;
+use App\Events\GroupSheetsNeedRefresh;
 use App\Filament\Admin\Resources\GroupResource\Pages;
 use App\Mail\GroupMergedNotification;
 use App\Models\Course;
@@ -25,6 +26,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 use Illuminate\Validation\ValidationException;
 
 class GroupResource extends Resource
@@ -39,7 +42,7 @@ class GroupResource extends Resource
 
     protected static ?string $modelLabel = 'Grupo';
 
-    protected static ?string $modelLabelPlural = 'Grupos';
+    protected static ?string $pluralModelLabel = 'Grupos';
 
     public static function form(Form $form): Form
     {
@@ -48,11 +51,20 @@ class GroupResource extends Resource
                 Forms\Components\Select::make('course_id')
                     ->relationship('course', 'nombre')
                     ->searchable()
-                    ->required(),
+                    ->required()
+                    ->live(),
                 Forms\Components\TextInput::make('nombre')
                     ->label('Nombre del grupo')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->rules([
+                        fn (Forms\Get $get, ?Group $record): Unique => Rule::unique('groups', 'nombre')
+                            ->where('course_id', $get('course_id'))
+                            ->ignore($record?->id),
+                    ])
+                    ->validationMessages([
+                        'unique' => 'Ya existe un grupo con este nombre para el curso seleccionado.',
+                    ]),
                 Forms\Components\TextInput::make('aula')
                     ->label('Aula / Laboratorio')
                     ->placeholder('Ej. Laboratorio 1')
@@ -94,8 +106,10 @@ class GroupResource extends Resource
                         };
                     }),
                 Forms\Components\Select::make('status')
+                    ->label('Estado')
                     ->options(GroupStatus::class)
-                    ->default(GroupStatus::NO_HABILITADO),
+                    ->default(GroupStatus::NO_HABILITADO)
+                    ->hiddenOn('create'),
             ]);
     }
 
@@ -278,9 +292,9 @@ class GroupResource extends Resource
                             }
 
                             if ($movedCount > 0) {
-                                $origin->preinscriptions()
-                                    ->whereIn('status', $activeStatuses)
-                                    ->update(['group_id' => $destination->getKey()]);
+                                foreach ($toMove as $preinscription) {
+                                    $preinscription->update(['group_id' => $destination->getKey()]);
+                                }
                             }
 
                             $origin->status = GroupStatus::CERRADO;
@@ -288,6 +302,9 @@ class GroupResource extends Resource
 
                             return [$toMove, $destination, $movedCount];
                         });
+
+                        GroupSheetsNeedRefresh::dispatch($record->getKey());
+                        GroupSheetsNeedRefresh::dispatch($destination->getKey());
 
                         foreach ($toMove as $preinscription) {
                             if (filled($preinscription->email)) {

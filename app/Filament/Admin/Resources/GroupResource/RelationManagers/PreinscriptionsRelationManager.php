@@ -89,6 +89,7 @@ class PreinscriptionsRelationManager extends RelationManager
                     ->dateTime()
                     ->sortable(),
             ])
+            ->defaultSort('created_at', 'desc')
             ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->using(function (array $data): Preinscription {

@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Enums\AttendanceStatus;
 use App\Enums\CertificateType;
+use App\Enums\CourseLevel;
 use App\Enums\CourseStatus;
 use App\Enums\GroupStatus;
 use App\Enums\PaymentMethod;
@@ -50,7 +51,7 @@ class CoursesSeeder extends Seeder
                 'contenido' => 'Diagnóstico de hardware, ensamble de componentes, optimización de sistemas operativos y mantenimiento preventivo y correctivo de PCs y laptops.',
                 'portada_path' => 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=1000&q=80',
                 'carga_horaria' => '20',
-                'nivel' => 'Básico',
+                'nivel' => CourseLevel::BASICO,
                 'periodo' => '1-2026',
                 'status' => CourseStatus::PUBLICADO,
                 'instructor_id' => $inst1->id,
@@ -73,7 +74,7 @@ class CoursesSeeder extends Seeder
                         'cupo_minimo' => 15,
                         'cupo_maximo' => 20,
                         'status' => GroupStatus::HABILITADO,
-                        'participants_count' => 12,
+                        'participants_count' => 15,
                     ],
                 ],
             ],
@@ -82,7 +83,7 @@ class CoursesSeeder extends Seeder
                 'contenido' => 'Fundamentos de lógica algorítmica, animación interactiva, estructuras condicionales y desarrollo de videojuegos didácticos con bloques visuales.',
                 'portada_path' => 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1000&q=80',
                 'carga_horaria' => '20',
-                'nivel' => 'Básico',
+                'nivel' => CourseLevel::BASICO,
                 'periodo' => '1-2026',
                 'status' => CourseStatus::PUBLICADO,
                 'instructor_id' => $inst2->id,
@@ -104,7 +105,7 @@ class CoursesSeeder extends Seeder
                 'contenido' => 'Arquitectura MVC, Eloquent ORM avanzado, Livewire 3 reactivo, diseño con Tailwind CSS y generación de APIs REST seguras.',
                 'portada_path' => 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1000&q=80',
                 'carga_horaria' => '30',
-                'nivel' => 'Intermedio',
+                'nivel' => CourseLevel::INTERMEDIO,
                 'periodo' => '1-2026',
                 'status' => CourseStatus::PUBLICADO,
                 'instructor_id' => $inst3->id,
@@ -126,7 +127,7 @@ class CoursesSeeder extends Seeder
                 'contenido' => 'Creación de piezas gráficas para redes sociales, retoque digital, teoría del color, tipografía y branding empresarial.',
                 'portada_path' => 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=1000&q=80',
                 'carga_horaria' => '20',
-                'nivel' => 'Básico',
+                'nivel' => CourseLevel::BASICO,
                 'periodo' => '1-2026',
                 'status' => CourseStatus::PUBLICADO,
                 'instructor_id' => $inst4->id,
@@ -148,7 +149,7 @@ class CoursesSeeder extends Seeder
                 'contenido' => 'Configuración de switches y routers Cisco, protocolos TCP/IP, subnetting IPv4/IPv6, firewalls y hardening de servidores Linux.',
                 'portada_path' => 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1000&q=80',
                 'carga_horaria' => '30',
-                'nivel' => 'Avanzado',
+                'nivel' => CourseLevel::AVANZADO,
                 'periodo' => '2-2026',
                 'status' => CourseStatus::EN_PREPARACION,
                 'instructor_id' => $inst1->id,
@@ -194,7 +195,20 @@ class CoursesSeeder extends Seeder
             ['ci' => '16768480', 'cod_sis' => null, 'nom' => 'Ian Fernando', 'pat' => 'Lizarazu', 'mat' => 'Calizaya', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '71458963'],
             ['ci' => '16268688', 'cod_sis' => '202407412', 'nom' => 'Ainhoa Evangeline', 'pat' => 'Lopez', 'mat' => 'Vargas', 'tipo' => TipoParticipante::UMSS, 'cel' => '69852147'],
             ['ci' => '14441951', 'cod_sis' => '202109852', 'nom' => 'Ana Paula', 'pat' => 'Lopez', 'mat' => 'Parra', 'tipo' => TipoParticipante::UMSS, 'cel' => '76541238'],
+            ['ci' => '11844723', 'cod_sis' => '202004712', 'nom' => 'Danitza Romina', 'pat' => 'Salvatierra', 'mat' => 'Vargas', 'tipo' => TipoParticipante::UMSS, 'cel' => '68524179'],
+            ['ci' => '12435671', 'cod_sis' => null, 'nom' => 'Alvaro', 'pat' => 'Jaldin', 'mat' => 'Rojas', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '71478952'],
+            ['ci' => '15420229', 'cod_sis' => '202401120', 'nom' => 'Fabiana', 'pat' => 'Torrico', 'mat' => 'Antezana', 'tipo' => TipoParticipante::UMSS, 'cel' => '68951247'],
+            ['ci' => '10887542', 'cod_sis' => null, 'nom' => 'Rodrigo', 'pat' => 'Zarate', 'mat' => 'Caballero', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '77412593'],
+            ['ci' => '14258784', 'cod_sis' => '202201899', 'nom' => 'Maria Jose', 'pat' => 'Romero', 'mat' => 'Delgadillo', 'tipo' => TipoParticipante::UMSS, 'cel' => '65708941'],
+            ['ci' => '16127890', 'cod_sis' => '202502310', 'nom' => 'Andres', 'pat' => 'Vaca', 'mat' => 'Flores', 'tipo' => TipoParticipante::AUXILIAR, 'cel' => '74581296'],
+            ['ci' => '12879654', 'cod_sis' => '202300452', 'nom' => 'Camila Fernanda', 'pat' => 'Rojas', 'mat' => 'Apaza', 'tipo' => TipoParticipante::UMSS, 'cel' => '78954123'],
+            ['ci' => '15987746', 'cod_sis' => null, 'nom' => 'Samuel', 'pat' => 'Quispe', 'mat' => 'Mamani', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '69541278'],
+            ['ci' => '11953627', 'cod_sis' => '202108745', 'nom' => 'Valeria', 'pat' => 'Paredes', 'mat' => 'Suarez', 'tipo' => TipoParticipante::UMSS, 'cel' => '72589641'],
+            ['ci' => '16458732', 'cod_sis' => '202407815', 'nom' => 'Mateo', 'pat' => 'Serrano', 'mat' => 'Uriarte', 'tipo' => TipoParticipante::UMSS, 'cel' => '65874123'],
+            ['ci' => '13456987', 'cod_sis' => null, 'nom' => 'Luciana', 'pat' => 'Ortiz', 'mat' => 'Navarro', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '77450012'],
         ];
+
+        $estudianteCursor = 0;
 
         foreach ($coursesData as $cIdx => $cData) {
             $courseHours = (int) $cData['carga_horaria'];
@@ -216,10 +230,6 @@ class CoursesSeeder extends Seeder
             );
 
             // Criterios de evaluación para el curso (100% ponderación)
-            $crit1 = EvaluationCriteria::firstOrCreate(
-                ['course_id' => $course->id, 'nombre' => 'Asistencia y Participación'],
-                ['ponderacion' => 50.0]
-            );
             $crit2 = EvaluationCriteria::firstOrCreate(
                 ['course_id' => $course->id, 'nombre' => 'Evaluación Práctica'],
                 ['ponderacion' => 20.0]
@@ -265,10 +275,11 @@ class CoursesSeeder extends Seeder
                     $currentDay->addDay();
                 }
 
-                // Inscribir participantes
+                // Inscribir participantes sin repetir CI dentro del mismo curso
                 $targetCount = min($gData['participants_count'], count($poolEstudiantes));
                 for ($i = 0; $i < $targetCount; $i++) {
-                    $est = $poolEstudiantes[($i + ($cIdx * 3) + $gIdx) % count($poolEstudiantes)];
+                    $est = $poolEstudiantes[$estudianteCursor % count($poolEstudiantes)];
+                    $estudianteCursor++;
 
                     // Variedad de estados para QA
                     $status = PreinscriptionStatus::INSCRITO;
@@ -297,7 +308,11 @@ class CoursesSeeder extends Seeder
                     );
 
                     // Pagos según estado
-                    $monto = BusinessRules::calculatePrice($courseHours, $est['tipo']->value);
+                    $monto = match ($est['tipo']) {
+                        TipoParticipante::UMSS => $course->precio_umss,
+                        TipoParticipante::EXTERNO => $course->precio_externo,
+                        TipoParticipante::AUXILIAR => $course->precio_auxiliar,
+                    };
                     if ($status === PreinscriptionStatus::INSCRITO) {
                         $metodo = ($i % 2 === 0) ? PaymentMethod::EFECTIVO : PaymentMethod::QR;
                         Payment::firstOrCreate(
@@ -330,14 +345,9 @@ class CoursesSeeder extends Seeder
                         }
 
                         // Calificaciones en criterios (escala 0-100, igual que EvaluationService)
-                        $grade1 = 100.0; // asistencia completa
                         $grade2 = rand(75, 100);
                         $grade3 = rand(73, 100);
 
-                        Grade::updateOrCreate(
-                            ['evaluation_criteria_id' => $crit1->id, 'preinscription_id' => $preinscription->id],
-                            ['nota' => $grade1]
-                        );
                         Grade::updateOrCreate(
                             ['evaluation_criteria_id' => $crit2->id, 'preinscription_id' => $preinscription->id],
                             ['nota' => (float) $grade2]
@@ -354,8 +364,8 @@ class CoursesSeeder extends Seeder
                                 [
                                     'tipo' => CertificateType::APROBACION,
                                     'codigo_unico' => 'CERT-2026-'.strtoupper(Str::random(6)),
-                                    'pdf_path' => 'certificates/cert-'.Str::uuid().'.pdf',
-                                    'signature_status' => SignatureStatus::LISTO,
+                                    'pdf_path' => null,
+                                    'signature_status' => SignatureStatus::PENDIENTE,
                                     'emitido_en' => now()->subDays(2),
                                 ]
                             );

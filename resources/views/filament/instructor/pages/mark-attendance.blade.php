@@ -10,7 +10,7 @@
                     <x-filament::input.wrapper>
                         <x-filament::input.select id="group-select" wire:model.live="selectedGroupId">
                             <option value="">-- Seleccionar un grupo --</option>
-                            @foreach($this->groupOptions as $id => $label)
+                            @foreach($groupOptions as $id => $label)
                                 <option value="{{ $id }}">{{ $label }}</option>
                             @endforeach
                         </x-filament::input.select>
@@ -19,9 +19,9 @@
 
                 @if($selectedGroupId && count($students) > 0 && count($sessions) > 0)
                     <div class="flex items-center gap-3">
-                        <x-filament::button wire:click="save" size="md" icon="heroicon-o-check" color="success">
-                            Guardar Asistencia
-                        </x-filament::button>
+                        <span class="text-xs text-umss-gray-700">
+                            Use la tabla de abajo para marcar la asistencia de cada sesión.
+                        </span>
                     </div>
                 @endif
             </div>

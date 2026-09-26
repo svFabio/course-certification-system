@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,13 +24,13 @@ it('renders the login page with UMSS institutional design and return link', func
 });
 
 it('authenticates admin and redirects to admin panel', function () {
-    Role::firstOrCreate(['name' => 'admin']);
+    Role::firstOrCreate(['name' => UserRole::ADMIN->value]);
 
     $admin = User::factory()->create([
         'email' => 'admin@umss.edu.bo',
         'password' => bcrypt('secret123'),
     ]);
-    $admin->assignRole('admin');
+    $admin->assignRole(UserRole::ADMIN->value);
 
     $response = $this->withoutMiddleware(ValidateCsrfToken::class)
         ->post('/login', [
@@ -42,13 +43,13 @@ it('authenticates admin and redirects to admin panel', function () {
 });
 
 it('authenticates instructor and redirects to instructor panel', function () {
-    Role::firstOrCreate(['name' => 'instructor']);
+    Role::firstOrCreate(['name' => UserRole::INSTRUCTOR->value]);
 
     $instructor = User::factory()->create([
         'email' => 'docente@umss.edu.bo',
         'password' => bcrypt('secret123'),
     ]);
-    $instructor->assignRole('instructor');
+    $instructor->assignRole(UserRole::INSTRUCTOR->value);
 
     $response = $this->withoutMiddleware(ValidateCsrfToken::class)
         ->post('/login', [
@@ -69,4 +70,22 @@ it('rejects invalid credentials', function () {
 
     $response->assertSessionHasErrors('email');
     $this->assertGuest();
+});
+
+it('rate limits repeated login attempts', function () {
+    for ($attempt = 1; $attempt <= 5; $attempt++) {
+        $this->withoutMiddleware(ValidateCsrfToken::class)
+            ->post('/login', [
+                'email' => 'fake@umss.edu.bo',
+                'password' => 'wrongpass',
+            ])
+            ->assertStatus(302);
+    }
+
+    $this->withoutMiddleware(ValidateCsrfToken::class)
+        ->post('/login', [
+            'email' => 'fake@umss.edu.bo',
+            'password' => 'wrongpass',
+        ])
+        ->assertStatus(429);
 });

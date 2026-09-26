@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Instructor\Resources;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\UserRole;
 use App\Filament\Instructor\Resources\InstructorAttendanceResource\Pages;
 use App\Models\Attendance;
 use Filament\Forms;
@@ -12,6 +13,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class InstructorAttendanceResource extends Resource
 {
@@ -21,7 +23,7 @@ class InstructorAttendanceResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->check() && auth()->user()->hasRole('instructor');
+        return auth()->check() && auth()->user()->hasRole(UserRole::INSTRUCTOR->value);
     }
 
     protected static ?string $navigationGroup = 'Mis Cursos';
@@ -30,18 +32,29 @@ class InstructorAttendanceResource extends Resource
 
     protected static ?string $modelLabel = 'Asistencia';
 
-    protected static ?string $modelLabelPlural = 'Asistencias';
+    protected static ?string $pluralModelLabel = 'Asistencias';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Select::make('session_id')
-                    ->relationship('session', 'fecha')
+                    ->relationship(
+                        'session',
+                        'fecha',
+                        modifyQueryUsing: fn (Builder $query) => $query
+                            ->whereHas('group.course', fn (Builder $q) => $q->where('instructor_id', auth()->id()))
+                            ->orderByDesc('fecha'),
+                    )
                     ->searchable()
                     ->required(),
                 Forms\Components\Select::make('preinscription_id')
-                    ->relationship('preinscription', 'nombres')
+                    ->relationship(
+                        'preinscription',
+                        'nombres',
+                        modifyQueryUsing: fn (Builder $query) => $query
+                            ->whereHas('group.course', fn (Builder $q) => $q->where('instructor_id', auth()->id())),
+                    )
                     ->searchable()
                     ->required(),
                 Forms\Components\Select::make('status')
@@ -71,9 +84,6 @@ class InstructorAttendanceResource extends Resource
             ->modifyQueryUsing(fn ($query) => $query->whereHas('session.group.course', fn ($q) => $q->where('instructor_id', auth()->id())))
             ->filters([
                 //
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
             ]);
     }
 
@@ -82,7 +92,6 @@ class InstructorAttendanceResource extends Resource
         return [
             'index' => Pages\ListInstructorAttendances::route('/'),
             'view' => Pages\ViewInstructorAttendance::route('/{record}'),
-            'edit' => Pages\EditInstructorAttendance::route('/{record}/edit'),
         ];
     }
 }

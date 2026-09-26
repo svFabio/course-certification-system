@@ -25,7 +25,7 @@ class AttendanceResource extends Resource
 
     protected static ?string $modelLabel = 'Asistencia';
 
-    protected static ?string $modelLabelPlural = 'Asistencias';
+    protected static ?string $pluralModelLabel = 'Asistencias';
 
     public static function form(Form $form): Form
     {
@@ -54,7 +54,7 @@ class AttendanceResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('preinscription.full_name')
                     ->label('Participante')
-                    ->searchable(),
+                    ->searchable(['preinscription.nombres', 'preinscription.apellido_paterno', 'preinscription.apellido_materno']),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge(),
