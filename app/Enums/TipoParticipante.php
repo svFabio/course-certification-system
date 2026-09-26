@@ -15,9 +15,9 @@ enum TipoParticipante: string implements HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::UMSS => 'UMSS',
-            self::EXTERNO => 'Externo',
-            self::AUXILIAR => 'Auxiliar',
+            self::UMSS => 'Estudiante regular umss',
+            self::EXTERNO => 'Participante Externo',
+            self::AUXILIAR => 'Auxiliar de Docencia',
         };
     }
 }

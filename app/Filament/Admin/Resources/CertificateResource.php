@@ -8,8 +8,10 @@ use App\Enums\CertificateType;
 use App\Enums\SignatureStatus;
 use App\Filament\Admin\Resources\CertificateResource\Pages;
 use App\Models\Certificate;
+use App\Models\Preinscription;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -26,20 +28,42 @@ class CertificateResource extends Resource
 
     protected static ?string $modelLabel = 'Certificado';
 
-    protected static ?string $modelLabelPlural = 'Certificados';
+    protected static ?string $pluralModelLabel = 'Certificados';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Select::make('preinscription_id')
-                    ->relationship('preinscription', 'nombres')
+                    ->relationship('preinscription', 'full_name')
                     ->searchable()
+                    ->preload()
+                    ->unique(table: 'certificates', ignoreRecord: true)
+                    ->validationMessages([
+                        'unique' => 'Esta preinscripción ya tiene un certificado emitido.',
+                    ])
                     ->required(),
                 Forms\Components\Select::make('course_id')
                     ->relationship('course', 'nombre')
                     ->searchable()
-                    ->required(),
+                    ->required()
+                    ->rules([
+                        fn (Get $get): \Closure => function (string $attribute, mixed $value, callable $fail) use ($get): void {
+                            $preinscriptionId = $get('preinscription_id');
+
+                            if ($preinscriptionId === null || (int) $value === 0) {
+                                return;
+                            }
+
+                            $preinscription = Preinscription::with('group')->find((int) $preinscriptionId);
+
+                            if ($preinscription !== null
+                                && $preinscription->group !== null
+                                && (int) $value !== (int) $preinscription->group->course_id) {
+                                $fail('El curso debe coincidir con el curso del grupo de la preinscripción seleccionada.');
+                            }
+                        },
+                    ]),
                 Forms\Components\Select::make('tipo')
                     ->options(CertificateType::class)
                     ->required(),

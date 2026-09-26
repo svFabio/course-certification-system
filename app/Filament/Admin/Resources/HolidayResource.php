@@ -18,13 +18,15 @@ class HolidayResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-flag';
 
-    protected static ?string $navigationGroup = 'Gestión Académica';
+    protected static ?string $navigationGroup = 'Configuración';
 
     protected static ?int $navigationSort = 5;
 
     protected static ?string $modelLabel = 'Feriado / Asueto';
 
-    protected static ?string $modelLabelPlural = 'Feriados y Asuetos';
+    protected static ?string $pluralModelLabel = 'Feriados / Asuetos';
+
+    protected static ?string $navigationLabel = 'Feriados / Asuetos';
 
     public static function form(Form $form): Form
     {

@@ -96,9 +96,42 @@ class HolidayService
             ]);
         }
 
+        $newDateString = $newDate->toDateString();
+
+        $overlapCondition = function ($query) use ($session, $newDateString): void {
+            $query->whereDate('fecha', $newDateString)
+                ->where('id', '!=', $session->id)
+                ->where(function ($q) use ($session): void {
+                    $q->where('hora_inicio', '<', $session->hora_fin->format('H:i:s'))
+                        ->where('hora_fin', '>', $session->hora_inicio->format('H:i:s'));
+                });
+        };
+
+        $sameGroupClash = Session::where('group_id', $session->group_id)
+            ->where($overlapCondition)
+            ->exists();
+
+        if ($sameGroupClash) {
+            throw ValidationException::withMessages([
+                'nueva_fecha' => 'La nueva fecha coincide con otra clase ya programada para este grupo.',
+            ]);
+        }
+
+        $instructorClash = Session::whereHas('group.course', function ($q) use ($session): void {
+            $q->where('instructor_id', $session->group->course->instructor_id);
+        })
+            ->where($overlapCondition)
+            ->exists();
+
+        if ($instructorClash) {
+            throw ValidationException::withMessages([
+                'nueva_fecha' => 'Ya tienes otra clase programada en ese horario para la misma fecha.',
+            ]);
+        }
+
         $session->update([
             'fecha_original' => $session->fecha_original ?? $session->fecha,
-            'fecha' => $newDate->toDateString(),
+            'fecha' => $newDateString,
             'es_pospuesta' => true,
             'motivo_reprogramacion' => $reason,
         ]);

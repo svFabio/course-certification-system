@@ -84,6 +84,8 @@ const startScanning = async () => {
   }
 };
 
+const SCAN_STATUS_PARA_REVISION = 'para_revision';
+
 const onScanSuccess = async (decodedText) => {
   if (html5QrcodeInstance) {
     await html5QrcodeInstance.stop();
@@ -118,7 +120,7 @@ const onScanSuccess = async (decodedText) => {
     if (response.ok) {
       result.value = { distance: data.distance_metros };
       maxDistance.value = data.max_distance || 100;
-      if (data.status === 'para_revision') {
+      if (data.status === SCAN_STATUS_PARA_REVISION) {
         state.value = 'out-of-range';
       } else {
         state.value = 'success';

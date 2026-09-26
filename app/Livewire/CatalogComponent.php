@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
+use App\Enums\CourseLevel;
 use App\Enums\CourseStatus;
 use App\Enums\GroupStatus;
 use App\Enums\PreinscriptionStatus;
@@ -46,7 +47,7 @@ class CatalogComponent extends Component
 
     public function getNivelesProperty(): array
     {
-        return Course::distinct()->orderBy('nivel')->pluck('nivel')->filter()->values()->toArray();
+        return CourseLevel::values();
     }
 
     public function getCargasProperty(): array

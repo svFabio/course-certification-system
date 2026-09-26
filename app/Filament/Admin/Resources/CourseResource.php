@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\CourseLevel;
 use App\Enums\CourseStatus;
 use App\Filament\Admin\Resources\CourseResource\Pages;
 use App\Models\Course;
@@ -28,7 +29,7 @@ class CourseResource extends Resource
 
     protected static ?string $modelLabel = 'Curso';
 
-    protected static ?string $modelLabelPlural = 'Cursos';
+    protected static ?string $pluralModelLabel = 'Cursos';
 
     public static function form(Form $form): Form
     {
@@ -67,7 +68,9 @@ class CourseResource extends Resource
                                     $set('precio_externo', $prices['externo'] ?? 0);
                                     $set('precio_auxiliar', $prices['auxiliar'] ?? 0);
                                 }),
-                            Forms\Components\TextInput::make('nivel'),
+                            Forms\Components\Select::make('nivel')
+                                ->options(CourseLevel::class)
+                                ->required(),
                             Forms\Components\Select::make('periodo')
                                 ->options(function (): array {
                                     $year = now()->year;
@@ -90,19 +93,26 @@ class CourseResource extends Resource
                                 ->required(),
                         ]),
                     Forms\Components\Wizard\Step::make('Precios')
+                        ->description('Se precargan según la carga horaria; ajusta el monto vigente (inflación, tarifas).')
                         ->schema([
                             Forms\Components\TextInput::make('precio_umss')
                                 ->numeric()
                                 ->prefix('Bs.')
-                                ->required(),
+                                ->required()
+                                ->minValue(0)
+                                ->helperText('Precio para participantes UMSS.'),
                             Forms\Components\TextInput::make('precio_externo')
                                 ->numeric()
                                 ->prefix('Bs.')
-                                ->required(),
+                                ->required()
+                                ->minValue(0)
+                                ->helperText('Precio para participantes externos.'),
                             Forms\Components\TextInput::make('precio_auxiliar')
                                 ->numeric()
                                 ->prefix('Bs.')
-                                ->required(),
+                                ->required()
+                                ->minValue(0)
+                                ->helperText('Precio auxiliar con 50% de descuento.'),
                         ]),
                 ])->columnSpanFull(),
             ]);

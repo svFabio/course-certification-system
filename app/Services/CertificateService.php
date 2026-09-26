@@ -23,7 +23,7 @@ class CertificateService
 
     public function generate(Preinscription $preinscription): Certificate
     {
-        $finalGrade = $this->evaluationService->calculateFinalGrade($preinscription);
+        $finalGrade = $this->evaluationService->finalGrade($preinscription);
         $type = $this->calculateCertificateType($finalGrade);
 
         return Certificate::create([

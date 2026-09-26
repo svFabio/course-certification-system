@@ -51,9 +51,9 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 'Gestión Académica',
                 'Inscripciones',
-                'Evaluación',
-                'Certificados',
+                'Evaluación & Certificados',
                 'Reportes',
+                'Configuración',
             ])
             ->resources([
                 Resources\CourseResource::class,
@@ -62,8 +62,6 @@ class AdminPanelProvider extends PanelProvider
                 Resources\AttendanceResource::class,
                 Resources\PreinscriptionResource::class,
                 Resources\PaymentResource::class,
-                Resources\EvaluationCriteriaResource::class,
-                Resources\GradeResource::class,
                 Resources\CertificateResource::class,
                 Resources\HolidayResource::class,
                 Resources\UserResource::class,

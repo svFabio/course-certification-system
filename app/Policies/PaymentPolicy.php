@@ -48,16 +48,40 @@ class PaymentPolicy
 
     public function delete(User $user, Payment $payment): bool
     {
-        return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
+        if ($user->hasRole(UserRole::ADMIN->value)) {
+            return true;
+        }
+
+        if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
+            return $user->id === $payment->preinscription->group->course->instructor_id;
+        }
+
+        return false;
     }
 
     public function restore(User $user, Payment $payment): bool
     {
-        return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
+        if ($user->hasRole(UserRole::ADMIN->value)) {
+            return true;
+        }
+
+        if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
+            return $user->id === $payment->preinscription->group->course->instructor_id;
+        }
+
+        return false;
     }
 
     public function forceDelete(User $user, Payment $payment): bool
     {
-        return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
+        if ($user->hasRole(UserRole::ADMIN->value)) {
+            return true;
+        }
+
+        if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
+            return $user->id === $payment->preinscription->group->course->instructor_id;
+        }
+
+        return false;
     }
 }

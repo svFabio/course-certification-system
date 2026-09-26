@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Instructor\Resources;
 
+use App\Enums\UserRole;
 use App\Filament\Instructor\Resources\InstructorCourseResource\Pages;
 use App\Models\Course;
 use Filament\Forms\Form;
@@ -19,7 +20,7 @@ class InstructorCourseResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->check() && auth()->user()->hasRole('instructor');
+        return auth()->check() && auth()->user()->hasRole(UserRole::INSTRUCTOR->value);
     }
 
     protected static ?string $navigationGroup = 'Mis Cursos';
@@ -28,7 +29,7 @@ class InstructorCourseResource extends Resource
 
     protected static ?string $modelLabel = 'Curso';
 
-    protected static ?string $modelLabelPlural = 'Cursos';
+    protected static ?string $pluralModelLabel = 'Cursos';
 
     public static function form(Form $form): Form
     {
@@ -60,16 +61,14 @@ class InstructorCourseResource extends Resource
             ->filters([
                 //
             ])
-            ->actions([
-                Tables\Actions\ViewAction::make(),
-            ]);
+            ->actions([])
+            ->recordUrl(null);
     }
 
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListInstructorCourses::route('/'),
-            'view' => Pages\ViewInstructorCourse::route('/{record}'),
         ];
     }
 }

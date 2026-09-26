@@ -17,4 +17,4 @@ RULES_FILE="AGENTS.md"
 STRICT_MODE="true"
 
 # Review timeout in seconds
-TIMEOUT="300"
+TIMEOUT="1800"

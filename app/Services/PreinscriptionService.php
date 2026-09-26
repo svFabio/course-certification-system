@@ -9,17 +9,22 @@ use App\Enums\PreinscriptionStatus;
 use App\Events\GroupSheetsNeedRefresh;
 use App\Models\Group;
 use App\Models\Preinscription;
-use App\Support\BusinessRules;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PreinscriptionService
 {
-    public function register(array $data): Preinscription
+    public function register(array $data, bool $enforceEnabledGroup = true): Preinscription
     {
-        return DB::transaction(function () use ($data) {
+        return DB::transaction(function () use ($data, $enforceEnabledGroup) {
             $group = Group::where('id', $data['group_id'])->lockForUpdate()->firstOrFail();
+
+            if ($enforceEnabledGroup && $group->status !== GroupStatus::HABILITADO) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El grupo seleccionado no está habilitado para recibir preinscripciones.',
+                ]);
+            }
 
             $activeExists = Preinscription::where('ci', $data['ci'])
                 ->whereHas('group', fn ($q) => $q->where('course_id', $group->course_id))
@@ -29,6 +34,16 @@ class PreinscriptionService
             if ($activeExists) {
                 throw ValidationException::withMessages([
                     'ci' => 'Ya enviaste tu preinscripción para este curso. Por favor realiza el pago y mantente atento(a) a tu teléfono o correo para confirmar tu inscripción.',
+                ]);
+            }
+
+            $priorSameGroup = Preinscription::where('ci', $data['ci'])
+                ->where('group_id', $group->id)
+                ->first();
+
+            if ($priorSameGroup !== null) {
+                throw ValidationException::withMessages([
+                    'ci' => $this->describePriorSameGroupPreinscription($priorSameGroup->status),
                 ]);
             }
 
@@ -55,22 +70,42 @@ class PreinscriptionService
         });
     }
 
-    public function evaluateCupoMinimo(Group $group): bool
+    private function describePriorSameGroupPreinscription(PreinscriptionStatus $status): string
     {
-        $confirmed = $group->preinscriptions()
-            ->where('status', PreinscriptionStatus::INSCRITO)
-            ->count();
-
-        return $confirmed >= BusinessRules::MIN_GROUP_CAPACITY;
+        return match ($status) {
+            PreinscriptionStatus::RECHAZADO => 'Este CI ya tiene una preinscripción rechazada para este grupo. No es posible registrar una nueva solicitud automáticamente; contacta a la coordinación del curso.',
+            PreinscriptionStatus::RETIRADO => 'Este CI ya tiene una preinscripción retirada para este grupo. Contacta a la coordinación del curso si deseas participar nuevamente.',
+            default => 'Este CI ya tiene una preinscripción registrada para este grupo. Contacta a la coordinación del curso para más información.',
+        };
     }
 
-    public function hasAvailableCapacity(Group $group): bool
+    public function availableSlots(Group $group): int
     {
         $confirmed = $group->preinscriptions()
             ->whereIn('status', [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO])
             ->count();
 
-        return $confirmed < $group->cupo_maximo;
+        return max(0, $group->cupo_maximo - $confirmed);
+    }
+
+    public function hasAvailableCapacity(Group $group): bool
+    {
+        return $this->availableSlots($group) > 0;
+    }
+
+    public function markAsWithdrawn(Preinscription $preinscription): void
+    {
+        if (! in_array($preinscription->status, [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Solo se puede retirar a participantes en estado pendiente de pago o inscrito.',
+            ]);
+        }
+
+        $preinscription->update(['status' => PreinscriptionStatus::RETIRADO]);
+
+        if ($preinscription->group_id !== null) {
+            GroupSheetsNeedRefresh::dispatch($preinscription->group_id);
+        }
     }
 
     public function moveToGroup(Preinscription $preinscription, Group $destination): Preinscription

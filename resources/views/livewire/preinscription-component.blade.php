@@ -1,4 +1,13 @@
 <div>
+    <div class="max-w-2xl mx-auto mb-4">
+        <a href="{{ route('home') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-umss-navy hover:text-umss-navy-dark transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Volver al catálogo de cursos
+        </a>
+    </div>
+
     <div class="max-w-2xl mx-auto card-umss p-8 bg-umss-white border border-umss-gray-200 border-t-4 border-t-umss-navy rounded-xl shadow-md">
         @if($isSubmitted && $registeredData)
             {{-- STEP 3: SUCCESS SCREEN --}}
@@ -111,14 +120,14 @@
                     <label class="block text-xs font-medium text-umss-gray-700 mb-1.5 uppercase tracking-wide">Tipo de Participante</label>
                     <select wire:model.live="tipoParticipante" class="input-umss" required>
                         <option value="">Seleccione su categoria</option>
-                        <option value="umss">Comunidad UMSS (Estudiante / Docente)</option>
-                        <option value="externo">Participante Externo</option>
-                        <option value="auxiliar">Auxiliar de Docencia</option>
+                        @foreach(\App\Enums\TipoParticipante::cases() as $tipo)
+                            <option value="{{ $tipo->value }}">{{ $tipo->getLabel() }}</option>
+                        @endforeach
                     </select>
                     @error('tipoParticipante') <p class="text-umss-red text-xs mt-1 font-medium">{{ $message }}</p> @enderror
                 </div>
 
-                @if(in_array($tipoParticipante, ['umss', 'auxiliar'], true))
+                @if(in_array($tipoParticipante, [\App\Enums\TipoParticipante::UMSS->value, \App\Enums\TipoParticipante::AUXILIAR->value], true))
                     <div>
                         <label class="block text-xs font-medium text-umss-gray-700 mb-1.5 uppercase tracking-wide">Código SIS (Opcional si cuenta con registro UMSS)</label>
                         <input type="text" inputmode="numeric" wire:model.blur="codSis" placeholder="Ej. 202002515" maxlength="10" class="input-umss">
@@ -126,7 +135,7 @@
                     </div>
                 @endif
 
-                @if($tipoParticipante === 'auxiliar')
+                @if($tipoParticipante === \App\Enums\TipoParticipante::AUXILIAR->value)
                     <div class="bg-umss-sky-light border border-umss-sky rounded-lg p-4">
                         <label class="block text-xs font-medium text-umss-sky-dark mb-1 uppercase tracking-wide">Certificado de auxiliar practicante (Jefatura)</label>
                         <input type="file" wire:model="auxiliarCertificado" accept="application/pdf,image/jpeg,image/png" class="block w-full text-sm text-umss-gray-700 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-umss-navy file:text-umss-white hover:file:bg-umss-navy-dark">
@@ -139,15 +148,19 @@
                     <div class="bg-umss-gray-100 border border-umss-gray-100 rounded-lg p-4">
                         <p class="text-xs text-umss-gray-700 uppercase tracking-wide mb-1">Costo de inscripcion</p>
                         <p class="text-2xl font-bold text-umss-navy">Bs. {{ number_format($this->precioCalculado, 2) }}</p>
-                        @if($tipoParticipante === 'auxiliar')
+@if($tipoParticipante === \App\Enums\TipoParticipante::AUXILIAR->value)
                             <p class="text-xs text-umss-gray-700 mt-1">Tarifa de comunidad UMSS. Con certificado auxiliar aprobado pagará Bs. {{ number_format($this->precioDescuentoAuxiliar, 2) }}.</p>
                         @endif
                     </div>
                 @endif
 
-                <div class="pt-4">
+                <div class="pt-4 flex flex-col-reverse sm:flex-row gap-3">
+                    <a href="{{ route('home') }}"
+                        class="btn-secondary !h-11 sm:w-1/3 text-center justify-center">
+                        Volver al catálogo
+                    </a>
                     <button type="submit"
-                        class="btn-primary w-full !h-11"
+                        class="btn-primary flex-1 !h-11"
                         wire:loading.attr="disabled">
                         <span wire:loading.remove>Continuar</span>
                         <span wire:loading>Validando...</span>
@@ -191,7 +204,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-xs text-umss-gray-700 uppercase">Tipo participante</span>
-                        <span class="text-sm font-medium text-umss-black">{{ ucfirst($tipoParticipante) }}</span>
+                        <span class="text-sm font-medium text-umss-black">{{ \App\Enums\TipoParticipante::tryFrom($tipoParticipante)?->getLabel() ?? $tipoParticipante }}</span>
                     </div>
                     <hr class="border-umss-gray-100">
                     <div class="flex justify-between items-center">
