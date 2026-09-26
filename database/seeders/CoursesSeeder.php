@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Enums\AttendanceStatus;
 use App\Enums\CertificateType;
+use App\Enums\CourseLevel;
 use App\Enums\CourseStatus;
 use App\Enums\GroupStatus;
 use App\Enums\PaymentMethod;
@@ -13,6 +14,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Enums\SignatureStatus;
 use App\Enums\TipoParticipante;
+use App\Enums\UserRole;
 use App\Models\Attendance;
 use App\Models\Certificate;
 use App\Models\Course;
@@ -33,24 +35,24 @@ class CoursesSeeder extends Seeder
     public function run(): void
     {
         $admin = User::where('email', 'admin@umss.edu.bo')->first();
-        $instructors = User::role('instructor')->get();
+        $instructors = User::role(UserRole::INSTRUCTOR->value)->get();
 
         if ($instructors->isEmpty()) {
             return;
         }
 
-        $inst1 = $instructors[0]; // Adan Llanos
-        $inst2 = $instructors[1] ?? $inst1; // Santos Flores
-        $inst3 = $instructors[2] ?? $inst1; // Beatriz Murillo
-        $inst4 = $instructors[3] ?? $inst1; // Carlos Vargas
+        $inst1 = $instructors[0];
+        $inst2 = $instructors[1] ?? $inst1;
+        $inst3 = $instructors[2] ?? $inst1;
+        $inst4 = $instructors[3] ?? $inst1;
 
         $coursesData = [
             [
                 'nombre' => 'Mantenimiento y Reparación de Computadoras',
                 'contenido' => 'Diagnóstico de hardware, ensamble de componentes, optimización de sistemas operativos y mantenimiento preventivo y correctivo de PCs y laptops.',
-                'portada_path' => 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=1000&q=80',
+                'portada_path' => null,
                 'carga_horaria' => '20',
-                'nivel' => 'Básico',
+                'nivel' => CourseLevel::BASICO,
                 'periodo' => '1-2026',
                 'status' => CourseStatus::PUBLICADO,
                 'instructor_id' => $inst1->id,
@@ -60,7 +62,7 @@ class CoursesSeeder extends Seeder
                         'aula' => 'Laboratorio de Informática 1',
                         'hora_inicio' => '10:00',
                         'hora_fin' => '11:30',
-                        'cupo_minimo' => 15,
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 25,
                         'status' => GroupStatus::HABILITADO,
                         'participants_count' => 18,
@@ -70,19 +72,19 @@ class CoursesSeeder extends Seeder
                         'aula' => 'Laboratorio de Redes',
                         'hora_inicio' => '14:15',
                         'hora_fin' => '15:45',
-                        'cupo_minimo' => 15,
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 20,
                         'status' => GroupStatus::HABILITADO,
-                        'participants_count' => 12,
+                        'participants_count' => 15,
                     ],
                 ],
             ],
             [
                 'nombre' => 'Programación con Scratch para Niños y Jóvenes',
                 'contenido' => 'Fundamentos de lógica algorítmica, animación interactiva, estructuras condicionales y desarrollo de videojuegos didácticos con bloques visuales.',
-                'portada_path' => 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1000&q=80',
+                'portada_path' => null,
                 'carga_horaria' => '20',
-                'nivel' => 'Básico',
+                'nivel' => CourseLevel::BASICO,
                 'periodo' => '1-2026',
                 'status' => CourseStatus::PUBLICADO,
                 'instructor_id' => $inst2->id,
@@ -92,7 +94,7 @@ class CoursesSeeder extends Seeder
                         'aula' => 'Laboratorio de Informática 2',
                         'hora_inicio' => '09:45',
                         'hora_fin' => '11:15',
-                        'cupo_minimo' => 15,
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 30,
                         'status' => GroupStatus::HABILITADO,
                         'participants_count' => 22,
@@ -102,9 +104,9 @@ class CoursesSeeder extends Seeder
             [
                 'nombre' => 'Desarrollo de Aplicaciones Web con Laravel y Livewire',
                 'contenido' => 'Arquitectura MVC, Eloquent ORM avanzado, Livewire 3 reactivo, diseño con Tailwind CSS y generación de APIs REST seguras.',
-                'portada_path' => 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1000&q=80',
+                'portada_path' => null,
                 'carga_horaria' => '30',
-                'nivel' => 'Intermedio',
+                'nivel' => CourseLevel::INTERMEDIO,
                 'periodo' => '1-2026',
                 'status' => CourseStatus::PUBLICADO,
                 'instructor_id' => $inst3->id,
@@ -114,7 +116,7 @@ class CoursesSeeder extends Seeder
                         'aula' => 'Aula 692A - Facultad de Tecnología',
                         'hora_inicio' => '18:45',
                         'hora_fin' => '20:15',
-                        'cupo_minimo' => 15,
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 35,
                         'status' => GroupStatus::HABILITADO,
                         'participants_count' => 16,
@@ -124,9 +126,9 @@ class CoursesSeeder extends Seeder
             [
                 'nombre' => 'Diseño Gráfico Publicitario e Identidad Corporativa',
                 'contenido' => 'Creación de piezas gráficas para redes sociales, retoque digital, teoría del color, tipografía y branding empresarial.',
-                'portada_path' => 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=1000&q=80',
+                'portada_path' => null,
                 'carga_horaria' => '20',
-                'nivel' => 'Básico',
+                'nivel' => CourseLevel::BASICO,
                 'periodo' => '1-2026',
                 'status' => CourseStatus::PUBLICADO,
                 'instructor_id' => $inst4->id,
@@ -136,7 +138,7 @@ class CoursesSeeder extends Seeder
                         'aula' => 'Laboratorio Multimedia',
                         'hora_inicio' => '08:15',
                         'hora_fin' => '09:45',
-                        'cupo_minimo' => 15,
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 20,
                         'status' => GroupStatus::HABILITADO,
                         'participants_count' => 15,
@@ -146,9 +148,9 @@ class CoursesSeeder extends Seeder
             [
                 'nombre' => 'Administración de Redes y Seguridad Informática',
                 'contenido' => 'Configuración de switches y routers Cisco, protocolos TCP/IP, subnetting IPv4/IPv6, firewalls y hardening de servidores Linux.',
-                'portada_path' => 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1000&q=80',
+                'portada_path' => null,
                 'carga_horaria' => '30',
-                'nivel' => 'Avanzado',
+                'nivel' => CourseLevel::AVANZADO,
                 'periodo' => '2-2026',
                 'status' => CourseStatus::EN_PREPARACION,
                 'instructor_id' => $inst1->id,
@@ -158,7 +160,7 @@ class CoursesSeeder extends Seeder
                         'aula' => 'Laboratorio de Redes y Telecomunicaciones',
                         'hora_inicio' => '17:15',
                         'hora_fin' => '18:45',
-                        'cupo_minimo' => 15,
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 25,
                         'status' => GroupStatus::NO_HABILITADO,
                         'participants_count' => 5,
@@ -167,34 +169,28 @@ class CoursesSeeder extends Seeder
             ],
         ];
 
-        // Estudiantes realistas para poblar
-        $poolEstudiantes = [
-            ['ci' => '7912552', 'cod_sis' => '202002515', 'nom' => 'Christian Mauricio', 'pat' => 'Arias', 'mat' => 'Chubarieva', 'tipo' => TipoParticipante::AUXILIAR, 'cel' => '75468783'],
-            ['ci' => '9516503', 'cod_sis' => '202503252', 'nom' => 'Giliani Anel', 'pat' => 'Balderrama', 'mat' => 'Cordova', 'tipo' => TipoParticipante::UMSS, 'cel' => '65518177'],
-            ['ci' => '13163508', 'cod_sis' => '202202517', 'nom' => 'Jazmin', 'pat' => 'Cuizara', 'mat' => 'Segarra', 'tipo' => TipoParticipante::AUXILIAR, 'cel' => '63873042'],
-            ['ci' => '9409282', 'cod_sis' => '202100112', 'nom' => 'Scarlet', 'pat' => 'Davila', 'mat' => 'Montaño', 'tipo' => TipoParticipante::UMSS, 'cel' => '69524424'],
-            ['ci' => '12968669', 'cod_sis' => '202103793', 'nom' => 'Kevin Antonio', 'pat' => 'Fernandez', 'mat' => 'Aguilar', 'tipo' => TipoParticipante::UMSS, 'cel' => '69529974'],
-            ['ci' => '13378682', 'cod_sis' => '202401362', 'nom' => 'Francisco', 'pat' => 'Lazarte', 'mat' => 'Salazar', 'tipo' => TipoParticipante::AUXILIAR, 'cel' => '70739012'],
-            ['ci' => '15568524', 'cod_sis' => '202500690', 'nom' => 'Nadir Fabricio', 'pat' => 'Lizarazu', 'mat' => 'Flores', 'tipo' => TipoParticipante::UMSS, 'cel' => '69533334'],
-            ['ci' => '9508215', 'cod_sis' => '201709859', 'nom' => 'Jhojan Enrique', 'pat' => 'Manzel', 'mat' => 'Mollo', 'tipo' => TipoParticipante::UMSS, 'cel' => '75968023'],
-            ['ci' => '13589123', 'cod_sis' => '202401590', 'nom' => 'Leonardo Peter', 'pat' => 'Marca', 'mat' => 'Salas', 'tipo' => TipoParticipante::UMSS, 'cel' => '77965548'],
-            ['ci' => '8739408', 'cod_sis' => null, 'nom' => 'Rodrigo Javier', 'pat' => 'Molina', 'mat' => 'Peredo', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '65704302'],
-            ['ci' => '14077852', 'cod_sis' => '202300188', 'nom' => 'Brenda Katherine', 'pat' => 'Ancieta', 'mat' => 'Herrera', 'tipo' => TipoParticipante::UMSS, 'cel' => '71485962'],
-            ['ci' => '14829705', 'cod_sis' => '202304910', 'nom' => 'Santiago', 'pat' => 'Anzaldo', 'mat' => 'Flores', 'tipo' => TipoParticipante::UMSS, 'cel' => '78451296'],
-            ['ci' => '15501046', 'cod_sis' => null, 'nom' => 'Matias', 'pat' => 'Ayala', 'mat' => 'Villarroel', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '69584120'],
-            ['ci' => '16245988', 'cod_sis' => '202409841', 'nom' => 'Wendy Nicole', 'pat' => 'Ballesteros', 'mat' => 'Morales', 'tipo' => TipoParticipante::UMSS, 'cel' => '77412589'],
-            ['ci' => '16361541', 'cod_sis' => '202409842', 'nom' => 'Jonathan', 'pat' => 'Ballesteros', 'mat' => 'Morales', 'tipo' => TipoParticipante::UMSS, 'cel' => '77412590'],
-            ['ci' => '15077789', 'cod_sis' => '202201995', 'nom' => 'Briana Victoria', 'pat' => 'Cespedes', 'mat' => 'Chavez', 'tipo' => TipoParticipante::UMSS, 'cel' => '68541230'],
-            ['ci' => '17143554', 'cod_sis' => null, 'nom' => 'Emilio', 'pat' => 'Claure', 'mat' => 'Choque', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '70789456'],
-            ['ci' => '15799776', 'cod_sis' => '202403120', 'nom' => 'Thiago', 'pat' => 'Flores', 'mat' => 'Gamboa', 'tipo' => TipoParticipante::UMSS, 'cel' => '63985214'],
-            ['ci' => '13590051', 'cod_sis' => '202105412', 'nom' => 'Pablo Alejandro', 'pat' => 'Gonzales', 'mat' => 'Cortez', 'tipo' => TipoParticipante::UMSS, 'cel' => '72951478'],
-            ['ci' => '17008486', 'cod_sis' => '202501980', 'nom' => 'Alison Silvana', 'pat' => 'Gonzales', 'mat' => 'Cortez', 'tipo' => TipoParticipante::UMSS, 'cel' => '67412589'],
-            ['ci' => '15900533', 'cod_sis' => '202302450', 'nom' => 'Brenda Belen', 'pat' => 'Gonzales', 'mat' => 'Veliz', 'tipo' => TipoParticipante::UMSS, 'cel' => '75986321'],
-            ['ci' => '14836794', 'cod_sis' => '202208741', 'nom' => 'Carlos Manuel', 'pat' => 'Guaman', 'mat' => 'Cespedes', 'tipo' => TipoParticipante::UMSS, 'cel' => '68451239'],
-            ['ci' => '16768480', 'cod_sis' => null, 'nom' => 'Ian Fernando', 'pat' => 'Lizarazu', 'mat' => 'Calizaya', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '71458963'],
-            ['ci' => '16268688', 'cod_sis' => '202407412', 'nom' => 'Ainhoa Evangeline', 'pat' => 'Lopez', 'mat' => 'Vargas', 'tipo' => TipoParticipante::UMSS, 'cel' => '69852147'],
-            ['ci' => '14441951', 'cod_sis' => '202109852', 'nom' => 'Ana Paula', 'pat' => 'Lopez', 'mat' => 'Parra', 'tipo' => TipoParticipante::UMSS, 'cel' => '76541238'],
-        ];
+        // Pool de estudiantes generado con fake() — nunca datos personales reales
+        // (AGENTS.md §5: seeders usan fake() / credenciales genéricas).
+        $poolEstudiantes = [];
+        for ($i = 0; $i < 40; $i++) {
+            $tipo = match ($i % 3) {
+                0 => TipoParticipante::UMSS,
+                1 => TipoParticipante::AUXILIAR,
+                default => TipoParticipante::EXTERNO,
+            };
+
+            $poolEstudiantes[] = [
+                'ci' => (string) fake()->unique()->numberBetween(5_000_000, 12_000_000),
+                'cod_sis' => $tipo === TipoParticipante::EXTERNO ? null : (string) fake()->numberBetween(2017_00000, 2025_99999),
+                'nom' => fake()->firstName(),
+                'pat' => fake()->lastName(),
+                'mat' => fake()->lastName(),
+                'tipo' => $tipo,
+                'cel' => fake()->numerify('6#######'),
+            ];
+        }
+
+        $estudianteCursor = 0;
 
         foreach ($coursesData as $cIdx => $cData) {
             $courseHours = (int) $cData['carga_horaria'];
@@ -208,18 +204,14 @@ class CoursesSeeder extends Seeder
                     'nivel' => $cData['nivel'],
                     'periodo' => $cData['periodo'],
                     'status' => $cData['status'],
-                    'precio_umss' => BusinessRules::calculatePrice($courseHours, 'umss'),
-                    'precio_externo' => BusinessRules::calculatePrice($courseHours, 'externo'),
-                    'precio_auxiliar' => BusinessRules::calculatePrice($courseHours, 'auxiliar'),
+                    'precio_umss' => BusinessRules::calculatePrice($courseHours, TipoParticipante::UMSS->value),
+                    'precio_externo' => BusinessRules::calculatePrice($courseHours, TipoParticipante::EXTERNO->value),
+                    'precio_auxiliar' => BusinessRules::calculatePrice($courseHours, TipoParticipante::AUXILIAR->value),
                     'instructor_id' => $cData['instructor_id'],
                 ]
             );
 
             // Criterios de evaluación para el curso (100% ponderación)
-            $crit1 = EvaluationCriteria::firstOrCreate(
-                ['course_id' => $course->id, 'nombre' => 'Asistencia y Participación'],
-                ['ponderacion' => 50.0]
-            );
             $crit2 = EvaluationCriteria::firstOrCreate(
                 ['course_id' => $course->id, 'nombre' => 'Evaluación Práctica'],
                 ['ponderacion' => 20.0]
@@ -265,10 +257,11 @@ class CoursesSeeder extends Seeder
                     $currentDay->addDay();
                 }
 
-                // Inscribir participantes
+                // Inscribir participantes sin repetir CI dentro del mismo curso
                 $targetCount = min($gData['participants_count'], count($poolEstudiantes));
                 for ($i = 0; $i < $targetCount; $i++) {
-                    $est = $poolEstudiantes[($i + ($cIdx * 3) + $gIdx) % count($poolEstudiantes)];
+                    $est = $poolEstudiantes[$estudianteCursor % count($poolEstudiantes)];
+                    $estudianteCursor++;
 
                     // Variedad de estados para QA
                     $status = PreinscriptionStatus::INSCRITO;
@@ -297,7 +290,11 @@ class CoursesSeeder extends Seeder
                     );
 
                     // Pagos según estado
-                    $monto = BusinessRules::calculatePrice($courseHours, $est['tipo']->value);
+                    $monto = match ($est['tipo']) {
+                        TipoParticipante::UMSS => $course->precio_umss,
+                        TipoParticipante::EXTERNO => $course->precio_externo,
+                        TipoParticipante::AUXILIAR => $course->precio_auxiliar,
+                    };
                     if ($status === PreinscriptionStatus::INSCRITO) {
                         $metodo = ($i % 2 === 0) ? PaymentMethod::EFECTIVO : PaymentMethod::QR;
                         Payment::firstOrCreate(
@@ -330,14 +327,9 @@ class CoursesSeeder extends Seeder
                         }
 
                         // Calificaciones en criterios (escala 0-100, igual que EvaluationService)
-                        $grade1 = 100.0; // asistencia completa
                         $grade2 = rand(75, 100);
                         $grade3 = rand(73, 100);
 
-                        Grade::updateOrCreate(
-                            ['evaluation_criteria_id' => $crit1->id, 'preinscription_id' => $preinscription->id],
-                            ['nota' => $grade1]
-                        );
                         Grade::updateOrCreate(
                             ['evaluation_criteria_id' => $crit2->id, 'preinscription_id' => $preinscription->id],
                             ['nota' => (float) $grade2]
@@ -354,8 +346,8 @@ class CoursesSeeder extends Seeder
                                 [
                                     'tipo' => CertificateType::APROBACION,
                                     'codigo_unico' => 'CERT-2026-'.strtoupper(Str::random(6)),
-                                    'pdf_path' => 'certificates/cert-'.Str::uuid().'.pdf',
-                                    'signature_status' => SignatureStatus::LISTO,
+                                    'pdf_path' => null,
+                                    'signature_status' => SignatureStatus::PENDIENTE,
                                     'emitido_en' => now()->subDays(2),
                                 ]
                             );

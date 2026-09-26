@@ -16,11 +16,35 @@ use App\Models\User;
 use App\Services\AttendanceService;
 use App\Services\PaymentService;
 use App\Services\SheetExportService;
+use Illuminate\Bus\UniqueLock;
+use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Tests\Feature\Concerns\ConfiguresSheets;
 
 uses(ConfiguresSheets::class);
+
+$originalCacheConfig = null;
+
+beforeEach(function () use (&$originalCacheConfig): void {
+    $originalCacheConfig = [
+        'default' => config('cache.default'),
+        'connection' => config('cache.stores.database.connection'),
+        'lock_connection' => config('cache.stores.database.lock_connection'),
+    ];
+});
+
+afterEach(function () use (&$originalCacheConfig): void {
+    config([
+        'cache.default' => $originalCacheConfig['default'],
+        'cache.stores.database.connection' => $originalCacheConfig['connection'],
+        'cache.stores.database.lock_connection' => $originalCacheConfig['lock_connection'],
+    ]);
+
+    app()->forgetInstance(Repository::class);
+});
 
 it('queues a debounced export when the refresh event fires', function () {
     Queue::fake();
@@ -90,7 +114,7 @@ it('payment verify dispatches a sheets refresh event for its group', function ()
     $user = User::factory()->create();
     $course = Course::factory()->create();
     $group = Group::factory()->create(['course_id' => $course->id]);
-    $preinscription = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
+    $preinscription = Preinscription::factory()->inscrito()->create(['group_id' => $group->id, 'fotocopia_ci' => true]);
 
     $payment = Payment::factory()->pending()->create(['preinscription_id' => $preinscription->id]);
 
@@ -99,4 +123,66 @@ it('payment verify dispatches a sheets refresh event for its group', function ()
     app(PaymentService::class)->verify($payment);
 
     Event::assertDispatched(GroupSheetsNeedRefresh::class, fn ($event) => $event->groupId === $group->id);
+});
+
+it('does not crash or double queue when the unique lock is held and the event is dispatched inside a transaction', function () {
+    Queue::fake();
+
+    // The unique job lock must run on its own connection so it is not part of the
+    // wrapping test transaction: after the fix the lock runs post-commit, exactly
+    // like production, where no transaction is open at that point.
+    $cacheConnection = 'pgsql_cache';
+    config([
+        'database.connections.'.$cacheConnection => config('database.connections.'.config('database.default')),
+        'cache.stores.database.connection' => $cacheConnection,
+        'cache.stores.database.lock_connection' => $cacheConnection,
+        'cache.default' => 'database',
+    ]);
+
+    $cacheRepository = Cache::store('database');
+    app()->instance(Repository::class, $cacheRepository);
+
+    $course = Course::factory()->create();
+    $group = Group::factory()->create(['course_id' => $course->id]);
+
+    $lockKey = $cacheRepository->getStore()->getPrefix().UniqueLock::getKey(new ExportGroupSheetsJob($group->id));
+
+    DB::connection($cacheConnection)->table('cache_locks')->insert([
+        'key' => $lockKey,
+        'owner' => 'someone-else',
+        'expiration' => now()->addSeconds(600)->getTimestamp(),
+    ]);
+
+    $lockQueries = 0;
+    DB::connection($cacheConnection)->listen(function () use (&$lockQueries): void {
+        $lockQueries++;
+    });
+
+    DB::transaction(function () use ($group, &$lockQueries): void {
+        GroupSheetsNeedRefresh::dispatch($group->id);
+
+        expect($lockQueries)->toBe(0);
+    });
+
+    Queue::assertNotPushed(ExportGroupSheetsJob::class);
+    expect($lockQueries)->toBeGreaterThan(0);
+});
+
+it('defers the export job dispatch until after the database transaction commits', function () {
+    Queue::fake();
+
+    config(['cache.default' => 'database']);
+    $cacheRepository = Cache::store('database');
+    app()->instance(Repository::class, $cacheRepository);
+
+    $course = Course::factory()->create();
+    $group = Group::factory()->create(['course_id' => $course->id]);
+
+    DB::transaction(function () use ($group): void {
+        GroupSheetsNeedRefresh::dispatch($group->id);
+
+        Queue::assertNothingPushed();
+    });
+
+    Queue::assertPushed(ExportGroupSheetsJob::class, fn ($job) => $job->groupId === $group->id && $job->delay !== null);
 });

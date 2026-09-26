@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\UserRole;
+use App\Services\Auth\RedirectByRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function __construct(private readonly RedirectByRole $redirectByRole) {}
+
     public function showLoginForm()
     {
         if (Auth::check()) {
-            return $this->redirectByRole(Auth::user());
+            return $this->redirectByRole->redirect(Auth::user());
         }
 
         return view('auth.login');
@@ -38,11 +40,7 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
-        if (
-            ! $user->hasRole(UserRole::ADMIN->value)
-            && ! $user->hasRole(UserRole::INSTRUCTOR->value)
-            && ! $user->hasRole(UserRole::STUDENT->value)
-        ) {
+        if (! $this->redirectByRole->hasAccess($user)) {
             Auth::logout();
 
             throw ValidationException::withMessages([
@@ -52,7 +50,7 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        return $this->redirectByRole($user);
+        return $this->redirectByRole->redirect($user);
     }
 
     public function logout(Request $request)
@@ -63,22 +61,4 @@ class AuthController extends Controller
 
         return redirect('/login');
     }
-
-    private function redirectByRole($user)
-    {
-        if ($user->hasRole(UserRole::ADMIN->value)) {
-            return redirect('/admin');
-        }
-
-        if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return redirect('/instructor');
-        }
-
-        if ($user->hasRole(UserRole::STUDENT->value)) {
-            return redirect('/estudiante');
-        }
-
-        return redirect('/');
-    }
 }
-

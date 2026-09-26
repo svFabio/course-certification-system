@@ -22,4 +22,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'seed_password' => env('SEED_PASSWORD', 'password'),
+
 ];

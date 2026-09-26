@@ -32,16 +32,16 @@ class CoursePolicy
 
     public function delete(User $user, Course $course): bool
     {
-        return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
+        return $user->hasRole(UserRole::ADMIN->value) || $user->id === $course->instructor_id;
     }
 
     public function restore(User $user, Course $course): bool
     {
-        return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
+        return $user->hasRole(UserRole::ADMIN->value) || $user->id === $course->instructor_id;
     }
 
     public function forceDelete(User $user, Course $course): bool
     {
-        return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
+        return $user->hasRole(UserRole::ADMIN->value) || $user->id === $course->instructor_id;
     }
 }

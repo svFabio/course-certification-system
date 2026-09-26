@@ -3,14 +3,18 @@
 declare(strict_types=1);
 
 use App\Enums\GroupStatus;
+use App\Enums\UserRole;
+use App\Models\Course;
 use App\Models\Group;
 use App\Models\Holiday;
 use App\Models\Session;
+use App\Models\User;
 use App\Services\HolidayService;
 use App\Support\BusinessRules;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -123,4 +127,89 @@ it('does not warn when the affected sessions belong only to closed groups', func
     ]);
 
     expect(session('filament.notifications', []))->toBeEmpty();
+});
+
+it('rejects postponing a session when another session of the same group overlaps the target date', function () {
+    $group = Group::factory()->create();
+    $targetDate = Carbon::today()->next(Carbon::MONDAY);
+
+    Session::factory()->create([
+        'group_id' => $group->id,
+        'fecha' => $targetDate->toDateString(),
+        'hora_inicio' => '08:00',
+        'hora_fin' => '10:00',
+    ]);
+
+    $session = Session::factory()->create([
+        'group_id' => $group->id,
+        'fecha' => Carbon::today()->addDays(2)->toDateString(),
+        'hora_inicio' => '09:00',
+        'hora_fin' => '11:00',
+    ]);
+
+    $service = app(HolidayService::class);
+
+    expect(fn () => $service->postponeSession($session, $targetDate, 'Cruce de horario'))
+        ->toThrow(
+            ValidationException::class,
+            'La nueva fecha coincide con otra clase ya programada para este grupo.'
+        );
+});
+
+it('rejects postponing a session when the instructor already has another class in that slot', function () {
+    Role::firstOrCreate(['name' => UserRole::INSTRUCTOR->value]);
+    $instructor = User::factory()->create();
+    $instructor->assignRole(UserRole::INSTRUCTOR->value);
+    $targetDate = Carbon::today()->next(Carbon::TUESDAY);
+
+    $otherCourse = Course::factory()->create(['instructor_id' => $instructor->id]);
+    $otherGroup = Group::factory()->create(['course_id' => $otherCourse->id]);
+    Session::factory()->create([
+        'group_id' => $otherGroup->id,
+        'fecha' => $targetDate->toDateString(),
+        'hora_inicio' => '14:00',
+        'hora_fin' => '16:00',
+    ]);
+
+    $ownCourse = Course::factory()->create(['instructor_id' => $instructor->id]);
+    $ownGroup = Group::factory()->create(['course_id' => $ownCourse->id]);
+    $session = Session::factory()->create([
+        'group_id' => $ownGroup->id,
+        'fecha' => Carbon::today()->addDays(2)->toDateString(),
+        'hora_inicio' => '15:00',
+        'hora_fin' => '17:00',
+    ]);
+
+    $service = app(HolidayService::class);
+
+    expect(fn () => $service->postponeSession($session, $targetDate, 'Cruce de horario'))
+        ->toThrow(
+            ValidationException::class,
+            'Ya tienes otra clase programada en ese horario para la misma fecha.'
+        );
+});
+
+it('allows postponing when the target day has no overlapping classes for the group or instructor', function () {
+    $group = Group::factory()->create();
+    $targetDate = Carbon::today()->next(Carbon::WEDNESDAY);
+
+    Session::factory()->create([
+        'group_id' => $group->id,
+        'fecha' => $targetDate->toDateString(),
+        'hora_inicio' => '08:00',
+        'hora_fin' => '10:00',
+    ]);
+
+    $session = Session::factory()->create([
+        'group_id' => $group->id,
+        'fecha' => Carbon::today()->addDays(2)->toDateString(),
+        'hora_inicio' => '14:00',
+        'hora_fin' => '16:00',
+    ]);
+
+    $service = app(HolidayService::class);
+    $result = $service->postponeSession($session, $targetDate, 'Cambio de horario sin choque');
+
+    expect($result->es_pospuesta)->toBeTrue();
+    expect($result->fecha->toDateString())->toBe($targetDate->toDateString());
 });

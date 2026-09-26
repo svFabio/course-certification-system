@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -22,13 +23,12 @@ class RolesAndPermissionsSeeder extends Seeder
             Permission::firstOrCreate(['name' => $perm]);
         }
 
-        $admin = Role::firstOrCreate(['name' => 'admin']);
+        $admin = Role::firstOrCreate(['name' => UserRole::ADMIN->value]);
         $admin->givePermissionTo(Permission::all());
 
-        $instructor = Role::firstOrCreate(['name' => 'instructor']);
+        $instructor = Role::firstOrCreate(['name' => UserRole::INSTRUCTOR->value]);
         $instructor->givePermissionTo(['manage-sessions', 'manage-attendances', 'manage-evaluations']);
 
-        Role::firstOrCreate(['name' => 'student']);
+        Role::firstOrCreate(['name' => UserRole::STUDENT->value]);
     }
 }
-

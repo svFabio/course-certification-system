@@ -6,13 +6,14 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\ExportType;
 use App\Enums\GroupStatus;
-use App\Enums\PreinscriptionStatus;
+use App\Events\GroupSheetsNeedRefresh;
 use App\Filament\Admin\Resources\GroupResource\Pages;
 use App\Mail\GroupMergedNotification;
 use App\Models\Course;
 use App\Models\Group;
 use App\Models\SystemSetting;
 use App\Services\GoogleSheetsService;
+use App\Services\GroupMergeService;
 use App\Services\HolidayService;
 use App\Services\SheetExportService;
 use App\Support\BusinessRules;
@@ -23,9 +24,9 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 
 class GroupResource extends Resource
 {
@@ -39,7 +40,7 @@ class GroupResource extends Resource
 
     protected static ?string $modelLabel = 'Grupo';
 
-    protected static ?string $modelLabelPlural = 'Grupos';
+    protected static ?string $pluralModelLabel = 'Grupos';
 
     public static function form(Form $form): Form
     {
@@ -48,11 +49,20 @@ class GroupResource extends Resource
                 Forms\Components\Select::make('course_id')
                     ->relationship('course', 'nombre')
                     ->searchable()
-                    ->required(),
+                    ->required()
+                    ->live(),
                 Forms\Components\TextInput::make('nombre')
                     ->label('Nombre del grupo')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->rules([
+                        fn (Forms\Get $get, ?Group $record): Unique => Rule::unique('groups', 'nombre')
+                            ->where('course_id', $get('course_id'))
+                            ->ignore($record?->id),
+                    ])
+                    ->validationMessages([
+                        'unique' => 'Ya existe un grupo con este nombre para el curso seleccionado.',
+                    ]),
                 Forms\Components\TextInput::make('aula')
                     ->label('Aula / Laboratorio')
                     ->placeholder('Ej. Laboratorio 1')
@@ -94,8 +104,10 @@ class GroupResource extends Resource
                         };
                     }),
                 Forms\Components\Select::make('status')
+                    ->label('Estado')
                     ->options(GroupStatus::class)
-                    ->default(GroupStatus::NO_HABILITADO),
+                    ->default(GroupStatus::NO_HABILITADO)
+                    ->hiddenOn('create'),
             ]);
     }
 
@@ -249,55 +261,22 @@ class GroupResource extends Resource
                             ->required(),
                     ])
                     ->action(function (Group $record, array $data): void {
-                        [$toMove, $destination, $movedCount] = DB::transaction(function () use ($record, $data): array {
-                            $origin = Group::query()->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
-                            $destination = Group::query()->whereKey((int) $data['grupo_destino_id'])->lockForUpdate()->firstOrFail();
+                        $destinationGroup = Group::query()->findOrFail((int) $data['grupo_destino_id']);
 
-                            if ($destination->getKey() === $origin->getKey()
-                                || $destination->course_id !== $origin->course_id
-                                || $destination->status === GroupStatus::CERRADO
-                            ) {
-                                throw ValidationException::withMessages([
-                                    'grupo_destino_id' => 'Seleccione un grupo destino válido del mismo curso que no esté cerrado.',
-                                ]);
-                            }
+                        $result = app(GroupMergeService::class)->merge($record, $destinationGroup);
 
-                            $activeStatuses = [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO];
+                        GroupSheetsNeedRefresh::dispatch($result['origin']->getKey());
+                        GroupSheetsNeedRefresh::dispatch($result['destination']->getKey());
 
-                            $toMove = $origin->preinscriptions()->whereIn('status', $activeStatuses)->get();
-                            $movedCount = $toMove->count();
-
-                            $destinationConfirmed = $destination->preinscriptions()
-                                ->whereIn('status', $activeStatuses)
-                                ->count();
-
-                            if (($destination->cupo_maximo - $destinationConfirmed) < $movedCount) {
-                                throw ValidationException::withMessages([
-                                    'grupo_destino_id' => "El grupo destino no tiene cupo disponible para {$movedCount} participante(s).",
-                                ]);
-                            }
-
-                            if ($movedCount > 0) {
-                                $origin->preinscriptions()
-                                    ->whereIn('status', $activeStatuses)
-                                    ->update(['group_id' => $destination->getKey()]);
-                            }
-
-                            $origin->status = GroupStatus::CERRADO;
-                            $origin->save();
-
-                            return [$toMove, $destination, $movedCount];
-                        });
-
-                        foreach ($toMove as $preinscription) {
+                        foreach ($result['toMove'] as $preinscription) {
                             if (filled($preinscription->email)) {
                                 Mail::to($preinscription->email)
-                                    ->queue(new GroupMergedNotification($record, $destination, $preinscription));
+                                    ->queue(new GroupMergedNotification($result['origin'], $result['destination'], $preinscription));
                             }
                         }
 
                         Notification::make()
-                            ->title("Grupo fusionado: {$movedCount} participante(s) trasladado(s) al grupo destino.")
+                            ->title('Grupo fusionado: '.$result['movedCount'].' participante(s) trasladado(s) al grupo destino.')
                             ->success()
                             ->send();
                     }),

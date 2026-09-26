@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\AttendanceScanResult;
 use App\Enums\AttendanceStatus;
 use App\Services\AttendanceService;
 use Illuminate\Http\JsonResponse;
@@ -25,9 +26,16 @@ class AttendanceController extends Controller
             'lng' => 'required|numeric|between:-180,180',
             'preinscription_id' => 'nullable|integer',
             'ci' => 'nullable|string',
+        ], [
+            'lat.required' => 'La latitud es obligatoria.',
+            'lat.numeric' => 'La latitud debe ser un valor numérico.',
+            'lat.between' => 'La latitud debe estar entre -90 y 90.',
+            'lng.required' => 'La longitud es obligatoria.',
+            'lng.numeric' => 'La longitud debe ser un valor numérico.',
+            'lng.between' => 'La longitud debe estar entre -180 y 180.',
         ]);
 
-        $sessionId = $request->input('session_id');
+        $sessionId = isset($validated['session_id']) ? (int) $validated['session_id'] : null;
         $sessionCode = (string) $request->input('session_code', '');
 
         $session = $this->attendanceService->findSession($sessionId, $sessionCode);
@@ -45,6 +53,12 @@ class AttendanceController extends Controller
             ], 404);
         }
 
+        if (! $this->attendanceService->canManageSession($session, $request->user())) {
+            return response()->json([
+                'message' => 'No tiene permisos para registrar asistencia en esta sesión.',
+            ], 403);
+        }
+
         $preinscription = $this->attendanceService->findPreinscription(
             [
                 'preinscription_id' => $request->input('preinscription_id'),
@@ -54,7 +68,7 @@ class AttendanceController extends Controller
             $group->id
         );
 
-        if (! $preinscription) {
+        if (! $preinscription || $preinscription->group_id !== $group->id) {
             return response()->json([
                 'message' => 'No se encontró la preinscripción del participante para esta sesión.',
             ], 422);
@@ -73,7 +87,7 @@ class AttendanceController extends Controller
             'message' => $isWithinRadius
                 ? 'Asistencia registrada correctamente.'
                 : 'Fuera de rango. Su registro será enviado para revisión.',
-            'status' => $isWithinRadius ? 'presente' : 'para_revision',
+            'status' => $isWithinRadius ? AttendanceScanResult::PRESENTE->value : AttendanceScanResult::PARA_REVISION->value,
             'attendance_status' => $attendance->status->value,
             'distance_metros' => $attendance->distancia_metros,
             'max_distance' => Config::get('attendance.radius_meters'),

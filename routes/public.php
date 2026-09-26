@@ -14,7 +14,9 @@ Route::get('/preinscripcion/{group}', PreinscriptionComponent::class)
     ->middleware('throttle:10,1')
     ->name('preinscripcion');
 
-Route::get('/verificar-certificado', CertificateVerificationComponent::class)->name('certificado.verificar');
+Route::get('/verificar-certificado', CertificateVerificationComponent::class)
+    ->middleware('throttle:30,1')
+    ->name('certificado.verificar');
 
 Route::get('/boleta/{preinscription}', BoletaController::class)
     ->middleware('signed')

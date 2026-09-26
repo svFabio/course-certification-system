@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Instructor\Resources;
 
+use App\Enums\UserRole;
 use App\Filament\Instructor\Resources\InstructorSessionResource\Pages;
 use App\Models\Group;
 use App\Models\Session;
@@ -15,7 +16,11 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Grouping\Group as TableGroup;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
+use Illuminate\Validation\ValidationException;
 
 class InstructorSessionResource extends Resource
 {
@@ -25,18 +30,18 @@ class InstructorSessionResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->check() && auth()->user()->hasRole('instructor');
+        return auth()->check() && auth()->user()->hasRole(UserRole::INSTRUCTOR->value);
     }
 
     protected static ?string $navigationGroup = 'Mis Cursos';
 
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $modelLabel = 'Sesión';
+    protected static ?string $modelLabel = 'Historial de Sesión';
 
-    protected static ?string $pluralModelLabel = 'Sesiones';
+    protected static ?string $pluralModelLabel = 'Historial de Sesiones';
 
-    protected static ?string $navigationLabel = 'Sesiones';
+    protected static ?string $navigationLabel = 'Historial de Sesiones';
 
     public static function form(Form $form): Form
     {
@@ -69,33 +74,63 @@ class InstructorSessionResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('group.course.nombre')
+                    ->label('Curso')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('group.nombre')
-                    ->searchable(),
+                    ->label('Grupo')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('fecha')
-                    ->date()
+                    ->label('Clase')
+                    ->state(fn (Session $record): string => self::dayLabel($record))
+                    ->description(fn (Session $record): HtmlString => new HtmlString(implode('<br>', [
+                        e($record->hora_inicio->format('H:i').' – '.$record->hora_fin->format('H:i')),
+                    ])))
                     ->sortable(),
-                Tables\Columns\TextColumn::make('hora_inicio')
-                    ->time(),
-                Tables\Columns\TextColumn::make('hora_fin')
-                    ->time(),
-                Tables\Columns\IconColumn::make('dictada')
-                    ->label('Dictada')
-                    ->boolean(),
-                Tables\Columns\IconColumn::make('es_pospuesta')
-                    ->label('Reprogramada')
-                    ->boolean(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Fecha de registro')
-                    ->dateTime()
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('estado')
+                    ->label('Estado')
+                    ->badge()
+                    ->state(fn (Session $record): string => match (true) {
+                        (bool) $record->dictada => 'Dictada',
+                        (bool) $record->es_pospuesta => 'Reprogramada',
+                        default => 'Programada',
+                    })
+                    ->color(fn (Session $record): string => match (true) {
+                        (bool) $record->dictada => 'success',
+                        (bool) $record->es_pospuesta => 'warning',
+                        default => 'info',
+                    }),
             ])
-            ->modifyQueryUsing(fn ($query) => $query->whereHas('group.course', fn ($q) => $q->where('instructor_id', auth()->id())))
+            ->defaultSort('fecha', 'desc')
+            ->modifyQueryUsing(fn ($query) => $query
+                ->whereHas('group.course', fn ($q) => $q->where('instructor_id', auth()->id()))
+                ->with('group.course'))
+            ->groups([
+                TableGroup::make('group_id')
+                    ->label('Grupo')
+                    ->getTitleFromRecordUsing(fn (Session $record): string => "{$record->group->course->nombre} — {$record->group->nombre}"),
+            ])
+            ->defaultGroup('group_id')
+            ->groupingSettingsHidden()
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('estado')
+                    ->label('Estado')
+                    ->options([
+                        'programada' => 'Programada',
+                        'dictada' => 'Dictada',
+                        'reprogramada' => 'Reprogramada',
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                        'dictada' => $query->where('dictada', true),
+                        'reprogramada' => $query->where('es_pospuesta', true)->where('dictada', false),
+                        'programada' => $query->where('dictada', false)->where('es_pospuesta', false),
+                        default => $query,
+                    }),
             ])
             ->actions([
                 Tables\Actions\Action::make('postpone')
-                    ->label('Reprogramar / Posponer')
+                    ->label('Reprogramar')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
                     ->form([
@@ -103,9 +138,9 @@ class InstructorSessionResource extends Resource
                             ->label('Nueva fecha para la clase')
                             ->default(fn (Session $record) => $record->fecha->addDays(1))
                             ->required()
-                            ->afterOrEqual(today())
+                            ->afterOrEqual(today()->toDateString())
                             ->rules([
-                                function (string $attribute, mixed $value, Closure $fail): void {
+                                fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
                                     if (blank($value)) {
                                         return;
                                     }
@@ -136,8 +171,13 @@ class InstructorSessionResource extends Resource
                             ->success()
                             ->send();
                     }),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                ])
+                    ->icon('heroicon-o-ellipsis-vertical')
+                    ->label('Más'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -154,5 +194,47 @@ class InstructorSessionResource extends Resource
             'view' => Pages\ViewInstructorSession::route('/{record}'),
             'edit' => Pages\EditInstructorSession::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Server-side IDOR guard for both create and update. The submitted group_id must
+     * exist AND belong to a course taught by the authenticated instructor.
+     *
+     * The Select uses a plain options() closure, so Filament never applies its
+     * implicit exists rule here; and even that rule would not be ownership scoped.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws ValidationException
+     */
+    public static function ensureOwnedGroup(array $data, ?string $formStatePath): void
+    {
+        $groupId = $data['group_id'] ?? null;
+
+        if (blank($groupId)) {
+            return;
+        }
+
+        $owned = Group::query()
+            ->whereKey($groupId)
+            ->whereHas('course', fn (Builder $query) => $query->where('instructor_id', auth()->id()))
+            ->exists();
+
+        if (! $owned) {
+            $errorKey = filled($formStatePath) ? "{$formStatePath}.group_id" : 'group_id';
+
+            throw ValidationException::withMessages([
+                $errorKey => 'El grupo seleccionado no existe o no pertenece a sus cursos.',
+            ]);
+        }
+    }
+
+    /**
+     * Abbreviated Spanish weekday plus day/month, without any locale dependency.
+     */
+    private static function dayLabel(Session $record): string
+    {
+        return ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][(int) $record->fecha->dayOfWeek]
+            .' '.$record->fecha->format('d/m');
     }
 }

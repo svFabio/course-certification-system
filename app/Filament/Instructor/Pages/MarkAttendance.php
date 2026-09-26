@@ -6,12 +6,16 @@ namespace App\Filament\Instructor\Pages;
 
 use App\Enums\AttendanceStatus;
 use App\Enums\PreinscriptionStatus;
+use App\Enums\UserRole;
 use App\Models\Attendance;
 use App\Models\Group;
 use App\Models\Preinscription;
 use App\Models\Session;
+use App\Services\AttendanceService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use InvalidArgumentException;
+use Livewire\Attributes\Url;
 
 class MarkAttendance extends Page
 {
@@ -27,7 +31,11 @@ class MarkAttendance extends Page
 
     protected static ?string $navigationLabel = 'Marcar Asistencia';
 
+    #[Url(as: 'group')]
     public ?int $selectedGroupId = null;
+
+    /** @var array<int|string, string> */
+    public array $groupOptions = [];
 
     /** @var array<int, array{id: int, fecha: string, label: string}> */
     public array $sessions = [];
@@ -47,7 +55,7 @@ class MarkAttendance extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->check() && auth()->user()->hasRole('instructor');
+        return auth()->check() && auth()->user()->hasRole(UserRole::INSTRUCTOR->value);
     }
 
     public function getHeading(): string
@@ -57,30 +65,25 @@ class MarkAttendance extends Page
 
     public function mount(): void
     {
-        $options = $this->groupOptions;
-        $requested = request()->query('group');
-
-        if ($requested && isset($options[$requested])) {
-            $this->selectedGroupId = (int) $requested;
-        } elseif (! empty($options)) {
-            $this->selectedGroupId = (int) array_key_first($options);
-        }
-
-        if ($this->selectedGroupId) {
-            $this->loadGroupData();
-        }
-    }
-
-    /** @return array<int|string, string> */
-    public function getGroupOptionsProperty(): array
-    {
-        return Group::whereHas('course', fn ($q) => $q->where('instructor_id', auth()->id()))
+        $this->groupOptions = Group::whereHas('course', fn ($q) => $q->where('instructor_id', auth()->id()))
             ->with('course')
             ->get()
             ->mapWithKeys(fn (Group $g) => [
                 $g->id => $g->course->nombre.' — '.$g->nombre,
             ])
             ->toArray();
+
+        if ($this->selectedGroupId !== null && ! isset($this->groupOptions[$this->selectedGroupId])) {
+            $this->selectedGroupId = null;
+        }
+
+        if ($this->selectedGroupId === null && ! empty($this->groupOptions)) {
+            $this->selectedGroupId = (int) array_key_first($this->groupOptions);
+        }
+
+        if ($this->selectedGroupId) {
+            $this->loadGroupData();
+        }
     }
 
     /** @return array<string, string> */
@@ -122,7 +125,20 @@ class MarkAttendance extends Page
             return;
         }
 
-        $this->sessions = Session::where('group_id', $this->selectedGroupId)
+        $group = $this->scopedGroup();
+
+        if (! $group) {
+            $this->selectedGroupId = null;
+
+            Notification::make()
+                ->title('El grupo seleccionado no existe o no pertenece a sus cursos.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $this->sessions = Session::where('group_id', $group->id)
             ->orderBy('fecha')
             ->get()
             ->map(fn (Session $s) => [
@@ -132,7 +148,7 @@ class MarkAttendance extends Page
             ])
             ->toArray();
 
-        $this->students = Preinscription::where('group_id', $this->selectedGroupId)
+        $this->students = Preinscription::where('group_id', $group->id)
             ->where('status', PreinscriptionStatus::INSCRITO)
             ->get()
             ->map(fn (Preinscription $p) => [
@@ -166,26 +182,20 @@ class MarkAttendance extends Page
             return;
         }
 
-        foreach ($this->attendanceData as $key => $status) {
-            $parts = explode('_', (string) $key);
-            if (count($parts) !== 2) {
-                continue;
-            }
-            [$preinscriptionId, $sessionId] = $parts;
+        $group = $this->scopedGroup();
 
-            if ($status !== null && $status !== '') {
-                Attendance::updateOrCreate(
-                    [
-                        'session_id' => (int) $sessionId,
-                        'preinscription_id' => (int) $preinscriptionId,
-                    ],
-                    ['status' => $status]
-                );
-            } else {
-                Attendance::where('session_id', (int) $sessionId)
-                    ->where('preinscription_id', (int) $preinscriptionId)
-                    ->delete();
-            }
+        if (! $group) {
+            $this->rejectSave('El grupo seleccionado no existe o no pertenece a sus cursos.');
+
+            return;
+        }
+
+        try {
+            app(AttendanceService::class)->registerManualBatch($group, $this->attendanceData);
+        } catch (InvalidArgumentException $exception) {
+            $this->rejectSave($exception->getMessage());
+
+            return;
         }
 
         $this->saved = true;
@@ -193,6 +203,31 @@ class MarkAttendance extends Page
         Notification::make()
             ->title('Asistencia guardada correctamente')
             ->success()
+            ->send();
+    }
+
+    /**
+     * Re-validates the group against an instructor-scoped query, mirroring
+     * GradeMatrix::scopedGroup() so client-supplied ids can never widen access.
+     */
+    private function scopedGroup(): ?Group
+    {
+        if ($this->selectedGroupId === null) {
+            return null;
+        }
+
+        return Group::query()
+            ->whereHas('course', fn ($query) => $query->where('instructor_id', auth()->id()))
+            ->find($this->selectedGroupId);
+    }
+
+    private function rejectSave(string $message): void
+    {
+        $this->saved = false;
+
+        Notification::make()
+            ->title($message)
+            ->danger()
             ->send();
     }
 

@@ -6,7 +6,6 @@ namespace App\Models;
 
 use App\Enums\PreinscriptionStatus;
 use App\Enums\TipoParticipante;
-use App\Support\BusinessRules;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -39,6 +38,7 @@ class Preinscription extends Model
     protected function casts(): array
     {
         return [
+            'group_id' => 'integer',
             'status' => PreinscriptionStatus::class,
             'fotocopia_ci' => 'boolean',
             'auxiliar_certificado_aprobado' => 'boolean',
@@ -89,19 +89,29 @@ class Preinscription extends Model
 
     public function getPriceAttribute(): float
     {
-        $courseHours = (int) $this->group->course->carga_horaria;
+        $course = $this->group->course;
 
-        return BusinessRules::calculatePrice($courseHours, $this->tipo_participante);
+        return match ($this->tipo_participante) {
+            TipoParticipante::UMSS->value => (float) $course->precio_umss,
+            TipoParticipante::EXTERNO->value => (float) $course->precio_externo,
+            TipoParticipante::AUXILIAR->value => (float) $course->precio_auxiliar,
+            default => throw new \InvalidArgumentException("Invalid participant type: {$this->tipo_participante}"),
+        };
     }
 
     public function getChargeablePriceAttribute(): float
     {
-        $courseHours = (int) $this->group->course->carga_horaria;
+        $course = $this->group->course;
 
         if ($this->tipo_participante === TipoParticipante::AUXILIAR->value && ! $this->hasApprovedAuxiliarCertificate()) {
-            return BusinessRules::calculatePrice($courseHours, TipoParticipante::UMSS->value);
+            return (float) $course->precio_umss;
         }
 
-        return BusinessRules::calculatePrice($courseHours, $this->tipo_participante);
+        return match ($this->tipo_participante) {
+            TipoParticipante::UMSS->value => (float) $course->precio_umss,
+            TipoParticipante::EXTERNO->value => (float) $course->precio_externo,
+            TipoParticipante::AUXILIAR->value => (float) $course->precio_auxiliar,
+            default => throw new \InvalidArgumentException("Invalid participant type: {$this->tipo_participante}"),
+        };
     }
 }

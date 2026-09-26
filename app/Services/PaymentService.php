@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Enums\TipoParticipante;
@@ -15,9 +16,12 @@ use Illuminate\Validation\ValidationException;
 
 class PaymentService
 {
-    public function registerAndVerify(Preinscription $preinscription, string $method, ?string $reference, bool $fotocopiaCi = false): Payment
+    public function registerAndVerify(Preinscription $preinscription, string|PaymentMethod $method, ?string $reference, bool $fotocopiaCi = false): Payment
     {
+        $method = $method instanceof PaymentMethod ? $method->value : $method;
+
         $this->assertAuxiliarCertificateApproved($preinscription);
+        $this->assertPhotocopyDelivered($preinscription, $fotocopiaCi);
 
         if ($fotocopiaCi) {
             $preinscription->update(['fotocopia_ci' => true]);
@@ -45,6 +49,7 @@ class PaymentService
         $payment->loadMissing('preinscription');
 
         $this->assertAuxiliarCertificateApproved($payment->preinscription);
+        $this->assertPhotocopyDelivered($payment->preinscription);
 
         $payment->update([
             'verificado_por' => auth()->id(),
@@ -176,6 +181,15 @@ class PaymentService
         if ($preinscription->tipo_participante === TipoParticipante::AUXILIAR->value && ! $preinscription->hasApprovedAuxiliarCertificate()) {
             throw ValidationException::withMessages([
                 'auxiliar_certificado' => 'El 50% de descuento para participantes auxiliares requiere que el certificado emitido por Jefatura sea aprobado por el administrador antes de verificar el pago.',
+            ]);
+        }
+    }
+
+    protected function assertPhotocopyDelivered(Preinscription $preinscription, bool $fotocopiaCi = false): void
+    {
+        if (! $fotocopiaCi && ! $preinscription->fotocopia_ci) {
+            throw ValidationException::withMessages([
+                'fotocopia_ci' => 'Se requiere la fotocopia de la C.I. entregada en caja antes de confirmar la inscripción del participante.',
             ]);
         }
     }

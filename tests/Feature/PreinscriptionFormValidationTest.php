@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Enums\CourseStatus;
 use App\Enums\GroupStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Livewire\PreinscriptionComponent;
 use App\Models\Course;
 use App\Models\Group;
 use App\Models\Preinscription;
+use App\Services\PreinscriptionService;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 it('validates strictly against invalid inputs in preinscription form', function () {
@@ -238,4 +241,108 @@ it('rate limits repeated submissions for the same ci', function () {
         ->call('submit')
         ->assertHasErrors(['ci'])
         ->assertSee('demasiados intentos');
+});
+
+it('rejects service registration when the group is not enabled', function () {
+    $course = Course::factory()->create(['carga_horaria' => '20']);
+    $group = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::NO_HABILITADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    expect(fn () => app(PreinscriptionService::class)->register([
+        'group_id' => $group->id,
+        'ci' => '7894561',
+        'nombres' => 'Fabio Santos',
+        'apellido_paterno' => 'Fernandez',
+        'email' => 'fabio.fernandez@umss.edu.bo',
+        'tipo_participante' => 'umss',
+    ]))->toThrow(ValidationException::class, 'no está habilitado');
+
+    expect(Preinscription::where('ci', '7894561')->exists())->toBeFalse();
+});
+
+it('blocks re-registration when a rejected preinscription already exists for the same ci and group', function () {
+    $course = Course::factory()->create(['carga_horaria' => '20']);
+    $group = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::HABILITADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    Preinscription::factory()->create([
+        'ci' => '7894561',
+        'group_id' => $group->id,
+        'status' => PreinscriptionStatus::RECHAZADO,
+    ]);
+
+    expect(fn () => app(PreinscriptionService::class)->register([
+        'group_id' => $group->id,
+        'ci' => '7894561',
+        'nombres' => 'Fabio Santos',
+        'apellido_paterno' => 'Fernandez',
+        'email' => 'fabio.fernandez@umss.edu.bo',
+        'tipo_participante' => 'umss',
+    ]))->toThrow(ValidationException::class, 'rechazada');
+
+    expect(Preinscription::where('ci', '7894561')->count())->toBe(1);
+});
+
+it('redirects to the catalog when mounting a group that is not enabled', function () {
+    $course = Course::factory()->create(['carga_horaria' => '20']);
+    $group = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::NO_HABILITADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    Livewire::test(PreinscriptionComponent::class, ['group' => $group])
+        ->assertRedirect(route('home'));
+
+    expect(session()->has('error'))->toBeTrue();
+});
+
+it('redirects to the catalog when mounting a group whose course is not published', function () {
+    $course = Course::factory()->create([
+        'carga_horaria' => '20',
+        'status' => CourseStatus::EN_PREPARACION,
+    ]);
+    $group = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::HABILITADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    Livewire::test(PreinscriptionComponent::class, ['group' => $group])
+        ->assertRedirect(route('home'));
+});
+
+it('rejects selecting a group that belongs to a foreign course', function () {
+    $courseA = Course::factory()->create(['carga_horaria' => '20']);
+    $groupA = Group::factory()->create([
+        'course_id' => $courseA->id,
+        'status' => GroupStatus::HABILITADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    $courseB = Course::factory()->create(['carga_horaria' => '30']);
+    $groupB = Group::factory()->create([
+        'course_id' => $courseB->id,
+        'status' => GroupStatus::HABILITADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    Livewire::test(PreinscriptionComponent::class, ['group' => $groupA])
+        ->set('groupId', $groupB->id)
+        ->assertHasErrors(['groupId'])
+        ->assertSet('groupId', $groupA->id);
+
+    expect(Preinscription::where('group_id', $groupB->id)->exists())->toBeFalse();
 });

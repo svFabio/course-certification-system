@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
-use App\Enums\PaymentMethod;
 use App\Enums\PreinscriptionStatus;
 use App\Enums\TipoParticipante;
 use App\Filament\Admin\Resources\PreinscriptionResource\Pages;
+use App\Models\Course;
 use App\Models\Group;
 use App\Models\Preinscription;
 use App\Services\PaymentService;
@@ -21,6 +21,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 use Illuminate\Validation\ValidationException;
 
 class PreinscriptionResource extends Resource
@@ -35,76 +37,129 @@ class PreinscriptionResource extends Resource
 
     protected static ?string $modelLabel = 'Preinscripción';
 
-    protected static ?string $modelLabelPlural = 'Preinscripciones';
+    protected static ?string $pluralModelLabel = 'Preinscripciones';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('group_id')
-                    ->relationship('group', 'nombre')
-                    ->searchable()
-                    ->required(),
-                Forms\Components\TextInput::make('ci')
-                    ->label('Cédula de Identidad (CI)')
-                    ->required()
-                    ->regex('/^[0-9]{4,10}(-[0-9A-Z]{1,2})?$/i')
-                    ->helperText('4 a 10 dígitos numéricos (ej. 7894561 o 7894561-1A)')
-                    ->maxLength(20),
-                Forms\Components\TextInput::make('cod_sis')
-                    ->label('Código SIS')
-                    ->regex('/^[0-9]{7,10}$/')
-                    ->helperText('7 a 10 dígitos numéricos')
-                    ->maxLength(50),
-                Forms\Components\TextInput::make('nombres')
-                    ->required()
-                    ->regex('/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/')
-                    ->maxLength(100),
-                Forms\Components\TextInput::make('apellido_paterno')
-                    ->required()
-                    ->regex('/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/')
-                    ->maxLength(100),
-                Forms\Components\TextInput::make('apellido_materno')
-                    ->regex('/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/')
-                    ->maxLength(100),
-                Forms\Components\TextInput::make('celular')
-                    ->tel()
-                    ->regex('/^[67][0-9]{7}$/')
-                    ->helperText('8 dígitos iniciando en 6 o 7')
-                    ->maxLength(20),
-                Forms\Components\TextInput::make('email')
-                    ->email()
-                    ->required()
-                    ->maxLength(150),
-                Forms\Components\Select::make('tipo_participante')
-                    ->options(TipoParticipante::class)
-                    ->required(),
-                Forms\Components\Select::make('status')
-                    ->options(PreinscriptionStatus::class)
-                    ->default(PreinscriptionStatus::PENDIENTE_PAGO),
-                Forms\Components\Toggle::make('fotocopia_ci')
-                    ->label('Fotocopia de C.I. entregada')
-                    ->default(false),
-                Forms\Components\FileUpload::make('auxiliar_certificado_path')
-                    ->label('Certificado de auxiliar practicante (Jefatura)')
-                    ->disk('cloudinary')
-                    ->directory('auxiliar-certificados')
-                    ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
-                    ->maxSize(5120)
-                    ->helperText('Emitido por Jefatura tras concluir el semestre. Solo aplica descuento del 50% tras su aprobación.')
-                    ->visible(fn (Get $get): bool => $get('tipo_participante') === TipoParticipante::AUXILIAR->value),
-                Forms\Components\Select::make('auxiliar_certificado_aprobado')
-                    ->label('Aprobación del certificado auxiliar')
-                    ->options([
-                        null => 'Sin evaluar',
-                        true => 'Aprobado',
-                        false => 'Rechazado',
+                Forms\Components\Section::make('Asignación Académica')
+                    ->description('Seleccione el curso y grupo correspondiente.')
+                    ->schema([
+                        Forms\Components\Select::make('course_id')
+                            ->label('Curso')
+                            ->options(fn () => Course::query()->pluck('nombre', 'id'))
+                            ->searchable()
+                            ->preload()
+                            ->live()
+                            ->afterStateHydrated(function (Forms\Set $set, ?Preinscription $record) {
+                                if ($record && $record->group) {
+                                    $set('course_id', $record->group->course_id);
+                                }
+                            })
+                            ->dehydrated(false)
+                            ->disabled()
+                            ->required()
+                            ->helperText('El cambio de grupo se realiza con la acción "Cambiar de grupo".'),
+                        Forms\Components\Select::make('group_id')
+                            ->label('Grupo')
+                            ->options(function (Get $get): array {
+                                $courseId = $get('course_id');
+                                if (! $courseId) {
+                                    return [];
+                                }
+
+                                return Group::query()
+                                    ->where('course_id', $courseId)
+                                    ->get()
+                                    ->mapWithKeys(fn (Group $group) => [
+                                        $group->id => "{$group->nombre} ({$group->hora_inicio?->format('H:i')} - {$group->hora_fin?->format('H:i')})",
+                                    ])
+                                    ->toArray();
+                            })
+                            ->disabled()
+                            ->live()
+                            ->searchable()
+                            ->required()
+                            ->helperText('El cambio de grupo se realiza con la acción "Cambiar de grupo".'),
                     ])
-                    ->visible(fn (Get $get): bool => $get('tipo_participante') === TipoParticipante::AUXILIAR->value),
-                Forms\Components\Textarea::make('auxiliar_certificado_motivo')
-                    ->label('Motivo')
-                    ->helperText('Obligatorio al rechazar el certificado auxiliar.')
-                    ->visible(fn (Get $get): bool => $get('tipo_participante') === TipoParticipante::AUXILIAR->value),
+                    ->columns(2),
+
+                Forms\Components\Section::make('Datos del Participante')
+                    ->description('Complete los datos personales del estudiante.')
+                    ->schema([
+                        Forms\Components\TextInput::make('ci')
+                            ->label('Cédula de Identidad (CI)')
+                            ->required()
+                            ->regex('/^[0-9]{4,10}(-[0-9A-Z]{1,2})?$/i')
+                            ->helperText('4 a 10 dígitos numéricos (ej. 7894561 o 7894561-1A)')
+                            ->maxLength(20)
+                            ->disabled(fn (Get $get): bool => blank($get('group_id')))
+                            ->rules([
+                                fn (Get $get, ?Preinscription $record): Unique => Rule::unique('preinscriptions', 'ci')
+                                    ->where('group_id', $get('group_id'))
+                                    ->ignore($record?->id),
+                            ])
+                            ->validationMessages([
+                                'unique' => 'Este participante (CI) ya se encuentra registrado en este grupo.',
+                            ]),
+                        Forms\Components\TextInput::make('cod_sis')
+                            ->label('Código SIS')
+                            ->regex('/^[0-9]{7,10}$/')
+                            ->helperText('7 a 10 dígitos numéricos')
+                            ->maxLength(50)
+                            ->disabled(fn (Get $get): bool => blank($get('group_id'))),
+                        Forms\Components\TextInput::make('nombres')
+                            ->required()
+                            ->regex('/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/')
+                            ->maxLength(100)
+                            ->disabled(fn (Get $get): bool => blank($get('group_id'))),
+                        Forms\Components\TextInput::make('apellido_paterno')
+                            ->required()
+                            ->regex('/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/')
+                            ->maxLength(100)
+                            ->disabled(fn (Get $get): bool => blank($get('group_id'))),
+                        Forms\Components\TextInput::make('apellido_materno')
+                            ->regex('/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/')
+                            ->maxLength(100)
+                            ->disabled(fn (Get $get): bool => blank($get('group_id'))),
+                        Forms\Components\TextInput::make('celular')
+                            ->tel()
+                            ->regex('/^[67][0-9]{7}$/')
+                            ->helperText('8 dígitos iniciando en 6 o 7')
+                            ->maxLength(20)
+                            ->disabled(fn (Get $get): bool => blank($get('group_id'))),
+                        Forms\Components\TextInput::make('email')
+                            ->email()
+                            ->required()
+                            ->maxLength(150)
+                            ->disabled(fn (Get $get): bool => blank($get('group_id'))),
+                        Forms\Components\Select::make('tipo_participante')
+                            ->options(TipoParticipante::class)
+                            ->required()
+                            ->live()
+                            ->disabled(fn (Get $get): bool => blank($get('group_id'))),
+                        Forms\Components\Select::make('status')
+                            ->label('Estado')
+                            ->options(PreinscriptionStatus::class)
+                            ->default(PreinscriptionStatus::PENDIENTE_PAGO)
+                            ->disabled()
+                            ->dehydrated()
+                            ->hiddenOn('create'),
+                        Forms\Components\Toggle::make('fotocopia_ci')
+                            ->label('Fotocopia de C.I. entregada')
+                            ->default(false)
+                            ->disabled(fn (Get $get): bool => blank($get('group_id'))),
+                        Forms\Components\FileUpload::make('auxiliar_certificado_path')
+                            ->label('Certificado de auxiliar practicante (Jefatura)')
+                            ->disk('cloudinary')
+                            ->directory('auxiliar-certificados')
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                            ->maxSize(5120)
+                            ->helperText('Emitido por Jefatura tras concluir el semestre. Solo aplica descuento del 50% tras su aprobación.')
+                            ->visible(fn (Get $get): bool => $get('tipo_participante') === TipoParticipante::AUXILIAR->value),
+                    ])
+                    ->columns(2),
             ]);
     }
 
@@ -119,12 +174,12 @@ class PreinscriptionResource extends Resource
                     ->label('Cód. SIS')
                     ->getStateUsing(fn ($record) => match (true) {
                         empty($record->cod_sis) => 'EXTERNO',
-                        strlen($record->cod_sis) !== 9 => "⚠ {$record->cod_sis}",
+                        ! preg_match('/^[0-9]{7,10}$/', (string) $record->cod_sis) => "⚠ {$record->cod_sis}",
                         default => $record->cod_sis,
                     })
                     ->color(fn ($record) => match (true) {
                         empty($record->cod_sis) => 'gray',
-                        strlen($record->cod_sis) !== 9 => 'warning',
+                        ! preg_match('/^[0-9]{7,10}$/', (string) $record->cod_sis) => 'warning',
                         default => null,
                     })
                     ->searchable(),
@@ -186,6 +241,7 @@ class PreinscriptionResource extends Resource
                     ->dateTime()
                     ->sortable(),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('group_id')
                     ->relationship('group', 'nombre')
@@ -248,41 +304,6 @@ class PreinscriptionResource extends Resource
                         Notification::make()
                             ->title('Certificado rechazado. Se aplicará tarifa de comunidad UMSS.')
                             ->warning()
-                            ->send();
-                    }),
-                Tables\Actions\Action::make('registrarPago')
-                    ->label('Validar Pago')
-                    ->icon('heroicon-o-currency-dollar')
-                    ->color('success')
-                    ->visible(fn (Preinscription $record) => $record->status === PreinscriptionStatus::PENDIENTE_PAGO)
-                    ->requiresConfirmation()
-                    ->modalHeading('Registrar y Validar Pago en Caja')
-                    ->modalDescription(fn (Preinscription $record) => "¿Confirmar cobro de Bs. {$record->chargeable_price} a {$record->full_name} e inscribirlo automáticamente?")
-                    ->form([
-                        Forms\Components\Select::make('metodo')
-                            ->label('Método de pago')
-                            ->options(PaymentMethod::class)
-                            ->default(PaymentMethod::EFECTIVO)
-                            ->required(),
-                        Forms\Components\TextInput::make('numero_comprobante')
-                            ->label('Número de comprobante / recibo')
-                            ->placeholder('Opcional')
-                            ->maxLength(100),
-                        Forms\Components\Toggle::make('fotocopia_ci')
-                            ->label('Fotocopia de C.I. entregada físicamente')
-                            ->default(fn (Preinscription $record) => (bool) $record->fotocopia_ci),
-                    ])
-                    ->action(function (Preinscription $record, array $data) {
-                        app(PaymentService::class)->registerAndVerify(
-                            $record,
-                            $data['metodo'],
-                            $data['numero_comprobante'] ?? null,
-                            (bool) ($data['fotocopia_ci'] ?? false),
-                        );
-
-                        Notification::make()
-                            ->title('Pago registrado y estudiante inscrito con éxito.')
-                            ->success()
                             ->send();
                     }),
                 Tables\Actions\Action::make('cambiarGrupo')
@@ -394,7 +415,6 @@ class PreinscriptionResource extends Resource
     {
         return [
             'index' => Pages\ListPreinscriptions::route('/'),
-            'create' => Pages\CreatePreinscription::route('/create'),
             'view' => Pages\ViewPreinscription::route('/{record}'),
             'edit' => Pages\EditPreinscription::route('/{record}/edit'),
         ];

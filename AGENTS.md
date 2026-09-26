@@ -22,8 +22,9 @@ Sistema de gestión académica para cursos de Formación Continua y certificaci�
 
 Todas las reglas de cálculo y validación de negocio residen en `App\Support\BusinessRules` y los servicios en `App\Services\`.
 
-1. **Precios de Cursos (`BusinessRules::calculatePrice`):**
-   - Basados estrictamente en `carga_horaria` (20 o 30 horas) y `tipo_participante` (`umss`, `externo`, `auxiliar`).
+1. **Precios de Cursos:**
+   - **Las columnas `precio_umss`, `precio_externo` y `precio_auxiliar` del curso son la FUENTE DE VERDAD** y son **editables** por el administrador (ajustes por inflación/tarifas vigentes). Todo cálculo, cobro y exhibición (Page de preinscripción, catálogo público, planillas de caja/docente, boleta) debe leer esas columnas — nunca recalcular.
+   - `BusinessRules::calculatePrice(carga_horaria, tipo)` es ÚNICAMENTE el **precalculado por defecto**: precarga los valores al crear un curso o al cambiar la `carga_horaria` en el formulario (wizard "Precios"). No es la fuente para lecturas de cobro/exhibición.
    - Ningún componente o controlador debe hardcodear montos o fórmulas de precios.
 2. **Capacidad de Grupos (`cupo_minimo`, `cupo_maximo`):**
    - El cupo mínimo para habilitar un grupo es `BusinessRules::MIN_GROUP_CAPACITY` (15 participantes).
@@ -46,6 +47,7 @@ Todas las reglas de cálculo y validación de negocio residen en `App\Support\Bu
   - Sincronizar siempre las fuentes de verdad (ej. `estado` de pago vs `verificado_por`).
 
 ### Filament v3
+- **Único punto de entrada por operación de dominio:** Cada operación de negocio (validar pago, devolución, reembolso, retiro, reprogramación, etc.) debe exponerse en UN único lugar de la UI. NO dupliques la misma acción (misma llamada al servicio) en dos resources o entre un RelationManager y su resource raíz. Si el flujo operativo recorre una pantalla (ej.: validar pagos dentro del grupo), ahí vive la acción y se elimina de la otra.
 - **Reactividad:**
   - Usar inyección de dependencias oficial de Filament: `function (Forms\Get $get, Forms\Set $set, $state)`.
   - NUNCA acceder a `request()->input(...)` para leer estado de formularios Livewire/Filament.
@@ -84,6 +86,7 @@ Todas las reglas de cálculo y validación de negocio residen en `App\Support\Bu
 La IA y los hooks de revisión deben BLOQUEAR cualquier commit que contenga:
 - **Credenciales y Secretos:** Contraseñas, API keys, tokens de acceso (Bearer, GitHub, AWS, etc.), claves privadas (RSA, SSH, PGP) o secrets de autenticación.
 - **Variables de Entorno Sensibles:** Jamás incluir valores reales de producción en archivos de configuración o código fuente. Todo valor sensible debe leerse mediante `config(...)` y residir exclusivamente en `.env` (ignorado por git).
+- **Datos Personales (PII) en Seeders/Tests/Fixtures:** PROHIBIDO hardcodear datos personales de personas naturales o que parezcan reales: nombres propios, CIs, matrículas `cod_sis`, teléfonos, correos, domicilios. Este bloqueo aplica aunque los datos sean de ejemplo "para poblar" la BD de desarrollo. Usar SIEMPRE `fake()` (Faker) o credenciales genéricas documentadas en `.env.example`. Dato sospechoso (CI numérico, celular nacional, nombre+apellido realista) → bloquear y exigir reescritura con `fake()`.
 - **Datos Sensibles en Tests/Seeders:** Usar siempre `fake()` o credenciales genéricas documentadas en `.env.example`.
 
 ---

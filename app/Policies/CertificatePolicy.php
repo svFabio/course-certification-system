@@ -33,7 +33,6 @@ class CertificatePolicy
         return false;
     }
 
-
     public function create(User $user): bool
     {
         return $user->hasRole(UserRole::ADMIN->value);

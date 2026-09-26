@@ -48,16 +48,40 @@ class AttendancePolicy
 
     public function delete(User $user, Attendance $attendance): bool
     {
-        return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
+        if ($user->hasRole(UserRole::ADMIN->value)) {
+            return true;
+        }
+
+        if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
+            return $user->id === $attendance->session->group->course->instructor_id;
+        }
+
+        return false;
     }
 
     public function restore(User $user, Attendance $attendance): bool
     {
-        return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
+        if ($user->hasRole(UserRole::ADMIN->value)) {
+            return true;
+        }
+
+        if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
+            return $user->id === $attendance->session->group->course->instructor_id;
+        }
+
+        return false;
     }
 
     public function forceDelete(User $user, Attendance $attendance): bool
     {
-        return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
+        if ($user->hasRole(UserRole::ADMIN->value)) {
+            return true;
+        }
+
+        if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
+            return $user->id === $attendance->session->group->course->instructor_id;
+        }
+
+        return false;
     }
 }

@@ -34,13 +34,13 @@ class PreinscriptionObserver
         }
     }
 
-    protected function evaluateEnablement(?int $groupId): void
+    protected function evaluateEnablement(int|string|null $groupId): void
     {
         if ($groupId === null) {
             return;
         }
 
-        $group = Group::find($groupId);
+        $group = Group::find((int) $groupId);
 
         if ($group === null || $group->status !== GroupStatus::NO_HABILITADO) {
             return;

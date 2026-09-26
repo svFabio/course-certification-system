@@ -10,6 +10,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Models\Group;
 use App\Models\Preinscription;
+use App\Support\BusinessRules;
 use Illuminate\Support\Collection;
 
 class SheetExportBuilder
@@ -93,12 +94,13 @@ class SheetExportBuilder
         $rows[] = [];
 
         $sessionCount = $sessions->count();
+        $attendanceWeight = (int) ($course->attendance_weight ?? BusinessRules::DEFAULT_ATTENDANCE_WEIGHT);
 
         // Columns layout (0-indexed): A-E = identity (5 cols), then sessions, then Asistencia, Puntaje, criteria, NOTA FINAL
         $headerRow5 = array_merge(
             ['Nro', 'CI', 'APE_PAT', 'APE_MAT', 'NOMBRES'],
             $sessions->map(fn ($s) => $s->fecha->format('d/m'))->toArray(),
-            ['Asistencia', 'Puntaje /50'],
+            ['Asistencia', "Puntaje /{$attendanceWeight}"],
             $criteria->pluck('nombre')->toArray(),
             ['NOTA FINAL']
         );
@@ -107,7 +109,7 @@ class SheetExportBuilder
         $headerRow6 = array_merge(
             ['', '', '', '', ''],
             $sessions->pluck('fecha')->map(fn () => '')->toArray(),
-            ['', ''],
+            ['', "{$attendanceWeight}%"],
             $criteria->pluck('ponderacion')->map(fn ($p) => $p.'%')->toArray(),
             ['100']
         );
@@ -130,11 +132,16 @@ class SheetExportBuilder
             // Asistencia = count of 1s (PRESENTE or JUSTIFICADO)
             $asistenciaCol = $this->columnLetter(5 + $sessionCount);
 
-            $asistenciaFormula = "=COUNTIF({$firstAttendanceCol}{$currentRow}:{$lastAttendanceCol}{$currentRow};1)";
-            $puntajeFormula = "=ROUND(({$asistenciaCol}{$currentRow}/{$sessionCount})*50;2)";
+            $asistenciaFormula = $sessionCount > 0
+                ? "=COUNTIF({$firstAttendanceCol}{$currentRow}:{$lastAttendanceCol}{$currentRow};1)"
+                : '0';
+            $puntajeFormula = $sessionCount > 0
+                ? "=ROUND(({$asistenciaCol}{$currentRow}/{$sessionCount})*{$attendanceWeight};2)"
+                : '0';
 
             $gradeStartIndex = 5 + $sessionCount + 2;
-            $notaFinalFormula = $this->buildWeightedFinalGradeFormula($criteria, $gradeStartIndex, $currentRow);
+            $puntajeCol = $this->columnLetter(5 + $sessionCount + 1);
+            $notaFinalFormula = $this->buildWeightedFinalGradeFormula($criteria, $gradeStartIndex, $currentRow, "{$puntajeCol}{$currentRow}");
 
             $grades = $this->buildGradesRow($preinscription, $criteria);
 
@@ -194,28 +201,6 @@ class SheetExportBuilder
         })->toArray();
     }
 
-    private function calculateAttendanceTotal(Preinscription $preinscription, int $sessionsCount): float
-    {
-        if ($sessionsCount === 0) {
-            return 0.0;
-        }
-
-        $presentCount = $preinscription->attendances
-            ->filter(fn (mixed $a) => in_array($a->status, [AttendanceStatus::PRESENTE, AttendanceStatus::JUSTIFICADO]))
-            ->count();
-
-        return (float) $presentCount;
-    }
-
-    private function calculateAttendanceScore(float $attendanceTotal, int $sessionsCount): float
-    {
-        if ($sessionsCount === 0) {
-            return 0.0;
-        }
-
-        return round(($attendanceTotal / $sessionsCount) * 50, 2);
-    }
-
     private function buildGradesRow(Preinscription $preinscription, Collection $criteria): array
     {
         $gradesMap = $preinscription->grades->keyBy('evaluation_criteria_id');
@@ -228,10 +213,10 @@ class SheetExportBuilder
     }
 
     /**
-     * NOTA FINAL = sum(nota * ponderacion / 100) — same formula as EvaluationService.
+     * NOTA FINAL = puntaje_asistencia + sum(nota * ponderacion / 100) — same formula as EvaluationService.
      * Uses ';' as argument separator for Spanish/Es Google Sheets locales.
      */
-    private function buildWeightedFinalGradeFormula(Collection $criteria, int $gradeStartIndex, int $currentRow): string
+    private function buildWeightedFinalGradeFormula(Collection $criteria, int $gradeStartIndex, int $currentRow, string $attendanceScoreCell): string
     {
         $terms = $criteria->map(function (mixed $criterion, int $index) use ($gradeStartIndex, $currentRow): string {
             $col = $this->columnLetter($gradeStartIndex + $index);
@@ -239,78 +224,11 @@ class SheetExportBuilder
             return "{$col}{$currentRow}*{$criterion->ponderacion}/100";
         })->implode('+');
 
-        return "=ROUND({$terms};2)";
-    }
-
-    public function buildCashDataRows(): array
-    {
-        $preinscriptions = $this->getCashPreinscriptions();
-        $rows = [];
-        $nro = 1;
-
-        foreach ($preinscriptions as $preinscription) {
-            $rows[] = [
-                $nro++,
-                $preinscription->cod_sis ?? '',
-                $preinscription->ci,
-                $preinscription->apellido_paterno,
-                $preinscription->apellido_materno,
-                $preinscription->nombres,
-                $preinscription->celular,
-                $this->sumVerifiedPayments($preinscription, PaymentMethod::EFECTIVO),
-                $this->sumVerifiedPayments($preinscription, PaymentMethod::QR),
-                '',
-                $preinscription->fotocopia_ci ? 'SÍ' : 'NO',
-            ];
+        if ($terms === '') {
+            return "=ROUND({$attendanceScoreCell};2)";
         }
 
-        return $rows;
-    }
-
-    public function buildTeacherDataRows(): array
-    {
-        $sessions = $this->group->sessions;
-        $criteria = $this->group->course->evaluationCriteria;
-        $sessionsCount = $sessions->count();
-        $preinscriptions = $this->getTeacherPreinscriptions();
-        $rows = [];
-        $nro = 1;
-
-        // Data starts at row 7 (rows 1-4 header, 5 col headers, 6 weights)
-        $dataStartRow = 7;
-
-        foreach ($preinscriptions as $index => $preinscription) {
-            $currentRow = $dataStartRow + $index;
-            $attendanceMarks = $this->buildAttendanceMarks($preinscription, $sessions);
-
-            $firstAttendanceCol = $this->columnLetter(5);
-            $lastAttendanceCol = $this->columnLetter(5 + $sessionsCount - 1);
-            $asistenciaCol = $this->columnLetter(5 + $sessionsCount);
-
-            $asistenciaFormula = "=COUNTIF({$firstAttendanceCol}{$currentRow}:{$lastAttendanceCol}{$currentRow};1)";
-            $puntajeFormula = "=ROUND(({$asistenciaCol}{$currentRow}/{$sessionsCount})*50;2)";
-
-            $gradeStartIndex = 5 + $sessionsCount + 2;
-            $notaFinalFormula = $this->buildWeightedFinalGradeFormula($criteria, $gradeStartIndex, $currentRow);
-
-            $grades = $this->buildGradesRow($preinscription, $criteria);
-
-            $rows[] = array_merge(
-                [
-                    $nro++,
-                    $preinscription->ci,
-                    $preinscription->apellido_paterno,
-                    $preinscription->apellido_materno,
-                    $preinscription->nombres,
-                ],
-                $attendanceMarks,
-                [$asistenciaFormula, $puntajeFormula],
-                $grades,
-                [$notaFinalFormula]
-            );
-        }
-
-        return $rows;
+        return "=ROUND({$attendanceScoreCell}+{$terms};2)";
     }
 
     /**

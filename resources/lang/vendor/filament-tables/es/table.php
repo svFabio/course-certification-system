@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
 
     'column_toggle' => [
@@ -219,8 +221,8 @@ return [
                 'label' => 'Dirección del orden',
 
                 'options' => [
-                    'asc' => 'Ascendente',
-                    'desc' => 'Descendente',
+                    'asc' => 'Más antiguo primero',
+                    'desc' => 'Más reciente primero',
                 ],
 
             ],

@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Filament\Instructor\Pages\GradeMatrix;
+use App\Filament\Instructor\Pages\InstructorDashboard;
 use App\Filament\Instructor\Pages\MarkAttendance;
 use App\Filament\Instructor\Resources;
+use App\Filament\Instructor\Widgets\InstructorCoursesWidget;
+use App\Filament\Instructor\Widgets\InstructorStatsOverviewWidget;
+use App\Filament\Instructor\Widgets\PendingAttendanceWidget;
+use App\Filament\Instructor\Widgets\UpcomingSessionsWidget;
 use App\Http\Middleware\EnsureUserIsInstructor;
 use App\Support\DesignTokens;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -48,11 +53,17 @@ class InstructorPanelProvider extends PanelProvider
             ->resources([
                 Resources\InstructorCourseResource::class,
                 Resources\InstructorSessionResource::class,
-                Resources\InstructorGradeResource::class,
             ])
             ->pages([
-                Pages\Dashboard::class,
+                InstructorDashboard::class,
                 MarkAttendance::class,
+                GradeMatrix::class,
+            ])
+            ->widgets([
+                InstructorStatsOverviewWidget::class,
+                PendingAttendanceWidget::class,
+                UpcomingSessionsWidget::class,
+                InstructorCoursesWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
