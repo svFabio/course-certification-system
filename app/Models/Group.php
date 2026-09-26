@@ -90,4 +90,20 @@ class Group extends Model
 
         return round(($confirmed / $this->cupo_maximo) * 100, 1);
     }
+    public function getCuposOcupadosAttribute(): int
+    {
+        return $this->preinscriptions()
+            ->where('status', PreinscriptionStatus::INSCRITO)
+            ->count();
+    }
+    
+    public function getCuposDisponiblesAttribute(): int
+    {
+        return max(0, $this->cupo_maximo - $this->cupos_ocupados);
+    }
+    
+    public function getEstaLlenoAttribute(): bool
+    {
+        return $this->cupos_disponibles === 0;
+    }
 }

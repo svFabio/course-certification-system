@@ -19,6 +19,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 
@@ -186,8 +187,16 @@ class PreinscriptionResource extends Resource
                     ->sortable(),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('group_id')
+                    ->relationship('group', 'nombre')
+                    ->label('Grupo')
+                    ->searchable(),
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Estado')
+                    ->options(PreinscriptionStatus::class)
+                    ->default(PreinscriptionStatus::INSCRITO->value),
             ])
+            ->defaultSort('apellido_paterno')
             ->actions([
                 Tables\Actions\Action::make('aprobarCertificadoAuxiliar')
                     ->label('Aprobar certificado auxiliar')
@@ -202,7 +211,7 @@ class PreinscriptionResource extends Resource
                     ->action(function (Preinscription $record): void {
                         $record->update([
                             'auxiliar_certificado_aprobado' => true,
-                            'auxiliar_certificado_aprobado_por' => auth()->id(),
+                            'auxiliar_certificado_aprobado_por' => Auth::id(),
                             'auxiliar_certificado_aprobado_en' => now(),
                             'auxiliar_certificado_motivo' => null,
                         ]);
@@ -231,7 +240,7 @@ class PreinscriptionResource extends Resource
                     ->action(function (Preinscription $record, array $data): void {
                         $record->update([
                             'auxiliar_certificado_aprobado' => false,
-                            'auxiliar_certificado_aprobado_por' => auth()->id(),
+                            'auxiliar_certificado_aprobado_por' => Auth::id(),
                             'auxiliar_certificado_aprobado_en' => now(),
                             'auxiliar_certificado_motivo' => $data['motivo'],
                         ]);

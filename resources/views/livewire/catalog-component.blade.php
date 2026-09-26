@@ -1,4 +1,4 @@
-<div>
+<div wire:poll.10s>
     {{-- Search and filters header card --}}
     <div class="card-umss p-6 sm:p-8 mb-8 bg-white border border-umss-gray-100 border-t-4 border-t-umss-navy rounded-xl shadow-md">
         <div class="mb-6">
@@ -127,7 +127,8 @@
                             @foreach ($course->groups as $group)
                                 @php
                                     $inscritos = $group->inscritos_count ?? 0;
-                                    $full = $inscritos >= $group->cupo_maximo;
+                                    $disponibles = max(0, $group->cupo_maximo - $inscritos);
+                                    $full = $disponibles === 0;
                                 @endphp
                                 <div class="flex justify-between items-center text-xs">
                                     <div>
@@ -138,10 +139,15 @@
                                     @if ($full)
                                         <span class="text-umss-red font-semibold text-xs px-2 py-0.5 rounded bg-umss-red/10">Lleno</span>
                                     @else
-                                        <a href="{{ route('preinscripcion', ['group' => $group->id]) }}"
-                                            class="inline-flex items-center text-umss-navy hover:text-umss-navy-dark font-semibold text-xs transition">
-                                            Preinscribirse &rarr;
-                                        </a>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-umss-gray-700">
+                                                {{ $disponibles }} {{ \Illuminate\Support\Str::plural('cupo', $disponibles) }} disponibles
+                                            </span>
+                                            <a href="{{ route('preinscripcion', ['group' => $group->id]) }}"
+                                               class="text-umss-navy font-medium hover:underline">
+                                                Preinscribirse
+                                            </a>
+                                        </div>
                                     @endif
                                 </div>
                             @endforeach
