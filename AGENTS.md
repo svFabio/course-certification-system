@@ -86,6 +86,7 @@ Todas las reglas de cálculo y validación de negocio residen en `App\Support\Bu
 La IA y los hooks de revisión deben BLOQUEAR cualquier commit que contenga:
 - **Credenciales y Secretos:** Contraseñas, API keys, tokens de acceso (Bearer, GitHub, AWS, etc.), claves privadas (RSA, SSH, PGP) o secrets de autenticación.
 - **Variables de Entorno Sensibles:** Jamás incluir valores reales de producción en archivos de configuración o código fuente. Todo valor sensible debe leerse mediante `config(...)` y residir exclusivamente en `.env` (ignorado por git).
+- **Datos Personales (PII) en Seeders/Tests/Fixtures:** PROHIBIDO hardcodear datos personales de personas naturales o que parezcan reales: nombres propios, CIs, matrículas `cod_sis`, teléfonos, correos, domicilios. Este bloqueo aplica aunque los datos sean de ejemplo "para poblar" la BD de desarrollo. Usar SIEMPRE `fake()` (Faker) o credenciales genéricas documentadas en `.env.example`. Dato sospechoso (CI numérico, celular nacional, nombre+apellido realista) → bloquear y exigir reescritura con `fake()`.
 - **Datos Sensibles en Tests/Seeders:** Usar siempre `fake()` o credenciales genéricas documentadas en `.env.example`.
 
 ---

@@ -49,7 +49,7 @@ class CoursesSeeder extends Seeder
             [
                 'nombre' => 'Mantenimiento y Reparación de Computadoras',
                 'contenido' => 'Diagnóstico de hardware, ensamble de componentes, optimización de sistemas operativos y mantenimiento preventivo y correctivo de PCs y laptops.',
-                'portada_path' => 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=1000&q=80',
+                'portada_path' => null,
                 'carga_horaria' => '20',
                 'nivel' => CourseLevel::BASICO,
                 'periodo' => '1-2026',
@@ -61,7 +61,7 @@ class CoursesSeeder extends Seeder
                         'aula' => 'Laboratorio de Informática 1',
                         'hora_inicio' => '10:00',
                         'hora_fin' => '11:30',
-                        'cupo_minimo' => 15,
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 25,
                         'status' => GroupStatus::HABILITADO,
                         'participants_count' => 18,
@@ -71,7 +71,7 @@ class CoursesSeeder extends Seeder
                         'aula' => 'Laboratorio de Redes',
                         'hora_inicio' => '14:15',
                         'hora_fin' => '15:45',
-                        'cupo_minimo' => 15,
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 20,
                         'status' => GroupStatus::HABILITADO,
                         'participants_count' => 15,
@@ -81,7 +81,7 @@ class CoursesSeeder extends Seeder
             [
                 'nombre' => 'Programación con Scratch para Niños y Jóvenes',
                 'contenido' => 'Fundamentos de lógica algorítmica, animación interactiva, estructuras condicionales y desarrollo de videojuegos didácticos con bloques visuales.',
-                'portada_path' => 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1000&q=80',
+                'portada_path' => null,
                 'carga_horaria' => '20',
                 'nivel' => CourseLevel::BASICO,
                 'periodo' => '1-2026',
@@ -93,7 +93,7 @@ class CoursesSeeder extends Seeder
                         'aula' => 'Laboratorio de Informática 2',
                         'hora_inicio' => '09:45',
                         'hora_fin' => '11:15',
-                        'cupo_minimo' => 15,
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 30,
                         'status' => GroupStatus::HABILITADO,
                         'participants_count' => 22,
@@ -103,7 +103,7 @@ class CoursesSeeder extends Seeder
             [
                 'nombre' => 'Desarrollo de Aplicaciones Web con Laravel y Livewire',
                 'contenido' => 'Arquitectura MVC, Eloquent ORM avanzado, Livewire 3 reactivo, diseño con Tailwind CSS y generación de APIs REST seguras.',
-                'portada_path' => 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1000&q=80',
+                'portada_path' => null,
                 'carga_horaria' => '30',
                 'nivel' => CourseLevel::INTERMEDIO,
                 'periodo' => '1-2026',
@@ -115,7 +115,7 @@ class CoursesSeeder extends Seeder
                         'aula' => 'Aula 692A - Facultad de Tecnología',
                         'hora_inicio' => '18:45',
                         'hora_fin' => '20:15',
-                        'cupo_minimo' => 15,
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 35,
                         'status' => GroupStatus::HABILITADO,
                         'participants_count' => 16,
@@ -125,7 +125,7 @@ class CoursesSeeder extends Seeder
             [
                 'nombre' => 'Diseño Gráfico Publicitario e Identidad Corporativa',
                 'contenido' => 'Creación de piezas gráficas para redes sociales, retoque digital, teoría del color, tipografía y branding empresarial.',
-                'portada_path' => 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=1000&q=80',
+                'portada_path' => null,
                 'carga_horaria' => '20',
                 'nivel' => CourseLevel::BASICO,
                 'periodo' => '1-2026',
@@ -137,7 +137,7 @@ class CoursesSeeder extends Seeder
                         'aula' => 'Laboratorio Multimedia',
                         'hora_inicio' => '08:15',
                         'hora_fin' => '09:45',
-                        'cupo_minimo' => 15,
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 20,
                         'status' => GroupStatus::HABILITADO,
                         'participants_count' => 15,
@@ -147,7 +147,7 @@ class CoursesSeeder extends Seeder
             [
                 'nombre' => 'Administración de Redes y Seguridad Informática',
                 'contenido' => 'Configuración de switches y routers Cisco, protocolos TCP/IP, subnetting IPv4/IPv6, firewalls y hardening de servidores Linux.',
-                'portada_path' => 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1000&q=80',
+                'portada_path' => null,
                 'carga_horaria' => '30',
                 'nivel' => CourseLevel::AVANZADO,
                 'periodo' => '2-2026',
@@ -159,7 +159,7 @@ class CoursesSeeder extends Seeder
                         'aula' => 'Laboratorio de Redes y Telecomunicaciones',
                         'hora_inicio' => '17:15',
                         'hora_fin' => '18:45',
-                        'cupo_minimo' => 15,
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 25,
                         'status' => GroupStatus::NO_HABILITADO,
                         'participants_count' => 5,
@@ -168,45 +168,26 @@ class CoursesSeeder extends Seeder
             ],
         ];
 
-        // Estudiantes realistas para poblar
-        $poolEstudiantes = [
-            ['ci' => '7912552', 'cod_sis' => '202002515', 'nom' => 'Christian Mauricio', 'pat' => 'Arias', 'mat' => 'Chubarieva', 'tipo' => TipoParticipante::AUXILIAR, 'cel' => '75468783'],
-            ['ci' => '9516503', 'cod_sis' => '202503252', 'nom' => 'Giliani Anel', 'pat' => 'Balderrama', 'mat' => 'Cordova', 'tipo' => TipoParticipante::UMSS, 'cel' => '65518177'],
-            ['ci' => '13163508', 'cod_sis' => '202202517', 'nom' => 'Jazmin', 'pat' => 'Cuizara', 'mat' => 'Segarra', 'tipo' => TipoParticipante::AUXILIAR, 'cel' => '63873042'],
-            ['ci' => '9409282', 'cod_sis' => '202100112', 'nom' => 'Scarlet', 'pat' => 'Davila', 'mat' => 'Montaño', 'tipo' => TipoParticipante::UMSS, 'cel' => '69524424'],
-            ['ci' => '12968669', 'cod_sis' => '202103793', 'nom' => 'Kevin Antonio', 'pat' => 'Fernandez', 'mat' => 'Aguilar', 'tipo' => TipoParticipante::UMSS, 'cel' => '69529974'],
-            ['ci' => '13378682', 'cod_sis' => '202401362', 'nom' => 'Francisco', 'pat' => 'Lazarte', 'mat' => 'Salazar', 'tipo' => TipoParticipante::AUXILIAR, 'cel' => '70739012'],
-            ['ci' => '15568524', 'cod_sis' => '202500690', 'nom' => 'Nadir Fabricio', 'pat' => 'Lizarazu', 'mat' => 'Flores', 'tipo' => TipoParticipante::UMSS, 'cel' => '69533334'],
-            ['ci' => '9508215', 'cod_sis' => '201709859', 'nom' => 'Jhojan Enrique', 'pat' => 'Manzel', 'mat' => 'Mollo', 'tipo' => TipoParticipante::UMSS, 'cel' => '75968023'],
-            ['ci' => '13589123', 'cod_sis' => '202401590', 'nom' => 'Leonardo Peter', 'pat' => 'Marca', 'mat' => 'Salas', 'tipo' => TipoParticipante::UMSS, 'cel' => '77965548'],
-            ['ci' => '8739408', 'cod_sis' => null, 'nom' => 'Rodrigo Javier', 'pat' => 'Molina', 'mat' => 'Peredo', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '65704302'],
-            ['ci' => '14077852', 'cod_sis' => '202300188', 'nom' => 'Brenda Katherine', 'pat' => 'Ancieta', 'mat' => 'Herrera', 'tipo' => TipoParticipante::UMSS, 'cel' => '71485962'],
-            ['ci' => '14829705', 'cod_sis' => '202304910', 'nom' => 'Santiago', 'pat' => 'Anzaldo', 'mat' => 'Flores', 'tipo' => TipoParticipante::UMSS, 'cel' => '78451296'],
-            ['ci' => '15501046', 'cod_sis' => null, 'nom' => 'Matias', 'pat' => 'Ayala', 'mat' => 'Villarroel', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '69584120'],
-            ['ci' => '16245988', 'cod_sis' => '202409841', 'nom' => 'Wendy Nicole', 'pat' => 'Ballesteros', 'mat' => 'Morales', 'tipo' => TipoParticipante::UMSS, 'cel' => '77412589'],
-            ['ci' => '16361541', 'cod_sis' => '202409842', 'nom' => 'Jonathan', 'pat' => 'Ballesteros', 'mat' => 'Morales', 'tipo' => TipoParticipante::UMSS, 'cel' => '77412590'],
-            ['ci' => '15077789', 'cod_sis' => '202201995', 'nom' => 'Briana Victoria', 'pat' => 'Cespedes', 'mat' => 'Chavez', 'tipo' => TipoParticipante::UMSS, 'cel' => '68541230'],
-            ['ci' => '17143554', 'cod_sis' => null, 'nom' => 'Emilio', 'pat' => 'Claure', 'mat' => 'Choque', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '70789456'],
-            ['ci' => '15799776', 'cod_sis' => '202403120', 'nom' => 'Thiago', 'pat' => 'Flores', 'mat' => 'Gamboa', 'tipo' => TipoParticipante::UMSS, 'cel' => '63985214'],
-            ['ci' => '13590051', 'cod_sis' => '202105412', 'nom' => 'Pablo Alejandro', 'pat' => 'Gonzales', 'mat' => 'Cortez', 'tipo' => TipoParticipante::UMSS, 'cel' => '72951478'],
-            ['ci' => '17008486', 'cod_sis' => '202501980', 'nom' => 'Alison Silvana', 'pat' => 'Gonzales', 'mat' => 'Cortez', 'tipo' => TipoParticipante::UMSS, 'cel' => '67412589'],
-            ['ci' => '15900533', 'cod_sis' => '202302450', 'nom' => 'Brenda Belen', 'pat' => 'Gonzales', 'mat' => 'Veliz', 'tipo' => TipoParticipante::UMSS, 'cel' => '75986321'],
-            ['ci' => '14836794', 'cod_sis' => '202208741', 'nom' => 'Carlos Manuel', 'pat' => 'Guaman', 'mat' => 'Cespedes', 'tipo' => TipoParticipante::UMSS, 'cel' => '68451239'],
-            ['ci' => '16768480', 'cod_sis' => null, 'nom' => 'Ian Fernando', 'pat' => 'Lizarazu', 'mat' => 'Calizaya', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '71458963'],
-            ['ci' => '16268688', 'cod_sis' => '202407412', 'nom' => 'Ainhoa Evangeline', 'pat' => 'Lopez', 'mat' => 'Vargas', 'tipo' => TipoParticipante::UMSS, 'cel' => '69852147'],
-            ['ci' => '14441951', 'cod_sis' => '202109852', 'nom' => 'Ana Paula', 'pat' => 'Lopez', 'mat' => 'Parra', 'tipo' => TipoParticipante::UMSS, 'cel' => '76541238'],
-            ['ci' => '11844723', 'cod_sis' => '202004712', 'nom' => 'Danitza Romina', 'pat' => 'Salvatierra', 'mat' => 'Vargas', 'tipo' => TipoParticipante::UMSS, 'cel' => '68524179'],
-            ['ci' => '12435671', 'cod_sis' => null, 'nom' => 'Alvaro', 'pat' => 'Jaldin', 'mat' => 'Rojas', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '71478952'],
-            ['ci' => '15420229', 'cod_sis' => '202401120', 'nom' => 'Fabiana', 'pat' => 'Torrico', 'mat' => 'Antezana', 'tipo' => TipoParticipante::UMSS, 'cel' => '68951247'],
-            ['ci' => '10887542', 'cod_sis' => null, 'nom' => 'Rodrigo', 'pat' => 'Zarate', 'mat' => 'Caballero', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '77412593'],
-            ['ci' => '14258784', 'cod_sis' => '202201899', 'nom' => 'Maria Jose', 'pat' => 'Romero', 'mat' => 'Delgadillo', 'tipo' => TipoParticipante::UMSS, 'cel' => '65708941'],
-            ['ci' => '16127890', 'cod_sis' => '202502310', 'nom' => 'Andres', 'pat' => 'Vaca', 'mat' => 'Flores', 'tipo' => TipoParticipante::AUXILIAR, 'cel' => '74581296'],
-            ['ci' => '12879654', 'cod_sis' => '202300452', 'nom' => 'Camila Fernanda', 'pat' => 'Rojas', 'mat' => 'Apaza', 'tipo' => TipoParticipante::UMSS, 'cel' => '78954123'],
-            ['ci' => '15987746', 'cod_sis' => null, 'nom' => 'Samuel', 'pat' => 'Quispe', 'mat' => 'Mamani', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '69541278'],
-            ['ci' => '11953627', 'cod_sis' => '202108745', 'nom' => 'Valeria', 'pat' => 'Paredes', 'mat' => 'Suarez', 'tipo' => TipoParticipante::UMSS, 'cel' => '72589641'],
-            ['ci' => '16458732', 'cod_sis' => '202407815', 'nom' => 'Mateo', 'pat' => 'Serrano', 'mat' => 'Uriarte', 'tipo' => TipoParticipante::UMSS, 'cel' => '65874123'],
-            ['ci' => '13456987', 'cod_sis' => null, 'nom' => 'Luciana', 'pat' => 'Ortiz', 'mat' => 'Navarro', 'tipo' => TipoParticipante::EXTERNO, 'cel' => '77450012'],
-        ];
+        // Pool de estudiantes generado con fake() — nunca datos personales reales
+        // (AGENTS.md §5: seeders usan fake() / credenciales genéricas).
+        $poolEstudiantes = [];
+        for ($i = 0; $i < 40; $i++) {
+            $tipo = match ($i % 3) {
+                0 => TipoParticipante::UMSS,
+                1 => TipoParticipante::AUXILIAR,
+                default => TipoParticipante::EXTERNO,
+            };
+
+            $poolEstudiantes[] = [
+                'ci' => (string) fake()->unique()->numberBetween(5_000_000, 12_000_000),
+                'cod_sis' => $tipo === TipoParticipante::EXTERNO ? null : (string) fake()->numberBetween(2017_00000, 2025_99999),
+                'nom' => fake()->firstName(),
+                'pat' => fake()->lastName(),
+                'mat' => fake()->lastName(),
+                'tipo' => $tipo,
+                'cel' => fake()->numerify('6#######'),
+            ];
+        }
 
         $estudianteCursor = 0;
 
@@ -222,9 +203,9 @@ class CoursesSeeder extends Seeder
                     'nivel' => $cData['nivel'],
                     'periodo' => $cData['periodo'],
                     'status' => $cData['status'],
-                    'precio_umss' => BusinessRules::calculatePrice($courseHours, 'umss'),
-                    'precio_externo' => BusinessRules::calculatePrice($courseHours, 'externo'),
-                    'precio_auxiliar' => BusinessRules::calculatePrice($courseHours, 'auxiliar'),
+                    'precio_umss' => BusinessRules::calculatePrice($courseHours, TipoParticipante::UMSS->value),
+                    'precio_externo' => BusinessRules::calculatePrice($courseHours, TipoParticipante::EXTERNO->value),
+                    'precio_auxiliar' => BusinessRules::calculatePrice($courseHours, TipoParticipante::AUXILIAR->value),
                     'instructor_id' => $cData['instructor_id'],
                 ]
             );
