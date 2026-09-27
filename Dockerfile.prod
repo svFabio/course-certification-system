@@ -1,0 +1,97 @@
+# ==============================================================================
+# Stage 1 — Frontend assets (Vite / Node)
+# ==============================================================================
+FROM node:20-alpine AS assets
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY resources/ resources/
+COPY public/ public/
+COPY vite.config.js ./
+COPY tailwind.config.js ./
+COPY postcss.config.js ./
+
+RUN npm run build
+
+# ==============================================================================
+# Stage 2 — PHP dependencies (Composer, no dev)
+# ==============================================================================
+FROM composer:2 AS vendor
+
+WORKDIR /app
+
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --prefer-dist \
+    --optimize-autoloader \
+    --no-scripts
+
+# ==============================================================================
+# Stage 3 — Production image (PHP 8.3-FPM + OPcache)
+# ==============================================================================
+FROM php:8.3-fpm-alpine AS app
+
+# System dependencies
+RUN apk add --no-cache \
+    bash \
+    libpng-dev \
+    oniguruma-dev \
+    libxml2-dev \
+    postgresql-dev \
+    libzip-dev \
+    icu-dev \
+    freetype-dev \
+    libjpeg-turbo-dev \
+    shadow \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install \
+        pdo_pgsql \
+        mbstring \
+        exif \
+        bcmath \
+        gd \
+        zip \
+        intl \
+        opcache
+
+# OPcache — production tuning
+COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+
+WORKDIR /var/www/html
+
+# Application source (excludes files in .dockerignore)
+COPY --chown=www-data:www-data . .
+
+# Compiled assets from Stage 1
+COPY --from=assets --chown=www-data:www-data /app/public/build public/build
+
+# Production Composer deps from Stage 2
+COPY --from=vendor --chown=www-data:www-data /app/vendor vendor/
+
+# Production-safe entrypoint
+COPY docker/entrypoint.prod.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Ensure required directories exist with correct ownership
+RUN mkdir -p \
+    storage/app/public \
+    storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/testing \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
+USER www-data
+
+EXPOSE 9000
+
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["php-fpm"]

@@ -22,6 +22,4 @@ Route::get('/boleta/{preinscription}', BoletaController::class)
     ->middleware('signed')
     ->name('boleta.descargar');
 
-Route::get('/asistencia', function () {
-    return view('asistencia.escanear');
-})->name('asistencia.escanear');
+Route::view('/asistencia', 'asistencia.escanear')->name('asistencia.escanear');
