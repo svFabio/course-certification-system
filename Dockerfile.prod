@@ -32,22 +32,26 @@ RUN composer install \
     --no-scripts
 
 # ==============================================================================
-# Stage 3 — Production image (PHP 8.3-FPM + OPcache)
+# Stage 3 — Production image (PHP 8.3-Apache + OPcache)
 # ==============================================================================
-FROM php:8.3-fpm-alpine AS app
+FROM php:8.3-apache AS app
 
-# System dependencies
-RUN apk add --no-cache \
-    bash \
+# Enable Apache modules required by Laravel
+RUN a2enmod rewrite headers
+
+# Install system dependencies and PHP build requirements
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
     libpng-dev \
-    oniguruma-dev \
+    libonig-dev \
     libxml2-dev \
-    postgresql-dev \
+    libpq-dev \
     libzip-dev \
-    icu-dev \
-    freetype-dev \
-    libjpeg-turbo-dev \
-    shadow \
+    libicu-dev \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    zip \
+    unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
         pdo_pgsql \
@@ -57,27 +61,35 @@ RUN apk add --no-cache \
         gd \
         zip \
         intl \
-        opcache
+        opcache \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# OPcache — production tuning
+# Configure Apache DocumentRoot to Laravel's public/ directory
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
+    && sed -ri -e 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+
+# OPcache production configuration
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
 WORKDIR /var/www/html
 
-# Application source (excludes files in .dockerignore)
-COPY --chown=www-data:www-data . .
+# Application source code
+COPY . .
 
 # Compiled assets from Stage 1
-COPY --from=assets --chown=www-data:www-data /app/public/build public/build
+COPY --from=assets /app/public/build public/build
 
-# Production Composer deps from Stage 2
-COPY --from=vendor --chown=www-data:www-data /app/vendor vendor/
+# Production vendor dependencies from Stage 2
+COPY --from=vendor /app/vendor vendor/
 
 # Production-safe entrypoint
 COPY docker/entrypoint.prod.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Ensure required directories exist with correct ownership
+# Storage and cache directories
 RUN mkdir -p \
     storage/app/public \
     storage/framework/cache/data \
@@ -89,9 +101,7 @@ RUN mkdir -p \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-USER www-data
-
-EXPOSE 9000
+EXPOSE 80
 
 ENTRYPOINT ["entrypoint.sh"]
-CMD ["php-fpm"]
+CMD ["apache2-foreground"]
