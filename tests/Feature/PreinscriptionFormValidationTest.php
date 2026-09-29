@@ -47,21 +47,22 @@ it('accepts valid bolivian student data and proceeds to confirmation step', func
     ]);
 
     Livewire::test(PreinscriptionComponent::class, ['group' => $group])
-        ->set('ci', '7894561')
-        ->set('nombres', 'Fabio Santos')
-        ->set('apellidoPaterno', 'Fernandez')
-        ->set('apellidoMaterno', 'Vargas')
-        ->set('celular', '71234567')
-        ->set('email', 'fabio.fernandez@umss.edu.bo')
+        ->set('ci', (string) fake()->numerify('#######'))
+        ->set('nombres', fake()->firstName().' '.fake()->firstName())
+        ->set('apellidoPaterno', fake()->lastName())
+        ->set('apellidoMaterno', fake()->lastName())
+        ->set('celular', '7'.fake()->numerify('#######'))
+        ->set('email', fake()->userName().'@gmail.com')
         ->set('tipoParticipante', 'umss')
-        ->set('codSis', '202002515')
+        ->set('codSis', (string) fake()->numerify('#########'))
         ->call('goToConfirmation')
         ->assertHasNoErrors()
         ->assertSet('stepConfirmation', true);
 });
 
 it('displays dedicated success screen after preinscription submission instead of resetting form', function () {
-    RateLimiter::clear('preinscripcion:ci:7894561');
+    $ci = (string) fake()->numerify('#######');
+    RateLimiter::clear("preinscripcion:ci:{$ci}");
     RateLimiter::clear('preinscripcion:ip:127.0.0.1');
 
     $course = Course::factory()->create(['carga_horaria' => '20']);
@@ -73,14 +74,14 @@ it('displays dedicated success screen after preinscription submission instead of
     ]);
 
     Livewire::test(PreinscriptionComponent::class, ['group' => $group])
-        ->set('ci', '7894561')
-        ->set('nombres', 'Fabio Santos')
-        ->set('apellidoPaterno', 'Fernandez')
-        ->set('apellidoMaterno', 'Vargas')
-        ->set('celular', '71234567')
-        ->set('email', 'fabio.fernandez@umss.edu.bo')
+        ->set('ci', $ci)
+        ->set('nombres', fake()->firstName())
+        ->set('apellidoPaterno', fake()->lastName())
+        ->set('apellidoMaterno', fake()->lastName())
+        ->set('celular', '7'.fake()->numerify('#######'))
+        ->set('email', fake()->userName().'@gmail.com')
         ->set('tipoParticipante', 'umss')
-        ->set('codSis', '202002515')
+        ->set('codSis', (string) fake()->numerify('#########'))
         ->call('goToConfirmation')
         ->call('submit')
         ->assertSet('isSubmitted', true)
@@ -98,21 +99,22 @@ it('blocks same-course preinscription when one is pending payment', function () 
         'cupo_maximo' => 30,
     ]);
 
+    $ci = (string) fake()->numerify('#######');
     Preinscription::factory()->create([
-        'ci' => '7894561',
+        'ci' => $ci,
         'group_id' => $group->id,
         'status' => PreinscriptionStatus::PENDIENTE_PAGO,
     ]);
 
     Livewire::test(PreinscriptionComponent::class, ['group' => $group])
-        ->set('ci', '7894561')
-        ->set('nombres', 'Fabio Santos')
-        ->set('apellidoPaterno', 'Fernandez')
-        ->set('apellidoMaterno', 'Vargas')
-        ->set('celular', '71234567')
-        ->set('email', 'fabio.fernandez@umss.edu.bo')
+        ->set('ci', $ci)
+        ->set('nombres', fake()->firstName())
+        ->set('apellidoPaterno', fake()->lastName())
+        ->set('apellidoMaterno', fake()->lastName())
+        ->set('celular', '7'.fake()->numerify('#######'))
+        ->set('email', fake()->userName().'@gmail.com')
         ->set('tipoParticipante', 'umss')
-        ->set('codSis', '202002515')
+        ->set('codSis', (string) fake()->numerify('#########'))
         ->call('goToConfirmation')
         ->assertHasErrors(['ci'])
         ->assertSee('Ya enviaste tu preinscripción para este curso');
@@ -127,21 +129,22 @@ it('blocks same-course preinscription when already enrolled', function () {
         'cupo_maximo' => 30,
     ]);
 
+    $ci = (string) fake()->numerify('#######');
     Preinscription::factory()->create([
-        'ci' => '7894561',
+        'ci' => $ci,
         'group_id' => $group->id,
         'status' => PreinscriptionStatus::INSCRITO,
     ]);
 
     Livewire::test(PreinscriptionComponent::class, ['group' => $group])
-        ->set('ci', '7894561')
-        ->set('nombres', 'Fabio Santos')
-        ->set('apellidoPaterno', 'Fernandez')
-        ->set('apellidoMaterno', 'Vargas')
-        ->set('celular', '71234567')
-        ->set('email', 'fabio.fernandez@umss.edu.bo')
+        ->set('ci', $ci)
+        ->set('nombres', fake()->firstName())
+        ->set('apellidoPaterno', fake()->lastName())
+        ->set('apellidoMaterno', fake()->lastName())
+        ->set('celular', '7'.fake()->numerify('#######'))
+        ->set('email', fake()->userName().'@gmail.com')
         ->set('tipoParticipante', 'umss')
-        ->set('codSis', '202002515')
+        ->set('codSis', (string) fake()->numerify('#########'))
         ->call('goToConfirmation')
         ->assertHasErrors(['ci'])
         ->assertSee('Ya estás inscrito(a) en este curso');
@@ -156,21 +159,22 @@ it('allows retry after rejected preinscription', function () {
         'cupo_maximo' => 30,
     ]);
 
+    $ci = (string) fake()->numerify('#######');
     Preinscription::factory()->create([
-        'ci' => '7894561',
+        'ci' => $ci,
         'group_id' => $group->id,
         'status' => PreinscriptionStatus::RECHAZADO,
     ]);
 
     Livewire::test(PreinscriptionComponent::class, ['group' => $group])
-        ->set('ci', '7894561')
-        ->set('nombres', 'Fabio Santos')
-        ->set('apellidoPaterno', 'Fernandez')
-        ->set('apellidoMaterno', 'Vargas')
-        ->set('celular', '71234567')
-        ->set('email', 'fabio.fernandez@umss.edu.bo')
+        ->set('ci', $ci)
+        ->set('nombres', fake()->firstName())
+        ->set('apellidoPaterno', fake()->lastName())
+        ->set('apellidoMaterno', fake()->lastName())
+        ->set('celular', '7'.fake()->numerify('#######'))
+        ->set('email', fake()->userName().'@gmail.com')
         ->set('tipoParticipante', 'umss')
-        ->set('codSis', '202002515')
+        ->set('codSis', (string) fake()->numerify('#########'))
         ->call('goToConfirmation')
         ->assertHasNoErrors()
         ->assertSet('stepConfirmation', true);
@@ -185,8 +189,9 @@ it('allows preinscription in a different course', function () {
         'cupo_maximo' => 30,
     ]);
 
+    $ci = (string) fake()->numerify('#######');
     Preinscription::factory()->create([
-        'ci' => '7894561',
+        'ci' => $ci,
         'group_id' => $groupA->id,
         'status' => PreinscriptionStatus::PENDIENTE_PAGO,
     ]);
@@ -200,26 +205,27 @@ it('allows preinscription in a different course', function () {
     ]);
 
     Livewire::test(PreinscriptionComponent::class, ['group' => $groupB])
-        ->set('ci', '7894561')
-        ->set('nombres', 'Fabio Santos')
-        ->set('apellidoPaterno', 'Fernandez')
-        ->set('apellidoMaterno', 'Vargas')
-        ->set('celular', '71234567')
-        ->set('email', 'fabio.fernandez@umss.edu.bo')
+        ->set('ci', $ci)
+        ->set('nombres', fake()->firstName())
+        ->set('apellidoPaterno', fake()->lastName())
+        ->set('apellidoMaterno', fake()->lastName())
+        ->set('celular', '7'.fake()->numerify('#######'))
+        ->set('email', fake()->userName().'@gmail.com')
         ->set('tipoParticipante', 'umss')
-        ->set('codSis', '202002515')
+        ->set('codSis', (string) fake()->numerify('#########'))
         ->call('goToConfirmation')
         ->assertHasNoErrors()
         ->assertSet('stepConfirmation', true);
 });
 
 it('rate limits repeated submissions for the same ci', function () {
-    RateLimiter::clear('preinscripcion:ci:7894561');
+    $ci = (string) fake()->numerify('#######');
+    RateLimiter::clear("preinscripcion:ci:{$ci}");
     RateLimiter::clear('preinscripcion:ip:127.0.0.1');
 
-    RateLimiter::hit('preinscripcion:ci:7894561', 3600);
-    RateLimiter::hit('preinscripcion:ci:7894561', 3600);
-    RateLimiter::hit('preinscripcion:ci:7894561', 3600);
+    RateLimiter::hit("preinscripcion:ci:{$ci}", 3600);
+    RateLimiter::hit("preinscripcion:ci:{$ci}", 3600);
+    RateLimiter::hit("preinscripcion:ci:{$ci}", 3600);
 
     $course = Course::factory()->create(['carga_horaria' => '20']);
     $group = Group::factory()->create([
@@ -230,20 +236,20 @@ it('rate limits repeated submissions for the same ci', function () {
     ]);
 
     Livewire::test(PreinscriptionComponent::class, ['group' => $group])
-        ->set('ci', '7894561')
-        ->set('nombres', 'Fabio Santos')
-        ->set('apellidoPaterno', 'Fernandez')
-        ->set('apellidoMaterno', 'Vargas')
-        ->set('celular', '71234567')
-        ->set('email', 'fabio.fernandez@umss.edu.bo')
+        ->set('ci', $ci)
+        ->set('nombres', fake()->firstName())
+        ->set('apellidoPaterno', fake()->lastName())
+        ->set('apellidoMaterno', fake()->lastName())
+        ->set('celular', '7'.fake()->numerify('#######'))
+        ->set('email', fake()->userName().'@gmail.com')
         ->set('tipoParticipante', 'umss')
-        ->set('codSis', '202002515')
+        ->set('codSis', (string) fake()->numerify('#########'))
         ->call('submit')
         ->assertHasErrors(['ci'])
         ->assertSee('demasiados intentos');
 });
 
-it('rejects service registration when the group is not enabled', function () {
+it('allows service registration when the group is in no_habilitado status', function () {
     $course = Course::factory()->create(['carga_horaria' => '20']);
     $group = Group::factory()->create([
         'course_id' => $course->id,
@@ -252,16 +258,40 @@ it('rejects service registration when the group is not enabled', function () {
         'cupo_maximo' => 30,
     ]);
 
+    $ci = (string) fake()->numerify('#######');
+    $preinscription = app(PreinscriptionService::class)->register([
+        'group_id' => $group->id,
+        'ci' => $ci,
+        'nombres' => fake()->firstName(),
+        'apellido_paterno' => fake()->lastName(),
+        'email' => fake()->safeEmail(),
+        'tipo_participante' => 'umss',
+    ]);
+
+    expect($preinscription)->toBeInstanceOf(Preinscription::class);
+    expect(Preinscription::where('ci', $ci)->exists())->toBeTrue();
+});
+
+it('rejects service registration when the group is closed', function () {
+    $course = Course::factory()->create(['carga_horaria' => '20']);
+    $group = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::CERRADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    $ci = (string) fake()->numerify('#######');
     expect(fn () => app(PreinscriptionService::class)->register([
         'group_id' => $group->id,
-        'ci' => '7894561',
-        'nombres' => 'Fabio Santos',
-        'apellido_paterno' => 'Fernandez',
-        'email' => 'fabio.fernandez@umss.edu.bo',
+        'ci' => $ci,
+        'nombres' => fake()->firstName(),
+        'apellido_paterno' => fake()->lastName(),
+        'email' => fake()->safeEmail(),
         'tipo_participante' => 'umss',
     ]))->toThrow(ValidationException::class, 'no está habilitado');
 
-    expect(Preinscription::where('ci', '7894561')->exists())->toBeFalse();
+    expect(Preinscription::where('ci', $ci)->exists())->toBeFalse();
 });
 
 it('blocks re-registration when a rejected preinscription already exists for the same ci and group', function () {
@@ -273,29 +303,50 @@ it('blocks re-registration when a rejected preinscription already exists for the
         'cupo_maximo' => 30,
     ]);
 
+    $ci = (string) fake()->numerify('#######');
     Preinscription::factory()->create([
-        'ci' => '7894561',
+        'ci' => $ci,
         'group_id' => $group->id,
         'status' => PreinscriptionStatus::RECHAZADO,
     ]);
 
     expect(fn () => app(PreinscriptionService::class)->register([
         'group_id' => $group->id,
-        'ci' => '7894561',
-        'nombres' => 'Fabio Santos',
-        'apellido_paterno' => 'Fernandez',
-        'email' => 'fabio.fernandez@umss.edu.bo',
+        'ci' => $ci,
+        'nombres' => fake()->firstName(),
+        'apellido_paterno' => fake()->lastName(),
+        'email' => fake()->safeEmail(),
         'tipo_participante' => 'umss',
     ]))->toThrow(ValidationException::class, 'rechazada');
 
-    expect(Preinscription::where('ci', '7894561')->count())->toBe(1);
+    expect(Preinscription::where('ci', $ci)->count())->toBe(1);
 });
 
-it('redirects to the catalog when mounting a group that is not enabled', function () {
-    $course = Course::factory()->create(['carga_horaria' => '20']);
+it('allows mounting a group in no_habilitado status in the preinscription component', function () {
+    $course = Course::factory()->create([
+        'carga_horaria' => '20',
+        'status' => CourseStatus::PUBLICADO,
+    ]);
     $group = Group::factory()->create([
         'course_id' => $course->id,
         'status' => GroupStatus::NO_HABILITADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    Livewire::test(PreinscriptionComponent::class, ['group' => $group])
+        ->assertOk()
+        ->assertSet('groupId', $group->id);
+});
+
+it('redirects to the catalog when mounting a group that is closed', function () {
+    $course = Course::factory()->create([
+        'carga_horaria' => '20',
+        'status' => CourseStatus::PUBLICADO,
+    ]);
+    $group = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::CERRADO,
         'cupo_minimo' => 15,
         'cupo_maximo' => 30,
     ]);

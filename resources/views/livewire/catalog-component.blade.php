@@ -163,12 +163,23 @@
                                                 @php
                                                     $inscritos = $group->inscritos_count ?? 0;
                                                     $full = $inscritos >= $group->cupo_maximo;
+                                                    $isHabilitado = $group->status === \App\Enums\GroupStatus::HABILITADO;
+                                                    $cupoMinimo = $group->cupo_minimo ?? \App\Support\BusinessRules::MIN_GROUP_CAPACITY;
                                                 @endphp
                                                 <div class="flex justify-between items-center gap-3 px-4 py-3 text-xs">
                                                     <div>
-                                                        <span class="font-semibold text-umss-black">{{ $group->nombre }}</span>
-                                                        <span class="text-umss-gray-700 ml-1">{{ $group->hora_inicio->format('H:i') }} - {{ $group->hora_fin->format('H:i') }}</span>
-                                                        <span class="text-umss-gray-700 ml-1 font-mono text-[11px]">({{ $inscritos }}/{{ $group->cupo_maximo }})</span>
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="font-semibold text-umss-black">{{ $group->nombre }}</span>
+                                                            @if ($isHabilitado)
+                                                                <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-umss-green-light text-umss-green-dark">Habilitado</span>
+                                                            @else
+                                                                <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-umss-amber-light text-umss-amber-dark">En preinscripción ({{ $inscritos }}/{{ $cupoMinimo }} cupos mínimos)</span>
+                                                            @endif
+                                                        </div>
+                                                        <div class="mt-0.5">
+                                                            <span class="text-umss-gray-700">{{ $group->hora_inicio->format('H:i') }} - {{ $group->hora_fin->format('H:i') }}</span>
+                                                            <span class="text-umss-gray-700 ml-1 font-mono text-[11px]">({{ $inscritos }}/{{ $group->cupo_maximo }} cupos)</span>
+                                                        </div>
                                                     </div>
                                                     @if ($full)
                                                         <span class="text-umss-red font-semibold text-xs px-2 py-0.5 rounded bg-umss-red/10 shrink-0">Lleno</span>

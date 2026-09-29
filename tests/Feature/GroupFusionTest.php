@@ -3,14 +3,17 @@
 declare(strict_types=1);
 
 use App\Enums\GroupStatus;
+use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Filament\Admin\Resources\GroupResource\Pages\CreateGroup;
 use App\Filament\Admin\Resources\GroupResource\Pages\ListGroups;
 use App\Mail\GroupMergedNotification;
 use App\Models\Course;
 use App\Models\Group;
+use App\Models\Payment;
 use App\Models\Preinscription;
 use App\Models\User;
+use App\Services\GroupMergeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
@@ -179,4 +182,171 @@ it('leaves an already enabled group at the minimum untouched', function () {
     $preinscription->update(['status' => PreinscriptionStatus::INSCRITO]);
 
     expect($group->fresh()->status)->toBe(GroupStatus::HABILITADO);
+});
+
+it('merges group with an enrolled student requesting refund due to schedule incompatibility', function () {
+    Mail::fake();
+    $course = Course::factory()->withHours('20')->create();
+    $origin = Group::factory()->noHabilitado()->create([
+        'course_id' => $course->id,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+    $destination = Group::factory()->habilitado()->create([
+        'course_id' => $course->id,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    $enrolled = Preinscription::factory()->inscrito()->create(['group_id' => $origin->id]);
+    Payment::factory()->create([
+        'preinscription_id' => $enrolled->id,
+        'monto' => 100.0,
+        'estado' => PaymentStatus::VERIFICADO,
+    ]);
+
+    $moved = Preinscription::factory()->create(['group_id' => $origin->id]);
+
+    $result = app(GroupMergeService::class)->assistedMerge(
+        $origin,
+        $destination,
+        [
+            $enrolled->id => 'reembolso',
+            $moved->id => 'trasladar',
+        ]
+    );
+
+    expect($result['movedCount'])->toBe(1);
+    expect($result['refundedCount'])->toBe(1);
+    expect($result['withdrawnCount'])->toBe(0);
+
+    expect($origin->fresh()->status)->toBe(GroupStatus::CERRADO);
+    expect($moved->fresh()->group_id)->toBe($destination->id);
+
+    // Enrolled student requesting refund should have status DEVOLUCION_PENDIENTE and payment DEVOLUCION_PENDIENTE
+    expect($enrolled->fresh()->status)->toBe(PreinscriptionStatus::DEVOLUCION_PENDIENTE);
+    expect($enrolled->payments()->first()->estado)->toBe(PaymentStatus::DEVOLUCION_PENDIENTE);
+    expect($enrolled->payments()->first()->motivo_devolucion)->toBe('Incompatibilidad de horario por fusión de grupo');
+
+    Mail::assertQueuedCount(1);
+    Mail::assertQueued(
+        GroupMergedNotification::class,
+        fn (GroupMergedNotification $mail): bool => $mail->hasTo($moved->email),
+    );
+});
+
+it('merges group with a pending payment student who is marked as withdrawn', function () {
+    $course = Course::factory()->withHours('20')->create();
+    $origin = Group::factory()->noHabilitado()->create([
+        'course_id' => $course->id,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+    $destination = Group::factory()->habilitado()->create([
+        'course_id' => $course->id,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    $pending = Preinscription::factory()->create(['group_id' => $origin->id]);
+    $moved = Preinscription::factory()->inscrito()->create(['group_id' => $origin->id]);
+
+    $result = app(GroupMergeService::class)->assistedMerge(
+        $origin,
+        $destination,
+        [
+            $pending->id => 'retirar',
+            $moved->id => 'trasladar',
+        ]
+    );
+
+    expect($result['movedCount'])->toBe(1);
+    expect($result['refundedCount'])->toBe(0);
+    expect($result['withdrawnCount'])->toBe(1);
+
+    expect($origin->fresh()->status)->toBe(GroupStatus::CERRADO);
+    expect($moved->fresh()->group_id)->toBe($destination->id);
+    expect($pending->fresh()->status)->toBe(PreinscriptionStatus::RETIRADO);
+});
+
+it('validates exact destination capacity only against participants who are actually moved', function () {
+    $course = Course::factory()->withHours('20')->create();
+    $origin = Group::factory()->noHabilitado()->create([
+        'course_id' => $course->id,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+    // Destination only has 2 slots available
+    $destination = Group::factory()->habilitado()->create([
+        'course_id' => $course->id,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 2,
+    ]);
+
+    // Origin has 4 active participants: 2 will be moved, 1 refunded, 1 withdrawn
+    $student1 = Preinscription::factory()->create(['group_id' => $origin->id]);
+    $student2 = Preinscription::factory()->create(['group_id' => $origin->id]);
+    $studentRefund = Preinscription::factory()->inscrito()->create(['group_id' => $origin->id]);
+    Payment::factory()->create([
+        'preinscription_id' => $studentRefund->id,
+        'monto' => 100.0,
+        'estado' => PaymentStatus::VERIFICADO,
+    ]);
+    $studentWithdraw = Preinscription::factory()->create(['group_id' => $origin->id]);
+
+    // Destination has max capacity of 2. 4 total students, but only 2 toMove.
+    // It should SUCCEED because only 2 are moved.
+    $result = app(GroupMergeService::class)->assistedMerge(
+        $origin,
+        $destination,
+        [
+            $student1->id => 'trasladar',
+            $student2->id => 'trasladar',
+            $studentRefund->id => 'reembolso',
+            $studentWithdraw->id => 'retirar',
+        ]
+    );
+
+    expect($result['movedCount'])->toBe(2);
+    expect($result['refundedCount'])->toBe(1);
+    expect($result['withdrawnCount'])->toBe(1);
+    expect($destination->preinscriptions()->whereIn('status', [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO])->count())->toBe(2);
+});
+
+it('supports assisted merge via filament table action with custom decisions', function () {
+    $this->actingAs($this->admin);
+
+    $course = Course::factory()->withHours('20')->create();
+    $origin = Group::factory()->noHabilitado()->create([
+        'course_id' => $course->id,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+    $destination = Group::factory()->habilitado()->create([
+        'course_id' => $course->id,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    $studentMove = Preinscription::factory()->create(['group_id' => $origin->id]);
+    $studentRefund = Preinscription::factory()->inscrito()->create(['group_id' => $origin->id]);
+    Payment::factory()->create([
+        'preinscription_id' => $studentRefund->id,
+        'monto' => 100.0,
+        'estado' => PaymentStatus::VERIFICADO,
+    ]);
+
+    Livewire::test(ListGroups::class)
+        ->callTableAction('fusionarGrupo', $origin, [
+            'grupo_destino_id' => $destination->id,
+            'participant_decisions' => [
+                $studentMove->id => 'trasladar',
+                $studentRefund->id => 'reembolso',
+            ],
+        ])
+        ->assertHasNoTableActionErrors();
+
+    expect($origin->fresh()->status)->toBe(GroupStatus::CERRADO);
+    expect($studentMove->fresh()->group_id)->toBe($destination->id);
+    expect($studentRefund->fresh()->status)->toBe(PreinscriptionStatus::DEVOLUCION_PENDIENTE);
 });

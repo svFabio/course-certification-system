@@ -20,7 +20,7 @@ class PreinscriptionService
         return DB::transaction(function () use ($data, $enforceEnabledGroup) {
             $group = Group::where('id', $data['group_id'])->lockForUpdate()->firstOrFail();
 
-            if ($enforceEnabledGroup && $group->status !== GroupStatus::HABILITADO) {
+            if ($enforceEnabledGroup && ! in_array($group->status, [GroupStatus::HABILITADO, GroupStatus::NO_HABILITADO], true)) {
                 throw ValidationException::withMessages([
                     'group_id' => 'El grupo seleccionado no está habilitado para recibir preinscripciones.',
                 ]);
@@ -122,7 +122,7 @@ class PreinscriptionService
             ]);
         }
 
-        if ($destination->status !== GroupStatus::HABILITADO) {
+        if (! in_array($destination->status, [GroupStatus::HABILITADO, GroupStatus::NO_HABILITADO], true)) {
             throw ValidationException::withMessages([
                 'group_id' => 'El grupo de destino no está habilitado.',
             ]);
@@ -161,7 +161,7 @@ class PreinscriptionService
     public function getAvailableGroups(int $courseId): Collection
     {
         return Group::where('course_id', $courseId)
-            ->where('status', GroupStatus::HABILITADO)
+            ->whereIn('status', [GroupStatus::HABILITADO, GroupStatus::NO_HABILITADO])
             ->withCount(['preinscriptions as confirmed_count' => fn ($q) => $q->whereIn('status', [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO]),
             ])
             ->get()

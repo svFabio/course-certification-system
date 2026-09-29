@@ -6,9 +6,9 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\ExportType;
 use App\Enums\GroupStatus;
-use App\Events\GroupSheetsNeedRefresh;
+use App\Enums\MergeParticipantDecision;
+use App\Enums\PreinscriptionStatus;
 use App\Filament\Admin\Resources\GroupResource\Pages;
-use App\Mail\GroupMergedNotification;
 use App\Models\Course;
 use App\Models\Group;
 use App\Models\SystemSetting;
@@ -24,7 +24,6 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
 
@@ -246,37 +245,70 @@ class GroupResource extends Resource
                     ->icon('heroicon-o-arrows-right-left')
                     ->color('warning')
                     ->visible(fn (Group $record): bool => $record->status === GroupStatus::NO_HABILITADO)
-                    ->form([
-                        Forms\Components\Select::make('grupo_destino_id')
-                            ->label('Grupo destino')
-                            ->options(function (Group $record): array {
-                                return Group::query()
-                                    ->where('course_id', $record->course_id)
-                                    ->where('id', '!=', $record->getKey())
-                                    ->where('status', '!=', GroupStatus::CERRADO->value)
-                                    ->orderBy('nombre')
-                                    ->pluck('nombre', 'id')
-                                    ->all();
-                            })
-                            ->required(),
-                    ])
-                    ->action(function (Group $record, array $data): void {
-                        $destinationGroup = Group::query()->findOrFail((int) $data['grupo_destino_id']);
+                    ->form(function (Group $record): array {
+                        $activeParticipants = $record->preinscriptions()
+                            ->whereIn('status', [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO])
+                            ->orderBy('nombres')
+                            ->get();
 
-                        $result = app(GroupMergeService::class)->merge($record, $destinationGroup);
+                        $schema = [
+                            Forms\Components\Select::make('grupo_destino_id')
+                                ->label('Grupo destino')
+                                ->options(function (Group $record): array {
+                                    return Group::query()
+                                        ->where('course_id', $record->course_id)
+                                        ->where('id', '!=', $record->getKey())
+                                        ->where('status', '!=', GroupStatus::CERRADO->value)
+                                        ->orderBy('nombre')
+                                        ->pluck('nombre', 'id')
+                                        ->all();
+                                })
+                                ->required(),
+                        ];
 
-                        GroupSheetsNeedRefresh::dispatch($result['origin']->getKey());
-                        GroupSheetsNeedRefresh::dispatch($result['destination']->getKey());
+                        if ($activeParticipants->isNotEmpty()) {
+                            $participantFields = [];
 
-                        foreach ($result['toMove'] as $preinscription) {
-                            if (filled($preinscription->email)) {
-                                Mail::to($preinscription->email)
-                                    ->queue(new GroupMergedNotification($result['origin'], $result['destination'], $preinscription));
+                            foreach ($activeParticipants as $participant) {
+                                $isInscrito = $participant->status === PreinscriptionStatus::INSCRITO;
+                                $statusBadge = $isInscrito ? 'Inscrito' : 'Pendiente de pago';
+                                $label = "{$participant->nombres} {$participant->apellido_paterno} (CI: {$participant->ci}) — [{$statusBadge}]";
+
+                                $options = $isInscrito
+                                    ? [
+                                        MergeParticipantDecision::TRASLADAR->value => MergeParticipantDecision::TRASLADAR->label(),
+                                        MergeParticipantDecision::REEMBOLSO->value => MergeParticipantDecision::REEMBOLSO->label(),
+                                    ]
+                                    : [
+                                        MergeParticipantDecision::TRASLADAR->value => MergeParticipantDecision::TRASLADAR->label(),
+                                        MergeParticipantDecision::RETIRAR->value => MergeParticipantDecision::RETIRAR->label(),
+                                    ];
+
+                                $participantFields[] = Forms\Components\Radio::make("participant_decisions.{$participant->id}")
+                                    ->label($label)
+                                    ->options($options)
+                                    ->default(MergeParticipantDecision::TRASLADAR->value)
+                                    ->required();
                             }
+
+                            $schema[] = Forms\Components\Section::make('Decisiones por Participante')
+                                ->description('Indique el destino de cada alumno activo del grupo a fusionar.')
+                                ->schema($participantFields);
                         }
 
+                        return $schema;
+                    })
+                    ->action(function (Group $record, array $data): void {
+                        $destinationGroup = Group::query()->findOrFail((int) $data['grupo_destino_id']);
+                        $decisions = $data['participant_decisions'] ?? [];
+
+                        $result = app(GroupMergeService::class)->assistedMerge($record, $destinationGroup, $decisions);
+
+                        $body = "Trasladados: {$result['movedCount']} | Devoluciones: {$result['refundedCount']} | Retirados: {$result['withdrawnCount']}";
+
                         Notification::make()
-                            ->title('Grupo fusionado: '.$result['movedCount'].' participante(s) trasladado(s) al grupo destino.')
+                            ->title('Grupo fusionado con éxito')
+                            ->body($body)
                             ->success()
                             ->send();
                     }),

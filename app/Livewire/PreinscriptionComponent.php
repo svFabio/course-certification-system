@@ -58,7 +58,7 @@ class PreinscriptionComponent extends Component
     {
         $groupModel = $group instanceof Group ? $group : Group::with('course')->findOrFail($group);
 
-        if ($groupModel->status !== GroupStatus::HABILITADO
+        if (! in_array($groupModel->status, [GroupStatus::HABILITADO, GroupStatus::NO_HABILITADO], true)
             || $groupModel->course?->status !== CourseStatus::PUBLICADO) {
             session()->flash('error', 'El grupo seleccionado ya no está disponible para preinscripciones. Explore el catálogo para ver las opciones vigentes.');
 

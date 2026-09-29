@@ -71,7 +71,7 @@ class CatalogComponent extends Component
             ->with([
                 'instructor',
                 'groups' => function ($g) {
-                    $g->where('status', GroupStatus::HABILITADO)
+                    $g->whereIn('status', [GroupStatus::HABILITADO, GroupStatus::NO_HABILITADO])
                         ->withCount(['preinscriptions as inscritos_count' => fn ($q) => $q->whereIn('status', [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO]),
                         ]);
                 },
