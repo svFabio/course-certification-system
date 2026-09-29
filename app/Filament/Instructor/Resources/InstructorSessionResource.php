@@ -19,6 +19,7 @@ use Filament\Tables;
 use Filament\Tables\Grouping\Group as TableGroup;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 
@@ -31,6 +32,28 @@ class InstructorSessionResource extends Resource
     public static function canViewAny(): bool
     {
         return auth()->check() && auth()->user()->hasRole(UserRole::INSTRUCTOR->value);
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return auth()->check() && $record->group?->course?->instructor_id === auth()->id();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return auth()->check() && $record->group?->course?->instructor_id === auth()->id();
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return auth()->check() && $record->group?->course?->instructor_id === auth()->id();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->whereHas('group.course', fn ($q) => $q->where('instructor_id', auth()->id()))
+            ->with('group.course');
     }
 
     protected static ?string $navigationGroup = 'Mis Cursos';
@@ -103,9 +126,6 @@ class InstructorSessionResource extends Resource
                     }),
             ])
             ->defaultSort('fecha', 'desc')
-            ->modifyQueryUsing(fn ($query) => $query
-                ->whereHas('group.course', fn ($q) => $q->where('instructor_id', auth()->id()))
-                ->with('group.course'))
             ->groups([
                 TableGroup::make('group_id')
                     ->label('Grupo')

@@ -12,6 +12,8 @@ use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class StudentPreinscriptionResource extends Resource
 {
@@ -37,6 +39,28 @@ class StudentPreinscriptionResource extends Resource
         return false;
     }
 
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return auth()->check() && $record->email === auth()->user()?->email;
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('email', auth()->user()?->email)
+            ->with(['group.course']);
+    }
+
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
@@ -52,9 +76,6 @@ class StudentPreinscriptionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query
-                ->where('email', auth()->user()?->email)
-                ->with(['group.course']))
             ->columns([
                 Tables\Columns\TextColumn::make('group.course.nombre')
                     ->label('Curso')
