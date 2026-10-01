@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\GroupStatus;
+use App\Enums\MergeParticipantDecision;
 use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Filament\Admin\Resources\GroupResource\Pages\CreateGroup;
@@ -14,6 +15,8 @@ use App\Models\Payment;
 use App\Models\Preinscription;
 use App\Models\User;
 use App\Services\GroupMergeService;
+use App\Services\PaymentService;
+use App\Services\PreinscriptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
@@ -211,8 +214,8 @@ it('merges group with an enrolled student requesting refund due to schedule inco
         $origin,
         $destination,
         [
-            $enrolled->id => 'reembolso',
-            $moved->id => 'trasladar',
+            $enrolled->id => MergeParticipantDecision::REEMBOLSO->value,
+            $moved->id => MergeParticipantDecision::TRASLADAR->value,
         ]
     );
 
@@ -255,8 +258,8 @@ it('merges group with a pending payment student who is marked as withdrawn', fun
         $origin,
         $destination,
         [
-            $pending->id => 'retirar',
-            $moved->id => 'trasladar',
+            $pending->id => MergeParticipantDecision::RETIRAR->value,
+            $moved->id => MergeParticipantDecision::TRASLADAR->value,
         ]
     );
 
@@ -300,10 +303,10 @@ it('validates exact destination capacity only against participants who are actua
         $origin,
         $destination,
         [
-            $student1->id => 'trasladar',
-            $student2->id => 'trasladar',
-            $studentRefund->id => 'reembolso',
-            $studentWithdraw->id => 'retirar',
+            $student1->id => MergeParticipantDecision::TRASLADAR->value,
+            $student2->id => MergeParticipantDecision::TRASLADAR->value,
+            $studentRefund->id => MergeParticipantDecision::REEMBOLSO->value,
+            $studentWithdraw->id => MergeParticipantDecision::RETIRAR->value,
         ]
     );
 
@@ -340,8 +343,8 @@ it('supports assisted merge via filament table action with custom decisions', fu
         ->callTableAction('fusionarGrupo', $origin, [
             'grupo_destino_id' => $destination->id,
             'participant_decisions' => [
-                $studentMove->id => 'trasladar',
-                $studentRefund->id => 'reembolso',
+                $studentMove->id => MergeParticipantDecision::TRASLADAR->value,
+                $studentRefund->id => MergeParticipantDecision::REEMBOLSO->value,
             ],
         ])
         ->assertHasNoTableActionErrors();
@@ -349,4 +352,73 @@ it('supports assisted merge via filament table action with custom decisions', fu
     expect($origin->fresh()->status)->toBe(GroupStatus::CERRADO);
     expect($studentMove->fresh()->group_id)->toBe($destination->id);
     expect($studentRefund->fresh()->status)->toBe(PreinscriptionStatus::DEVOLUCION_PENDIENTE);
+});
+
+it('auto-disables a habilitado group when refund request drops active count below cupo_minimo', function () {
+    $course = Course::factory()->withHours('20')->create();
+    $group = Group::factory()->habilitado()->create([
+        'course_id' => $course->id,
+        'cupo_minimo' => 2,
+        'cupo_maximo' => 10,
+    ]);
+
+    // Two enrolled participants — group is just at the threshold.
+    $p1 = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
+    $p2 = Preinscription::factory()->auxiliarWithApprovedCertificate()->create([
+        'group_id' => $group->id,
+        'status' => PreinscriptionStatus::INSCRITO,
+        'fotocopia_ci' => true,
+    ]);
+
+    // Verify a payment for p2 so requestRefund and cancelRefundRequest can work.
+    Payment::factory()->create([
+        'preinscription_id' => $p2->id,
+        'estado' => PaymentStatus::VERIFICADO,
+    ]);
+
+    expect($group->fresh()->status)->toBe(GroupStatus::HABILITADO);
+
+    // Requesting refund drops active count from 2 to 1 (< threshold 2), auto-disabling the group.
+    app(PaymentService::class)->requestRefund($p2, 'No puede asistir');
+    expect($group->fresh()->status)->toBe(GroupStatus::NO_HABILITADO);
+
+    // Cancelling the refund request restores the participant to INSCRITO (count back to 2), auto-enabling the group.
+    app(PaymentService::class)->cancelRefundRequest($p2);
+    expect($group->fresh()->status)->toBe(GroupStatus::HABILITADO);
+});
+
+it('auto-disables a habilitado group when markAsWithdrawn drops active count below cupo_minimo', function () {
+    $course = Course::factory()->withHours('20')->create();
+    $group = Group::factory()->habilitado()->create([
+        'course_id' => $course->id,
+        'cupo_minimo' => 2,
+        'cupo_maximo' => 10,
+    ]);
+
+    // Exactly two active participants — group is at the threshold.
+    $p1 = Preinscription::factory()->create(['group_id' => $group->id]);
+    $p2 = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
+
+    expect($group->fresh()->status)->toBe(GroupStatus::HABILITADO);
+
+    // Withdrawing p2 drops active count to 1, below the threshold of 2.
+    app(PreinscriptionService::class)->markAsWithdrawn($p2);
+
+    expect($group->fresh()->status)->toBe(GroupStatus::NO_HABILITADO);
+    expect($p2->fresh()->status)->toBe(PreinscriptionStatus::RETIRADO);
+});
+
+it('does not auto-disable a group that is in en_curso status when count drops below threshold', function () {
+    $course = Course::factory()->withHours('20')->create();
+    $group = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::EN_CURSO,
+        'cupo_minimo' => 2,
+        'cupo_maximo' => 10,
+    ]);
+
+    $p1 = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
+
+    // Only 1 active participant, below threshold — but group is EN_CURSO, must stay.
+    expect($group->fresh()->status)->toBe(GroupStatus::EN_CURSO);
 });

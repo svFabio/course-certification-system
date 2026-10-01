@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\GroupStatus;
+use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Events\GroupSheetsNeedRefresh;
 use App\Models\Group;
@@ -166,5 +167,31 @@ class PreinscriptionService
             ])
             ->get()
             ->filter(fn ($group) => $group->confirmed_count < $group->cupo_maximo);
+    }
+
+    public function reactivate(Preinscription $preinscription): Preinscription
+    {
+        if ($preinscription->status !== PreinscriptionStatus::RECHAZADO) {
+            throw ValidationException::withMessages([
+                'status' => 'Solo se pueden reactivar preinscripciones en estado rechazado.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($preinscription): Preinscription {
+            $preinscription->update(['status' => PreinscriptionStatus::PENDIENTE_PAGO]);
+
+            $preinscription->payments()
+                ->where('estado', PaymentStatus::RECHAZADO->value)
+                ->update([
+                    'estado' => PaymentStatus::PENDIENTE->value,
+                    'motivo_rechazo' => null,
+                ]);
+
+            if ($preinscription->group_id !== null) {
+                GroupSheetsNeedRefresh::dispatch($preinscription->group_id);
+            }
+
+            return $preinscription->fresh();
+        });
     }
 }

@@ -154,6 +154,22 @@ class PreinscriptionsRelationManager extends RelationManager
                             ->status('gray')
                             ->send();
                     }),
+                Tables\Actions\Action::make('reactivarPreinscripcion')
+                    ->label('Reactivar preinscripción')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('primary')
+                    ->visible(fn (Preinscription $record) => $record->status === PreinscriptionStatus::RECHAZADO)
+                    ->requiresConfirmation()
+                    ->modalHeading('Reactivar preinscripción rechazada')
+                    ->modalDescription('El participante volverá al estado pendiente de pago. ¿Confirmar?')
+                    ->action(function (Preinscription $record, PreinscriptionService $service): void {
+                        $service->reactivate($record);
+
+                        Notification::make()
+                            ->title('Preinscripción reactivada. El participante queda pendiente de pago.')
+                            ->success()
+                            ->send();
+                    }),
             ]);
     }
 }

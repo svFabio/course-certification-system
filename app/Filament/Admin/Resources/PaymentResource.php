@@ -11,7 +11,6 @@ use App\Models\Payment;
 use App\Services\PaymentService;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -126,54 +125,6 @@ class PaymentResource extends Resource
                     ->options(PaymentStatus::class),
             ])
             ->actions([
-                Tables\Actions\Action::make('verificar')
-                    ->label('Verificar')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->visible(fn (Payment $record) => $record->estado === PaymentStatus::PENDIENTE)
-                    ->requiresConfirmation()
-                    ->modalHeading('¿Confirmar recepción del pago?')
-                    ->modalDescription('Se validará el pago inmediatamente y el estudiante quedará inscrito con notificación por correo.')
-                    ->action(function (Payment $record, PaymentService $service) {
-                        try {
-                            $service->verify($record);
-                        } catch (ValidationException $e) {
-                            Notification::make()
-                                ->title('No se pudo verificar el pago.')
-                                ->body(collect($e->errors())->flatten()->implode(' '))
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
-                        Notification::make()
-                            ->title('Pago verificado y estudiante inscrito correctamente.')
-                            ->success()
-                            ->send();
-                    }),
-                Tables\Actions\Action::make('rechazar')
-                    ->label('Rechazar')
-                    ->icon('heroicon-o-x-circle')
-                    ->color('danger')
-                    ->visible(fn (Payment $record) => $record->estado === PaymentStatus::PENDIENTE)
-                    ->requiresConfirmation()
-                    ->modalHeading('Rechazar pago')
-                    ->modalSubHeading('El pago no fue recibido o presento problemas')
-                    ->form([
-                        Forms\Components\TextInput::make('motivo_rechazo')
-                            ->label('Motivo del rechazo')
-                            ->required()
-                            ->maxLength(255),
-                    ])
-                    ->action(function (Payment $record, array $data, PaymentService $service) {
-                        $service->reject($record, $data['motivo_rechazo']);
-
-                        Notification::make()
-                            ->title('Pago rechazado correctamente.')
-                            ->warning()
-                            ->send();
-                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

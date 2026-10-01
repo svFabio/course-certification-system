@@ -252,7 +252,6 @@ class PreinscriptionResource extends Resource
                     ->options(PreinscriptionStatus::class)
                     ->default(PreinscriptionStatus::INSCRITO->value),
             ])
-            ->defaultSort('apellido_paterno')
             ->actions([
                 Tables\Actions\Action::make('aprobarCertificadoAuxiliar')
                     ->label('Aprobar certificado auxiliar')
@@ -391,6 +390,22 @@ class PreinscriptionResource extends Resource
 
                         Notification::make()
                             ->title('Reembolso confirmado.')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('cancelarDevolucion')
+                    ->label('Cancelar solicitud de devolución')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('warning')
+                    ->visible(fn (Preinscription $record) => $record->status === PreinscriptionStatus::DEVOLUCION_PENDIENTE)
+                    ->requiresConfirmation()
+                    ->modalHeading('Cancelar solicitud de devolución')
+                    ->modalDescription('El participante volverá al estado inscrito y su pago se reactivará. ¿Confirmar?')
+                    ->action(function (Preinscription $record, PaymentService $service) {
+                        $service->cancelRefundRequest($record);
+
+                        Notification::make()
+                            ->title('Solicitud de devolución cancelada. El participante vuelve a estar inscrito.')
                             ->success()
                             ->send();
                     }),
