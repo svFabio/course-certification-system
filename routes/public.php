@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\BoletaController;
+use App\Http\Controllers\PublicCertificateDownloadController;
 use App\Livewire\CatalogComponent;
 use App\Livewire\CertificateVerificationComponent;
 use App\Livewire\PreinscriptionComponent;
@@ -17,6 +18,10 @@ Route::get('/preinscripcion/{group}', PreinscriptionComponent::class)
 Route::get('/verificar-certificado', CertificateVerificationComponent::class)
     ->middleware('throttle:30,1')
     ->name('certificado.verificar');
+
+Route::get('/verificar-certificado/{codigo}/descargar', PublicCertificateDownloadController::class)
+    ->middleware('throttle:30,1')
+    ->name('certificado.publico.descargar');
 
 Route::get('/boleta/{preinscription}', BoletaController::class)
     ->middleware('signed')
