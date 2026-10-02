@@ -27,9 +27,9 @@ it('validates strictly against invalid inputs in preinscription form', function 
 
     Livewire::test(PreinscriptionComponent::class, ['group' => $group])
         ->set('ci', 'CI-CON-LETRAS')
-        ->set('nombres', 'Juan1234')
-        ->set('apellidoPaterno', 'Perez$$$')
-        ->set('celular', '75275375f')
+        ->set('nombres', fake()->firstName().'1234')
+        ->set('apellidoPaterno', fake()->lastName().'$$$')
+        ->set('celular', '7'.fake()->numerify('######').'f')
         ->set('email', 'correo-invalido')
         ->set('tipoParticipante', 'categoria_inexistente')
         ->call('goToConfirmation')
@@ -396,4 +396,62 @@ it('rejects selecting a group that belongs to a foreign course', function () {
         ->assertSet('groupId', $groupA->id);
 
     expect(Preinscription::where('group_id', $groupB->id)->exists())->toBeFalse();
+});
+
+it('maps group_id validation error from service to groupId in livewire form', function () {
+    $course = Course::factory()->create(['carga_horaria' => '20']);
+    $group = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::HABILITADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 1,
+    ]);
+
+    // Fill capacity
+    Preinscription::factory()->create([
+        'group_id' => $group->id,
+        'status' => PreinscriptionStatus::INSCRITO,
+    ]);
+
+    $ci = (string) fake()->numerify('#######');
+
+    Livewire::test(PreinscriptionComponent::class, ['group' => $group])
+        ->set('ci', $ci)
+        ->set('nombres', fake()->firstName())
+        ->set('apellidoPaterno', fake()->lastName())
+        ->set('apellidoMaterno', fake()->lastName())
+        ->set('celular', '7'.fake()->numerify('#######'))
+        ->set('email', fake()->userName().'@gmail.com')
+        ->set('tipoParticipante', 'externo')
+        ->set('stepConfirmation', true)
+        ->call('submit')
+        ->assertHasErrors(['groupId'])
+        ->assertSet('stepConfirmation', false);
+});
+
+it('moves preinscription to another group within the same course inside a transaction', function () {
+    $course = Course::factory()->create(['carga_horaria' => '20']);
+    $group1 = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::HABILITADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+    $group2 = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::HABILITADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    $preinscription = Preinscription::factory()->create([
+        'group_id' => $group1->id,
+        'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+    ]);
+
+    $service = app(PreinscriptionService::class);
+    $moved = $service->moveToGroup($preinscription, $group2);
+
+    expect($moved->group_id)->toBe($group2->id);
+    expect($preinscription->fresh()->group_id)->toBe($group2->id);
 });

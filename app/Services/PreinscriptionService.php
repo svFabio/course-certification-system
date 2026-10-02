@@ -111,52 +111,57 @@ class PreinscriptionService
 
     public function moveToGroup(Preinscription $preinscription, Group $destination): Preinscription
     {
-        if ($preinscription->group_id === $destination->id) {
-            throw ValidationException::withMessages([
-                'group_id' => 'El participante ya está asignado a ese grupo.',
-            ]);
-        }
+        return DB::transaction(function () use ($preinscription, $destination): Preinscription {
+            $destination = Group::whereKey($destination->getKey())->lockForUpdate()->firstOrFail();
+            $preinscription = Preinscription::whereKey($preinscription->getKey())->lockForUpdate()->firstOrFail();
 
-        if ($preinscription->group->course_id !== $destination->course_id) {
-            throw ValidationException::withMessages([
-                'group_id' => 'El grupo de destino debe pertenecer al mismo curso.',
-            ]);
-        }
+            if ($preinscription->group_id === $destination->id) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El participante ya está asignado a ese grupo.',
+                ]);
+            }
 
-        if (! in_array($destination->status, [GroupStatus::HABILITADO, GroupStatus::NO_HABILITADO], true)) {
-            throw ValidationException::withMessages([
-                'group_id' => 'El grupo de destino no está habilitado.',
-            ]);
-        }
+            if ($preinscription->group->course_id !== $destination->course_id) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El grupo de destino debe pertenecer al mismo curso.',
+                ]);
+            }
 
-        if (! $this->hasAvailableCapacity($destination)) {
-            throw ValidationException::withMessages([
-                'group_id' => 'El grupo de destino ha alcanzado su capacidad máxima.',
-            ]);
-        }
+            if (! in_array($destination->status, [GroupStatus::HABILITADO, GroupStatus::NO_HABILITADO], true)) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El grupo de destino no está habilitado.',
+                ]);
+            }
 
-        $duplicate = Preinscription::where('ci', $preinscription->ci)
-            ->where('group_id', $destination->id)
-            ->where('id', '!=', $preinscription->id)
-            ->exists();
+            if (! $this->hasAvailableCapacity($destination)) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El grupo de destino ha alcanzado su capacidad máxima.',
+                ]);
+            }
 
-        if ($duplicate) {
-            throw ValidationException::withMessages([
-                'group_id' => 'El participante ya está preinscrito en el grupo de destino.',
-            ]);
-        }
+            $duplicate = Preinscription::where('ci', $preinscription->ci)
+                ->where('group_id', $destination->id)
+                ->where('id', '!=', $preinscription->id)
+                ->exists();
 
-        $previousGroupId = $preinscription->group_id;
+            if ($duplicate) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El participante ya está preinscrito en el grupo de destino.',
+                ]);
+            }
 
-        $preinscription->update(['group_id' => $destination->id]);
+            $previousGroupId = $preinscription->group_id;
 
-        if ($previousGroupId !== null) {
-            GroupSheetsNeedRefresh::dispatch($previousGroupId);
-        }
+            $preinscription->update(['group_id' => $destination->id]);
 
-        GroupSheetsNeedRefresh::dispatch($destination->id);
+            if ($previousGroupId !== null) {
+                GroupSheetsNeedRefresh::dispatch($previousGroupId);
+            }
 
-        return $preinscription->fresh();
+            GroupSheetsNeedRefresh::dispatch($destination->id);
+
+            return $preinscription->fresh();
+        });
     }
 
     public function getAvailableGroups(int $courseId): Collection
