@@ -455,3 +455,56 @@ it('moves preinscription to another group within the same course inside a transa
     expect($moved->group_id)->toBe($group2->id);
     expect($preinscription->fresh()->group_id)->toBe($group2->id);
 });
+
+it('rejects service registration when the group course has preinscription closed', function () {
+    $course = Course::factory()->create([
+        'carga_horaria' => '20',
+        'status' => CourseStatus::PREINSCRIPCION_CERRADA,
+    ]);
+    $group = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::HABILITADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    $ci = (string) fake()->numerify('#######');
+
+    expect(fn () => app(PreinscriptionService::class)->register([
+        'group_id' => $group->id,
+        'ci' => $ci,
+        'nombres' => fake()->firstName(),
+        'apellido_paterno' => fake()->lastName(),
+        'email' => fake()->safeEmail(),
+        'tipo_participante' => 'umss',
+    ]))->toThrow(ValidationException::class, 'no acepta preinscripciones');
+
+    expect(Preinscription::where('ci', $ci)->exists())->toBeFalse();
+});
+
+it('allows service registration when the group course is published', function () {
+    $course = Course::factory()->create([
+        'carga_horaria' => '20',
+        'status' => CourseStatus::PUBLICADO,
+    ]);
+    $group = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::HABILITADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    $ci = (string) fake()->numerify('#######');
+
+    $preinscription = app(PreinscriptionService::class)->register([
+        'group_id' => $group->id,
+        'ci' => $ci,
+        'nombres' => fake()->firstName(),
+        'apellido_paterno' => fake()->lastName(),
+        'email' => fake()->safeEmail(),
+        'tipo_participante' => 'umss',
+    ]);
+
+    expect($preinscription)->toBeInstanceOf(Preinscription::class);
+    expect($preinscription->status)->toBe(PreinscriptionStatus::PENDIENTE_PAGO);
+});

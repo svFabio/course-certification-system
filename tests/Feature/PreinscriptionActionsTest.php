@@ -14,7 +14,9 @@ use App\Models\Payment;
 use App\Models\Preinscription;
 use App\Models\User;
 use App\Services\PaymentService;
+use App\Services\PreinscriptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 
@@ -174,4 +176,83 @@ it('reactivarPreinscripcion action is not visible for a preinscription that is p
         'pageClass' => ViewGroup::class,
     ])
         ->assertTableActionHidden('reactivarPreinscripcion', $preinscription);
+});
+
+it('reactivarPreinscripcion action restores a retired preinscription to pendiente_pago', function () {
+    $this->actingAs($this->admin);
+
+    $course = Course::factory()->withHours('20')->create();
+    $group = Group::factory()->habilitado()->create([
+        'course_id' => $course->id,
+        'cupo_minimo' => 2,
+        'cupo_maximo' => 10,
+    ]);
+
+    $retired = Preinscription::factory()->retirado()->create(['group_id' => $group->id]);
+
+    Livewire::test(PreinscriptionsRelationManager::class, [
+        'ownerRecord' => $group,
+        'pageClass' => ViewGroup::class,
+    ])
+        ->assertTableActionVisible('reactivarPreinscripcion', $retired)
+        ->callTableAction('reactivarPreinscripcion', $retired)
+        ->assertHasNoTableActionErrors();
+
+    expect($retired->fresh()->status)->toBe(PreinscriptionStatus::PENDIENTE_PAGO);
+});
+
+it('rejects reactivating a retired preinscription when the group has no available capacity', function () {
+    $course = Course::factory()->withHours('20')->create();
+    $group = Group::factory()->habilitado()->create([
+        'course_id' => $course->id,
+        'cupo_minimo' => 1,
+        'cupo_maximo' => 1,
+    ]);
+
+    Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
+    $retired = Preinscription::factory()->retirado()->create(['group_id' => $group->id]);
+
+    expect(fn () => app(PreinscriptionService::class)->reactivate($retired))
+        ->toThrow(ValidationException::class, 'capacidad máxima');
+
+    expect($retired->fresh()->status)->toBe(PreinscriptionStatus::RETIRADO);
+});
+
+it('rejects reactivating a preinscription whose group is closed', function () {
+    $course = Course::factory()->withHours('20')->create();
+    $group = Group::factory()->cerrado()->create(['course_id' => $course->id]);
+
+    $rejected = Preinscription::factory()->create([
+        'group_id' => $group->id,
+        'status' => PreinscriptionStatus::RECHAZADO,
+    ]);
+
+    expect(fn () => app(PreinscriptionService::class)->reactivate($rejected))
+        ->toThrow(ValidationException::class, 'no está disponible');
+
+    expect($rejected->fresh()->status)->toBe(PreinscriptionStatus::RECHAZADO);
+});
+
+// ---------------------------------------------------------------------------
+// default table filter — PreinscriptionResource
+// ---------------------------------------------------------------------------
+
+it('lists pendiente_pago preinscriptions by default without applying a status filter', function () {
+    $this->actingAs($this->admin);
+
+    $course = Course::factory()->withHours('20')->create();
+    $group = Group::factory()->habilitado()->create([
+        'course_id' => $course->id,
+        'cupo_minimo' => 2,
+        'cupo_maximo' => 10,
+    ]);
+
+    $pending = Preinscription::factory()->create([
+        'group_id' => $group->id,
+        'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+    ]);
+    $enrolled = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
+
+    Livewire::test(ListPreinscriptions::class)
+        ->assertCanSeeTableRecords([$pending, $enrolled]);
 });

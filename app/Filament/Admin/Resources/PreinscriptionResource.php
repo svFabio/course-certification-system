@@ -249,8 +249,7 @@ class PreinscriptionResource extends Resource
                     ->searchable(),
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Estado')
-                    ->options(PreinscriptionStatus::class)
-                    ->default(PreinscriptionStatus::INSCRITO->value),
+                    ->options(PreinscriptionStatus::class),
             ])
             ->actions([
                 Tables\Actions\Action::make('aprobarCertificadoAuxiliar')

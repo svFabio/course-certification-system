@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\CourseStatus;
 use App\Enums\GroupStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
@@ -24,6 +25,14 @@ class PreinscriptionService
             if ($enforceEnabledGroup && ! in_array($group->status, [GroupStatus::HABILITADO, GroupStatus::NO_HABILITADO], true)) {
                 throw ValidationException::withMessages([
                     'group_id' => 'El grupo seleccionado no está habilitado para recibir preinscripciones.',
+                ]);
+            }
+
+            $group->loadMissing('course');
+
+            if ($group->course?->status !== CourseStatus::PUBLICADO) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El curso del grupo seleccionado no acepta preinscripciones en este momento.',
                 ]);
             }
 
@@ -176,13 +185,29 @@ class PreinscriptionService
 
     public function reactivate(Preinscription $preinscription): Preinscription
     {
-        if ($preinscription->status !== PreinscriptionStatus::RECHAZADO) {
+        if (! in_array($preinscription->status, [PreinscriptionStatus::RECHAZADO, PreinscriptionStatus::RETIRADO], true)) {
             throw ValidationException::withMessages([
-                'status' => 'Solo se pueden reactivar preinscripciones en estado rechazado.',
+                'status' => 'Solo se pueden reactivar preinscripciones en estado rechazado o retirado.',
             ]);
         }
 
         return DB::transaction(function () use ($preinscription): Preinscription {
+            $group = $preinscription->group_id !== null
+                ? Group::whereKey($preinscription->group_id)->lockForUpdate()->first()
+                : null;
+
+            if ($group === null || $group->status === GroupStatus::CERRADO) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El grupo de la preinscripción no está disponible para reactivarla.',
+                ]);
+            }
+
+            if (! $this->hasAvailableCapacity($group)) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El grupo ha alcanzado su capacidad máxima; no hay cupo para reactivar la preinscripción.',
+                ]);
+            }
+
             $preinscription->update(['status' => PreinscriptionStatus::PENDIENTE_PAGO]);
 
             $preinscription->payments()

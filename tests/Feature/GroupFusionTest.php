@@ -231,14 +231,24 @@ it('merges group with an enrolled student requesting refund due to schedule inco
     expect($enrolled->payments()->first()->estado)->toBe(PaymentStatus::DEVOLUCION_PENDIENTE);
     expect($enrolled->payments()->first()->motivo_devolucion)->toBe('Incompatibilidad de horario por fusión de grupo');
 
-    Mail::assertQueuedCount(1);
+    // Moved student is notified of the transfer and the refunded student is
+    // notified of the refund request due to schedule incompatibility.
+    Mail::assertQueuedCount(2);
     Mail::assertQueued(
         GroupMergedNotification::class,
-        fn (GroupMergedNotification $mail): bool => $mail->hasTo($moved->email),
+        fn (GroupMergedNotification $mail): bool => $mail->hasTo($moved->email)
+            && $mail->decision === MergeParticipantDecision::TRASLADAR,
+    );
+    Mail::assertQueued(
+        GroupMergedNotification::class,
+        fn (GroupMergedNotification $mail): bool => $mail->hasTo($enrolled->email)
+            && $mail->decision === MergeParticipantDecision::REEMBOLSO,
     );
 });
 
 it('merges group with a pending payment student who is marked as withdrawn', function () {
+    Mail::fake();
+
     $course = Course::factory()->withHours('20')->create();
     $origin = Group::factory()->noHabilitado()->create([
         'course_id' => $course->id,
@@ -270,6 +280,18 @@ it('merges group with a pending payment student who is marked as withdrawn', fun
     expect($origin->fresh()->status)->toBe(GroupStatus::CERRADO);
     expect($moved->fresh()->group_id)->toBe($destination->id);
     expect($pending->fresh()->status)->toBe(PreinscriptionStatus::RETIRADO);
+
+    Mail::assertQueuedCount(2);
+    Mail::assertQueued(
+        GroupMergedNotification::class,
+        fn (GroupMergedNotification $mail): bool => $mail->hasTo($moved->email)
+            && $mail->decision === MergeParticipantDecision::TRASLADAR,
+    );
+    Mail::assertQueued(
+        GroupMergedNotification::class,
+        fn (GroupMergedNotification $mail): bool => $mail->hasTo($pending->email)
+            && $mail->decision === MergeParticipantDecision::RETIRAR,
+    );
 });
 
 it('validates exact destination capacity only against participants who are actually moved', function () {

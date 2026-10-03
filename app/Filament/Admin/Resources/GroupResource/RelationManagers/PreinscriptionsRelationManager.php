@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\GroupResource\RelationManagers;
 
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Enums\TipoParticipante;
 use App\Models\Preinscription;
@@ -18,6 +19,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
+use Illuminate\Validation\ValidationException;
 
 class PreinscriptionsRelationManager extends RelationManager
 {
@@ -158,16 +160,73 @@ class PreinscriptionsRelationManager extends RelationManager
                     ->label('Reactivar preinscripción')
                     ->icon('heroicon-o-arrow-path')
                     ->color('primary')
-                    ->visible(fn (Preinscription $record) => $record->status === PreinscriptionStatus::RECHAZADO)
+                    ->visible(fn (Preinscription $record) => in_array($record->status, [
+                        PreinscriptionStatus::RECHAZADO,
+                        PreinscriptionStatus::RETIRADO,
+                    ], true))
                     ->requiresConfirmation()
-                    ->modalHeading('Reactivar preinscripción rechazada')
-                    ->modalDescription('El participante volverá al estado pendiente de pago. ¿Confirmar?')
+                    ->modalHeading('Reactivar preinscripción')
+                    ->modalDescription('El participante volverá al estado pendiente de pago si el grupo dispone de cupo. ¿Confirmar?')
                     ->action(function (Preinscription $record, PreinscriptionService $service): void {
-                        $service->reactivate($record);
+                        try {
+                            $service->reactivate($record);
+                        } catch (ValidationException $e) {
+                            Notification::make()
+                                ->title('No se pudo reactivar la preinscripción.')
+                                ->body(collect($e->errors())->flatten()->implode(' '))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
 
                         Notification::make()
                             ->title('Preinscripción reactivada. El participante queda pendiente de pago.')
                             ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('rechazarPago')
+                    ->label('Rechazar pago')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->visible(fn (Preinscription $record): bool => in_array($record->status, [
+                        PreinscriptionStatus::PENDIENTE_PAGO,
+                        PreinscriptionStatus::INSCRITO,
+                    ], true) && $record->payments()
+                        ->whereIn('estado', [PaymentStatus::VERIFICADO->value, PaymentStatus::PENDIENTE->value])
+                        ->exists())
+                    ->modalHeading('Rechazar el pago del participante')
+                    ->modalDescription('El pago quedará marcado como rechazado, se liberará el cupo y se notificará al estudiante con el motivo indicado.')
+                    ->form([
+                        Forms\Components\Textarea::make('motivo_rechazo')
+                            ->label('Motivo del rechazo')
+                            ->required()
+                            ->maxLength(255),
+                    ])
+                    ->action(function (Preinscription $record, array $data): void {
+                        $payment = $record->payments()
+                            ->where('estado', PaymentStatus::VERIFICADO->value)
+                            ->latest('id')
+                            ->first()
+                            ?? $record->payments()
+                                ->where('estado', PaymentStatus::PENDIENTE->value)
+                                ->latest('id')
+                                ->first();
+
+                        if ($payment === null) {
+                            Notification::make()
+                                ->title('No se encontró un pago pendiente o verificado para rechazar.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        app(PaymentService::class)->reject($payment, $data['motivo_rechazo']);
+
+                        Notification::make()
+                            ->title('Pago rechazado. Se notificó al estudiante y se liberó el cupo.')
+                            ->danger()
                             ->send();
                     }),
             ]);

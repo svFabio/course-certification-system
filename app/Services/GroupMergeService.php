@@ -129,7 +129,23 @@ class GroupMergeService
         foreach ($result['moved'] as $participant) {
             if (filled($participant->email)) {
                 Mail::to($participant->email)
-                    ->queue(new GroupMergedNotification($result['origin'], $result['destination'], $participant));
+                    ->queue(new GroupMergedNotification($result['origin'], $result['destination'], $participant, MergeParticipantDecision::TRASLADAR));
+            }
+        }
+
+        // Queue notifications for refunded participants (schedule incompatibility)
+        foreach ($result['refunded'] as $participant) {
+            if (filled($participant->email)) {
+                Mail::to($participant->email)
+                    ->queue(new GroupMergedNotification($result['origin'], $result['destination'], $participant, MergeParticipantDecision::REEMBOLSO));
+            }
+        }
+
+        // Queue notifications for withdrawn participants
+        foreach ($result['withdrawn'] as $participant) {
+            if (filled($participant->email)) {
+                Mail::to($participant->email)
+                    ->queue(new GroupMergedNotification($result['origin'], $result['destination'], $participant, MergeParticipantDecision::RETIRAR));
             }
         }
 
