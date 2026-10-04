@@ -139,3 +139,15 @@ it('does not notify the student when the rejected payment does not change the pr
     Mail::assertNotQueued(PaymentRejectedNotification::class);
     Mail::assertNothingQueued();
 });
+
+it('still renders the rejection notification when the preinscription relation is missing', function () {
+    // group_id is NOT NULL, so the missing-relation path is exercised with an
+    // unsaved payment that carries no preinscription at all.
+    $mail = new PaymentRejectedNotification(new Payment([
+        'monto' => 150,
+        'motivo_rechazo' => 'Comprobante ilegible',
+    ]));
+
+    expect($mail->envelope()->subject)->toBe('Pago rechazado');
+    expect($mail->render())->toContain('Comprobante ilegible');
+});

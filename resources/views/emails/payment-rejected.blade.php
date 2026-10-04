@@ -9,7 +9,7 @@
         <h1 class="text-umss-red text-xl font-bold mb-5">Pago rechazado</h1>
 
         <p class="text-umss-gray-700 text-sm leading-relaxed">
-            Estimado/a {{ $payment->preinscription->nombres }} {{ $payment->preinscription->apellido_paterno }},
+            Estimado/a {{ $payment->preinscription?->nombres }} {{ $payment->preinscription?->apellido_paterno }},
         </p>
 
         <p class="text-umss-gray-700 text-sm leading-relaxed">
@@ -18,16 +18,16 @@
 
         <div class="bg-umss-gray-100 rounded-md p-4 my-5">
             <p class="my-1 text-xs text-umss-gray-700">
-                <strong>Curso:</strong> {{ $payment->preinscription->group->course->nombre }}
+                <strong>Curso:</strong> {{ $payment->preinscription?->group?->course?->nombre ?? '—' }}
             </p>
             <p class="my-1 text-xs text-umss-gray-700">
-                <strong>Grupo:</strong> {{ $payment->preinscription->group->nombre }}
+                <strong>Grupo:</strong> {{ $payment->preinscription?->group?->nombre ?? '—' }}
             </p>
             <p class="my-1 text-xs text-umss-gray-700">
                 <strong>Monto:</strong> Bs. {{ number_format((float) $payment->monto, 2) }}
             </p>
             <p class="my-1 text-xs text-umss-gray-700">
-                <strong>Motivo del rechazo:</strong> {{ $payment->motivo_rechazo }}
+                <strong>Motivo del rechazo:</strong> {{ $payment->motivo_rechazo ?? '—' }}
             </p>
         </div>
 

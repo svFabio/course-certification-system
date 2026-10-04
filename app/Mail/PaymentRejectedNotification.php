@@ -23,8 +23,12 @@ class PaymentRejectedNotification extends Mailable
 
     public function envelope(): Envelope
     {
+        // The relations may be gone by the time the queued mail renders; a
+        // missing relation must never break the delivery of the notification.
+        $courseNombre = $this->payment->preinscription?->group?->course?->nombre;
+
         return new Envelope(
-            subject: "Pago rechazado — {$this->payment->preinscription->group->course->nombre}",
+            subject: filled($courseNombre) ? "Pago rechazado — {$courseNombre}" : 'Pago rechazado',
         );
     }
 

@@ -10,9 +10,11 @@ use App\Enums\SignatureStatus;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\Preinscription;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Notifications\CertificateReadyNotification;
 use App\Support\BusinessRules;
+use App\Support\DesignTokens;
 use BaconQrCode\Common\ErrorCorrectionLevel;
 use BaconQrCode\Encoder\Encoder;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -313,6 +315,21 @@ class CertificateService
 
         $isInstructor = $certificate->isInstructorCertificate();
 
+        $directorNombre = (string) SystemSetting::get('director_academico_nombre', '');
+        $directorCargo = (string) SystemSetting::get('director_academico_cargo', 'Director Académico');
+        $directorFirmaPath = SystemSetting::get('director_academico_firma_path');
+        $firmaDirectorDataUri = $this->buildImageUriFromPath($directorFirmaPath);
+
+        $jefeNombre = (string) SystemSetting::get('jefe_departamento_nombre', '');
+        $jefeCargo = (string) SystemSetting::get('jefe_departamento_cargo', 'Jefe de Departamento');
+        $jefeFirmaPath = SystemSetting::get('jefe_departamento_firma_path');
+        $firmaJefeDataUri = $this->buildImageUriFromPath($jefeFirmaPath);
+
+        $instructorUser = $certificate->course?->instructor;
+        $instructorNombre = $instructorUser?->name ?? 'Docente';
+        $instructorFirmaPath = $instructorUser?->firma_digital_path;
+        $firmaInstructorDataUri = $this->buildImageUriFromPath($instructorFirmaPath);
+
         return Pdf::loadView('pdf.certificado', [
             'certificado' => [
                 'participante' => $certificate->beneficiaryName(),
@@ -329,7 +346,14 @@ class CertificateService
                 'fechas_curso' => $dates['rango'],
                 'emitido_en' => $certificate->emitido_en?->format('d / m / Y') ?? now()->format('d / m / Y'),
                 'codigo_unico' => $certificate->codigo_unico,
-                'instructor' => $certificate->course?->instructor?->name ?? 'Docente',
+                'instructor' => $instructorNombre,
+                'director_nombre' => $directorNombre,
+                'director_cargo' => $directorCargo,
+                'jefe_nombre' => $jefeNombre,
+                'jefe_cargo' => $jefeCargo,
+                'firma_director_data_uri' => $firmaDirectorDataUri,
+                'firma_jefe_data_uri' => $firmaJefeDataUri,
+                'firma_instructor_data_uri' => $firmaInstructorDataUri,
                 'url_verificacion' => $verifyUrl,
                 'qr_data_uri' => $qrDataUri,
                 'logo_data_uri' => $logoDataUri,
@@ -346,6 +370,16 @@ class CertificateService
         }
 
         $filename = 'certificado-'.Str::slug($certificate->codigo_unico).'.pdf';
+
+        if ($certificate->es_escaneado && filled($certificate->pdf_path)) {
+            $disk = $this->resolveStorageDisk($certificate) ?? 'cloudinary';
+
+            return Storage::disk($disk)->download(
+                $certificate->pdf_path,
+                $filename,
+                ['Content-Type' => 'application/pdf']
+            );
+        }
 
         $disk = $this->resolveStorageDisk($certificate);
 
@@ -494,8 +528,11 @@ class CertificateService
                 return null;
             }
 
-            $white = imagecolorallocate($image, 255, 255, 255);
-            $black = imagecolorallocate($image, 14, 46, 95);
+            [$wR, $wG, $wB] = DesignTokens::hexToRgb(DesignTokens::WHITE);
+            [$bR, $bG, $bB] = DesignTokens::hexToRgb(DesignTokens::NAVY);
+
+            $white = imagecolorallocate($image, $wR, $wG, $wB);
+            $black = imagecolorallocate($image, $bR, $bG, $bB);
             imagefilledrectangle($image, 0, 0, $size, $size, $white);
 
             for ($y = 0; $y < $modules; $y++) {
@@ -523,5 +560,36 @@ class CertificateService
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    private function buildImageUriFromPath(?string $path): ?string
+    {
+        if (! filled($path)) {
+            return null;
+        }
+
+        try {
+            if (Storage::disk('cloudinary')->exists($path)) {
+                $bytes = Storage::disk('cloudinary')->get($path);
+                if ($bytes !== false && $bytes !== '') {
+                    return 'data:image/png;base64,'.base64_encode($bytes);
+                }
+            }
+        } catch (\Throwable) {
+            // Cloudinary read failed
+        }
+
+        try {
+            if (Storage::disk('local')->exists($path)) {
+                $bytes = Storage::disk('local')->get($path);
+                if ($bytes !== false && $bytes !== '') {
+                    return 'data:image/png;base64,'.base64_encode($bytes);
+                }
+            }
+        } catch (\Throwable) {
+            // Local read failed
+        }
+
+        return null;
     }
 }

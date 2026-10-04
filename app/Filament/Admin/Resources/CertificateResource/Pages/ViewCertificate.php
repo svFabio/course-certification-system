@@ -4,16 +4,11 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\CertificateResource\Pages;
 
-use App\Enums\SignatureStatus;
 use App\Filament\Admin\Resources\CertificateResource;
 use App\Filament\Concerns\HasBackButton;
-use App\Services\CertificateService;
-use Filament\Actions;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
-use Illuminate\Validation\ValidationException;
 
 class ViewCertificate extends ViewRecord
 {
@@ -50,58 +45,6 @@ class ViewCertificate extends ViewRecord
     {
         return [
             $this->getBackAction(),
-            Actions\Action::make('avanzarFirma')
-                ->label(fn (): string => $this->record->signature_status->advanceLabel()
-                    ? 'Registrar: '.$this->record->signature_status->advanceLabel()
-                    : 'Flujo completo')
-                ->icon('heroicon-o-pencil-square')
-                ->color('primary')
-                ->visible(fn (): bool => $this->record->signature_status->next() !== null)
-                ->requiresConfirmation()
-                ->action(function (CertificateService $service): void {
-                    try {
-                        $this->record = $service->advanceSignature($this->record);
-                    } catch (ValidationException $e) {
-                        Notification::make()
-                            ->title('No se pudo avanzar la firma')
-                            ->body(collect($e->errors())->flatten()->implode(' '))
-                            ->danger()
-                            ->send();
-
-                        return;
-                    }
-
-                    Notification::make()
-                        ->title('Firma actualizada')
-                        ->body($this->record->signature_status->getLabel())
-                        ->success()
-                        ->send();
-                }),
-            Actions\Action::make('reenviarNotificacion')
-                ->label('Reenviar notificación')
-                ->icon('heroicon-o-envelope')
-                ->color('warning')
-                ->visible(fn (): bool => $this->record->signature_status === SignatureStatus::LISTO)
-                ->requiresConfirmation()
-                ->action(function (CertificateService $service): void {
-                    try {
-                        $service->resendReadyNotification($this->record);
-                    } catch (ValidationException $e) {
-                        Notification::make()
-                            ->title('No se pudo reenviar')
-                            ->body(collect($e->errors())->flatten()->implode(' '))
-                            ->danger()
-                            ->send();
-
-                        return;
-                    }
-
-                    Notification::make()
-                        ->title('Notificación reenviada')
-                        ->success()
-                        ->send();
-                }),
-            Actions\EditAction::make()->label('Ajustar estado'),
         ];
     }
 }

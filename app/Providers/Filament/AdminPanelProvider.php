@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\Filament;
 
 use App\Filament\Admin\Resources;
+use App\Filament\Pages\Settings\CertificateSignatureSettings;
 use App\Filament\Pages\Settings\GoogleSheetsSettings;
 use App\Filament\Widgets\StatsOverviewWidget;
 use App\Filament\Widgets\UpcomingGroupsWidget;
@@ -69,6 +70,7 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
                 GoogleSheetsSettings::class,
+                CertificateSignatureSettings::class,
             ])
             ->widgets([
                 StatsOverviewWidget::class,
