@@ -87,23 +87,19 @@ class GroupMergeService
                 ]);
             }
 
-            // Process participants to move
-            foreach ($toMove as $participant) {
-                $participant->update(['group_id' => $destination->getKey()]);
-            }
-
-            // Process refunds
-            foreach ($toRefund as $participant) {
-                if ($participant->status === PreinscriptionStatus::INSCRITO) {
-                    $this->paymentService->requestRefund($participant, 'Incompatibilidad de horario por fusión de grupo');
+            // Process mutations atomically
+            foreach ($activeParticipants as $participant) {
+                if ($toMove->contains($participant)) {
+                    $participant->update(['group_id' => $destination->getKey()]);
+                } elseif ($toRefund->contains($participant)) {
+                    if ($participant->status === PreinscriptionStatus::INSCRITO) {
+                        $this->paymentService->requestRefund($participant, 'Incompatibilidad de horario por fusión de grupo');
+                    } else {
+                        $this->preinscriptions->markAsWithdrawn($participant);
+                    }
                 } else {
                     $this->preinscriptions->markAsWithdrawn($participant);
                 }
-            }
-
-            // Process withdrawals
-            foreach ($toWithdraw as $participant) {
-                $this->preinscriptions->markAsWithdrawn($participant);
             }
 
             $origin->status = GroupStatus::CERRADO;
@@ -125,27 +121,19 @@ class GroupMergeService
         GroupSheetsNeedRefresh::dispatch($result['origin']->getKey());
         GroupSheetsNeedRefresh::dispatch($result['destination']->getKey());
 
-        // Queue notifications for moved participants with email
-        foreach ($result['moved'] as $participant) {
-            if (filled($participant->email)) {
-                Mail::to($participant->email)
-                    ->queue(new GroupMergedNotification($result['origin'], $result['destination'], $participant, MergeParticipantDecision::TRASLADAR));
-            }
-        }
+        // Queue notifications for all affected participants with email
+        $decisionGroups = [
+            [MergeParticipantDecision::TRASLADAR, $result['moved']],
+            [MergeParticipantDecision::REEMBOLSO, $result['refunded']],
+            [MergeParticipantDecision::RETIRAR, $result['withdrawn']],
+        ];
 
-        // Queue notifications for refunded participants (schedule incompatibility)
-        foreach ($result['refunded'] as $participant) {
-            if (filled($participant->email)) {
-                Mail::to($participant->email)
-                    ->queue(new GroupMergedNotification($result['origin'], $result['destination'], $participant, MergeParticipantDecision::REEMBOLSO));
-            }
-        }
-
-        // Queue notifications for withdrawn participants
-        foreach ($result['withdrawn'] as $participant) {
-            if (filled($participant->email)) {
-                Mail::to($participant->email)
-                    ->queue(new GroupMergedNotification($result['origin'], $result['destination'], $participant, MergeParticipantDecision::RETIRAR));
+        foreach ($decisionGroups as [$decision, $participants]) {
+            foreach ($participants as $participant) {
+                if (filled($participant->email)) {
+                    Mail::to($participant->email)
+                        ->queue(new GroupMergedNotification($result['origin'], $result['destination'], $participant, $decision));
+                }
             }
         }
 
