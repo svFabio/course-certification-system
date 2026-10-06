@@ -62,6 +62,7 @@ class AdminPanelProvider extends PanelProvider
                 Resources\SessionResource::class,
                 Resources\AttendanceResource::class,
                 Resources\PreinscriptionResource::class,
+                Resources\StudentRequestResource::class,
                 Resources\PaymentResource::class,
                 Resources\CertificateResource::class,
                 Resources\HolidayResource::class,
