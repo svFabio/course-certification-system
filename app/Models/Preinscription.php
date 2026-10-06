@@ -56,6 +56,11 @@ class Preinscription extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function studentRequests(): HasMany
+    {
+        return $this->hasMany(StudentRequest::class);
+    }
+
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
