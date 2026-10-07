@@ -121,11 +121,19 @@ class GroupMergeService
         GroupSheetsNeedRefresh::dispatch($result['origin']->getKey());
         GroupSheetsNeedRefresh::dispatch($result['destination']->getKey());
 
-        // Queue notifications for all affected participants with email
+        // Queue notifications for all affected participants with email.
+        // Participants with REEMBOLSO decision but PENDIENTE_PAGO status are silently
+        // withdrawn (no payment to refund) and should receive a RETIRAR notification.
+        $actualRefunded = $result['refunded']->filter(
+            fn ($p) => $p->status === PreinscriptionStatus::DEVOLUCION_PENDIENTE
+                || $p->getOriginal('status') === PreinscriptionStatus::INSCRITO->value
+        );
+        $refundedButWithdrawn = $result['refunded']->diff($actualRefunded);
+
         $decisionGroups = [
             [MergeParticipantDecision::TRASLADAR, $result['moved']],
-            [MergeParticipantDecision::REEMBOLSO, $result['refunded']],
-            [MergeParticipantDecision::RETIRAR, $result['withdrawn']],
+            [MergeParticipantDecision::REEMBOLSO, $actualRefunded],
+            [MergeParticipantDecision::RETIRAR, $result['withdrawn']->merge($refundedButWithdrawn)],
         ];
 
         foreach ($decisionGroups as [$decision, $participants]) {

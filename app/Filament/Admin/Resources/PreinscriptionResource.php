@@ -11,7 +11,6 @@ use App\Models\Course;
 use App\Models\Group;
 use App\Models\Preinscription;
 use App\Services\PaymentService;
-use App\Services\PreinscriptionService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -23,7 +22,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
-use Illuminate\Validation\ValidationException;
 
 class PreinscriptionResource extends Resource
 {
@@ -301,78 +299,6 @@ class PreinscriptionResource extends Resource
 
                         Notification::make()
                             ->title('Certificado rechazado. Se aplicará tarifa de comunidad UMSS.')
-                            ->warning()
-                            ->send();
-                    }),
-                Tables\Actions\Action::make('cambiarGrupo')
-                    ->label('Cambiar de grupo')
-                    ->icon('heroicon-o-arrows-right-left')
-                    ->color('info')
-                    ->visible(fn (Preinscription $record) => in_array($record->status, [
-                        PreinscriptionStatus::PENDIENTE_PAGO,
-                        PreinscriptionStatus::INSCRITO,
-                    ], true))
-                    ->form([
-                        Forms\Components\Select::make('nuevo_grupo_id')
-                            ->label('Grupo de destino')
-                            ->options(fn (Preinscription $record) => Group::where('course_id', $record->group->course_id)
-                                ->whereNot('id', $record->group_id)
-                                ->get()
-                                ->mapWithKeys(fn (Group $group) => [
-                                    $group->id => "{$group->nombre} ({$group->hora_inicio->format('H:i')} - {$group->hora_fin->format('H:i')})",
-                                ]))
-                            ->required(),
-                    ])
-                    ->action(function (Preinscription $record, array $data, PreinscriptionService $service) {
-                        $destination = Group::findOrFail((int) $data['nuevo_grupo_id']);
-
-                        try {
-                            $service->moveToGroup($record, $destination);
-                        } catch (ValidationException $e) {
-                            Notification::make()
-                                ->title('No se pudo realizar el cambio de grupo.')
-                                ->body(collect($e->errors())->flatten()->implode(' '))
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
-                        Notification::make()
-                            ->title('Participante reubicado al grupo de destino.')
-                            ->success()
-                            ->send();
-                    }),
-                Tables\Actions\Action::make('solicitarDevolucion')
-                    ->label('Solicitar devolución')
-                    ->icon('heroicon-o-arrow-uturn-left')
-                    ->color('danger')
-                    ->visible(fn (Preinscription $record) => $record->status === PreinscriptionStatus::INSCRITO)
-                    ->requiresConfirmation()
-                    ->modalHeading('Solicitar devolución / reembolso')
-                    ->modalDescription('Se marcará al participante como "devolución pendiente" y su pago quedará en espera de confirmación de reembolso.')
-                    ->form([
-                        Forms\Components\Textarea::make('motivo')
-                            ->label('Motivo de la devolución')
-                            ->helperText('Ej.: el grupo no alcanzó el cupo mínimo o el participante no aceptó el cambio de grupo.')
-                            ->required()
-                            ->maxLength(500),
-                    ])
-                    ->action(function (Preinscription $record, array $data, PaymentService $service) {
-                        try {
-                            $service->requestRefund($record, $data['motivo']);
-                        } catch (ValidationException $e) {
-                            Notification::make()
-                                ->title('No se pudo solicitar la devolución.')
-                                ->body(collect($e->errors())->flatten()->implode(' '))
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
-                        Notification::make()
-                            ->title('Devolución solicitada. Confirme el reembolso cuando corresponda.')
                             ->warning()
                             ->send();
                     }),
