@@ -204,7 +204,7 @@ it('calculates weighted final grade correctly via EvaluationService', function (
 it('generates certificate with correct type and matching course_id via CertificateService', function () {
     $course = Course::factory()->create();
     $group = Group::factory()->create(['course_id' => $course->id]);
-    $preinscription = Preinscription::factory()->create(['group_id' => $group->id]);
+    $preinscription = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
 
     // Combined-sum invariant: attendance_weight + criteria sum must equal 100.
     $course->update(['attendance_weight' => 0]);
@@ -223,6 +223,7 @@ it('generates certificate with correct type and matching course_id via Certifica
     expect($certificate->course_id)->toBe($course->id);
     expect($certificate->tipo)->toBe(CertificateType::APROBACION);
     expect($certificate->codigo_unico)->toStartWith('CERT-');
+    expect($certificate->signature_status->getLabel())->toBe('Pendiente de firma');
 });
 
 it('supports cod_sis, fotocopia_ci in preinscriptions and aula in groups', function () {

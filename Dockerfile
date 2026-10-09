@@ -33,9 +33,6 @@ RUN mkdir -p \
     storage/logs \
     bootstrap/cache
 
-# Copy compiled frontend assets (built separately with npm run build)
-COPY public/build ./public/build
-
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 

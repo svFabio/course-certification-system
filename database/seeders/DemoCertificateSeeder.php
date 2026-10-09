@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Enums\CertificateType;
+use App\Enums\PreinscriptionStatus;
 use App\Enums\SignatureStatus;
+use App\Enums\TipoParticipante;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\Preinscription;
@@ -25,24 +27,27 @@ class DemoCertificateSeeder extends Seeder
 
         $group = $course->groups->first();
 
-        $preinscription = Preinscription::firstOrCreate(
-            [
+        $preinscription = Preinscription::query()
+            ->where('group_id', $group->id)
+            ->where('email', $student->email)
+            ->first();
+
+        if ($preinscription === null) {
+            $preinscription = Preinscription::create([
                 'group_id' => $group->id,
-                'ci' => '9335660',
-            ],
-            [
+                'ci' => fake()->unique()->numerify('#######'),
                 'email' => $student->email,
                 'nombres' => 'Estudiante',
                 'apellido_paterno' => 'Demo',
                 'apellido_materno' => null,
-                'celular' => '71234567',
-                'tipo_participante' => 'umss',
-                'status' => 'inscrito',
-            ]
-        );
-
-        if ($preinscription->email !== $student->email) {
-            $preinscription->update(['email' => $student->email]);
+                'celular' => fake()->numerify('7#######'),
+                'tipo_participante' => TipoParticipante::UMSS->value,
+                'status' => PreinscriptionStatus::INSCRITO,
+            ]);
+        } else {
+            $preinscription->update([
+                'status' => PreinscriptionStatus::INSCRITO,
+            ]);
         }
 
         Certificate::updateOrCreate(

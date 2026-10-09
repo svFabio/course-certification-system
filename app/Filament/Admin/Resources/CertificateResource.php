@@ -8,13 +8,15 @@ use App\Enums\CertificateType;
 use App\Enums\SignatureStatus;
 use App\Filament\Admin\Resources\CertificateResource\Pages;
 use App\Models\Certificate;
-use App\Models\Preinscription;
+use App\Services\CertificateService;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Forms\Get;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\ValidationException;
 
 class CertificateResource extends Resource
 {
@@ -34,51 +36,34 @@ class CertificateResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('preinscription_id')
-                    ->relationship('preinscription', 'full_name')
-                    ->searchable()
-                    ->preload()
-                    ->unique(table: 'certificates', ignoreRecord: true)
-                    ->validationMessages([
-                        'unique' => 'Esta preinscripción ya tiene un certificado emitido.',
-                    ])
-                    ->required(),
-                Forms\Components\Select::make('course_id')
-                    ->relationship('course', 'nombre')
-                    ->searchable()
-                    ->required()
-                    ->rules([
-                        fn (Get $get): \Closure => function (string $attribute, mixed $value, callable $fail) use ($get): void {
-                            $preinscriptionId = $get('preinscription_id');
-
-                            if ($preinscriptionId === null || (int) $value === 0) {
-                                return;
-                            }
-
-                            $preinscription = Preinscription::with('group')->find((int) $preinscriptionId);
-
-                            if ($preinscription !== null
-                                && $preinscription->group !== null
-                                && (int) $value !== (int) $preinscription->group->course_id) {
-                                $fail('El curso debe coincidir con el curso del grupo de la preinscripción seleccionada.');
-                            }
-                        },
-                    ]),
-                Forms\Components\Select::make('tipo')
-                    ->options(CertificateType::class)
-                    ->required(),
-                Forms\Components\TextInput::make('codigo_unico')
-                    ->required()
-                    ->unique(ignoreRecord: true)
-                    ->disabled(fn (string $operation) => $operation === 'edit')
-                    ->maxLength(50),
-                Forms\Components\TextInput::make('pdf_path')
-                    ->maxLength(500),
+                Forms\Components\Placeholder::make('participante')
+                    ->label('Beneficiario')
+                    ->content(fn (?Certificate $record): string => $record?->beneficiaryName() ?? '—'),
+                Forms\Components\Placeholder::make('curso')
+                    ->label('Curso')
+                    ->content(fn (?Certificate $record): string => $record?->course?->nombre ?? '—'),
+                Forms\Components\Placeholder::make('tipo_label')
+                    ->label('Tipo de certificado')
+                    ->content(fn (?Certificate $record): string => $record?->tipo?->getLabel() ?? '—'),
+                Forms\Components\Placeholder::make('grupos')
+                    ->label('Grupo(s)')
+                    ->content(fn (?Certificate $record): string => $record?->grupos_detalle ?: '—')
+                    ->visible(fn (?Certificate $record): bool => $record?->isInstructorCertificate() ?? false),
+                Forms\Components\Placeholder::make('codigo')
+                    ->label('Código único')
+                    ->content(fn (?Certificate $record): string => $record?->codigo_unico ?? '—'),
                 Forms\Components\Select::make('signature_status')
+                    ->label('Estado de firma')
                     ->options(SignatureStatus::class)
-                    ->default(SignatureStatus::PENDIENTE)
-                    ->required(),
-                Forms\Components\DateTimePicker::make('emitido_en'),
+                    ->required()
+                    ->helperText('Avance el flujo de firmas hasta «Certificado listo» para habilitar la descarga y notificar al beneficiario.'),
+                Forms\Components\Placeholder::make('emitido')
+                    ->label('Fecha de emisión')
+                    ->content(fn (?Certificate $record): string => $record?->emitido_en?->format('d/m/Y H:i') ?? '—'),
+                Forms\Components\Placeholder::make('demora')
+                    ->label('Demora administrativa')
+                    ->content(fn (?Certificate $record): string => $record?->administrativeDelayLabel() ?? '—')
+                    ->helperText('Tiempo desde la generación del certificado hasta que quedó listo (o hasta ahora si sigue en proceso).'),
             ]);
     }
 
@@ -86,51 +71,145 @@ class CertificateResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('preinscription.full_name')
-                    ->label('Participante')
-                    ->searchable(),
+                Tables\Columns\TextColumn::make('beneficiario')
+                    ->label('Beneficiario')
+                    ->state(fn (Certificate $record): string => $record->beneficiaryName())
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where(function (Builder $outer) use ($search): void {
+                            $outer->whereHas('preinscription', function (Builder $q) use ($search): void {
+                                $q->where('nombres', 'ilike', "%{$search}%")
+                                    ->orWhere('apellido_paterno', 'ilike', "%{$search}%")
+                                    ->orWhere('apellido_materno', 'ilike', "%{$search}%")
+                                    ->orWhere('ci', 'ilike', "%{$search}%");
+                            })->orWhereHas('instructor', function (Builder $q) use ($search): void {
+                                $q->where('name', 'ilike', "%{$search}%")
+                                    ->orWhere('email', 'ilike', "%{$search}%");
+                            });
+                        });
+                    }),
                 Tables\Columns\TextColumn::make('course.nombre')
                     ->label('Curso')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('tipo')
-                    ->label('Tipo de certificado')
+                    ->label('Tipo')
                     ->badge(),
                 Tables\Columns\TextColumn::make('codigo_unico')
                     ->label('Código único')
-                    ->searchable(),
+                    ->searchable()
+                    ->copyable(),
                 Tables\Columns\TextColumn::make('signature_status')
                     ->label('Estado de firma')
                     ->badge(),
+                Tables\Columns\TextColumn::make('demora')
+                    ->label('Demora')
+                    ->state(fn (Certificate $record): string => $record->administrativeDelayLabel())
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('emitido_en')
-                    ->label('Fecha de emisión')
-                    ->dateTime()
+                    ->label('Emitido')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Fecha de registro')
-                    ->dateTime()
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('listo_en')
+                    ->label('Listo')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('course_id')
+                    ->label('Curso')
+                    ->relationship('course', 'nombre')
+                    ->searchable()
+                    ->preload(),
+                Tables\Filters\SelectFilter::make('signature_status')
+                    ->label('Estado de firma')
+                    ->options(SignatureStatus::class),
+                Tables\Filters\SelectFilter::make('tipo')
+                    ->label('Tipo')
+                    ->options(CertificateType::class),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\Action::make('avanzarFirma')
+                    ->label(fn (Certificate $record): string => $record->signature_status->advanceLabel()
+                        ? 'Registrar: '.$record->signature_status->advanceLabel()
+                        : 'Flujo completo')
+                    ->icon('heroicon-o-pencil-square')
+                    ->color('primary')
+                    ->visible(fn (Certificate $record): bool => $record->signature_status->next() !== null)
+                    ->requiresConfirmation()
+                    ->modalHeading('Avanzar firma')
+                    ->modalDescription(fn (Certificate $record): string => 'Se actualizará el estado a «'
+                        .($record->signature_status->advanceLabel() ?? '').'».')
+                    ->action(function (Certificate $record, CertificateService $service): void {
+                        try {
+                            $updated = $service->advanceSignature($record);
+                        } catch (ValidationException $e) {
+                            Notification::make()
+                                ->title('No se pudo avanzar la firma')
+                                ->body(collect($e->errors())->flatten()->implode(' '))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title('Firma actualizada')
+                            ->body($updated->signature_status->getLabel())
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('reenviarNotificacion')
+                    ->label('Reenviar notificación')
+                    ->icon('heroicon-o-envelope')
+                    ->color('warning')
+                    ->visible(fn (Certificate $record): bool => $record->signature_status === SignatureStatus::LISTO)
+                    ->requiresConfirmation()
+                    ->modalHeading('Reenviar notificación')
+                    ->modalDescription('Se enviará nuevamente el correo de disponibilidad del certificado.')
+                    ->action(function (Certificate $record, CertificateService $service): void {
+                        try {
+                            $service->resendReadyNotification($record);
+                        } catch (ValidationException $e) {
+                            Notification::make()
+                                ->title('No se pudo reenviar')
+                                ->body(collect($e->errors())->flatten()->implode(' '))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title('Notificación reenviada')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->label('Ajustar estado'),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                //
             ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['preinscription', 'instructor', 'course']);
     }
 
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListCertificates::route('/'),
-            'create' => Pages\CreateCertificate::route('/create'),
             'view' => Pages\ViewCertificate::route('/{record}'),
             'edit' => Pages\EditCertificate::route('/{record}/edit'),
         ];
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
     }
 }
