@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\CourseStatus;
 use App\Enums\InterestStatus;
+use App\Mail\CourseSlotAvailableNotification;
 use App\Models\Course;
 use App\Models\CourseInterest;
 use App\Models\Preinscription;
@@ -13,6 +14,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class CourseInterestService
@@ -86,6 +88,11 @@ class CourseInterestService
                 ]);
             }
         });
+
+        foreach ($interests as $interest) {
+            Mail::to($interest->email)
+                ->queue(new CourseSlotAvailableNotification($course));
+        }
 
         return $interests->count();
     }

@@ -5,13 +5,16 @@ declare(strict_types=1);
 use App\Enums\CourseStatus;
 use App\Enums\InterestStatus;
 use App\Enums\PreinscriptionStatus;
+use App\Mail\CourseSlotAvailableNotification;
 use App\Models\Course;
 use App\Models\CourseInterest;
 use App\Models\Group;
 use App\Models\Preinscription;
 use App\Services\CourseInterestService;
 use App\Services\PreinscriptionService;
+use App\Support\BusinessRules;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
 
@@ -32,7 +35,7 @@ it('never consumes group capacity when registering an interest', function () {
     $course = Course::factory()->create();
     $group = Group::factory()->habilitado()->create([
         'course_id' => $course->id,
-        'cupo_minimo' => 15,
+        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
         'cupo_maximo' => 30,
     ]);
 
@@ -140,4 +143,28 @@ it('never links a preinscription that belongs to another course', function () {
     expect($converted)->toBe(0)
         ->and($interest->fresh()->estado)->toBe(InterestStatus::INTERESADO)
         ->and($interest->fresh()->preinscription_id)->toBeNull();
+});
+
+it('queues one email per notified interest and never re-notifies an already notified row', function () {
+    Mail::fake();
+
+    $course = Course::factory()->create();
+    $interests = CourseInterest::factory()->count(2)->create(['course_id' => $course->id]);
+    CourseInterest::factory()->notificado()->create(['course_id' => $course->id]);
+
+    $service = app(CourseInterestService::class);
+
+    $notified = $service->notifyInterested($course);
+
+    expect($notified)->toBe(2)
+        ->and($interests->every(
+            fn (CourseInterest $interest): bool => $interest->fresh()->estado === InterestStatus::NOTIFICADO
+                && $interest->fresh()->notificado_at !== null
+        ))->toBeTrue();
+
+    Mail::assertQueued(CourseSlotAvailableNotification::class, 2);
+
+    expect($service->notifyInterested($course))->toBe(0);
+
+    Mail::assertQueued(CourseSlotAvailableNotification::class, 2);
 });
