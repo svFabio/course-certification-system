@@ -9,6 +9,8 @@ use App\Enums\CourseStatus;
 use App\Enums\GroupStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Models\Course;
+use App\Models\Group;
+use App\Services\CourseInterestService;
 use App\Support\BusinessRules;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -24,6 +26,14 @@ class CatalogComponent extends Component
     public ?string $nivel = null;
 
     public ?string $cargaHoraria = null;
+
+    public ?int $interestCourseId = null;
+
+    public ?string $interestEmail = null;
+
+    public bool $interestSubmitted = false;
+
+    public bool $interestAlreadyRegistered = false;
 
     public function updatingSearch(): void
     {
@@ -55,6 +65,50 @@ class CatalogComponent extends Component
         return BusinessRules::VALID_HOURS;
     }
 
+    public function openInterest(int $courseId): void
+    {
+        $this->interestCourseId = $courseId;
+        $this->interestEmail = null;
+        $this->interestSubmitted = false;
+        $this->interestAlreadyRegistered = false;
+        $this->resetValidation('interestEmail');
+    }
+
+    public function closeInterest(): void
+    {
+        $this->interestCourseId = null;
+        $this->interestEmail = null;
+        $this->interestSubmitted = false;
+        $this->interestAlreadyRegistered = false;
+        $this->resetValidation('interestEmail');
+    }
+
+    public function registerInterest(CourseInterestService $service): void
+    {
+        $validated = $this->validate([
+            'interestCourseId' => ['required', 'integer', 'exists:courses,id'],
+            'interestEmail' => ['required', 'email:rfc', 'max:150'],
+        ], [
+            'interestCourseId.exists' => 'El curso seleccionado ya no está disponible.',
+            'interestEmail.required' => 'Ingrese su correo electrónico.',
+            'interestEmail.email' => 'Ingrese una dirección de correo electrónico válida.',
+        ]);
+
+        $course = Course::findOrFail($validated['interestCourseId']);
+
+        if ($course->status !== CourseStatus::PUBLICADO) {
+            $this->addError('interestCourseId', 'El curso ya no acepta registros de interés.');
+
+            return;
+        }
+
+        $interest = $service->register($course, $validated['interestEmail'], auth()->user());
+
+        $this->interestSubmitted = true;
+        $this->interestAlreadyRegistered = ! $interest->wasRecentlyCreated;
+        $this->interestEmail = null;
+    }
+
     public function render()
     {
         $periods = Course::where('status', CourseStatus::PUBLICADO)
@@ -78,9 +132,18 @@ class CatalogComponent extends Component
             ])
             ->paginate(12);
 
+        $atCapacity = $courses->getCollection()->mapWithKeys(function (Course $course): array {
+            $hasFreeSeat = $course->groups->contains(
+                fn (Group $group): bool => (int) ($group->inscritos_count ?? 0) < $group->cupo_maximo
+            );
+
+            return [$course->id => ! $hasFreeSeat];
+        });
+
         return view('livewire.catalog-component', [
             'courses' => $courses,
             'periods' => $periods,
+            'atCapacity' => $atCapacity,
         ]);
     }
 }
