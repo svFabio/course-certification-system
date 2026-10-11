@@ -72,6 +72,11 @@ class CourseInterestService
      */
     public function notifyInterested(Course $course): int
     {
+        // Domain invariant: a student who already holds a preinscription for the
+        // course must never receive the "slot available" email. Sync conversions
+        // first so those interests leave the active selection below.
+        $this->syncConversions($course);
+
         $interests = $course->courseInterests()
             ->where('estado', InterestStatus::INTERESADO)
             ->get();

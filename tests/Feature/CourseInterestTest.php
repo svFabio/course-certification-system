@@ -168,3 +168,39 @@ it('queues one email per notified interest and never re-notifies an already noti
 
     Mail::assertQueued(CourseSlotAvailableNotification::class, 2);
 });
+
+it('excludes an interest that already has a preinscription before notifying slot availability', function () {
+    Mail::fake();
+
+    $course = Course::factory()->create();
+    $group = Group::factory()->habilitado()->create(['course_id' => $course->id]);
+
+    $enrolledEmail = fake()->unique()->safeEmail();
+    $waitingEmail = fake()->unique()->safeEmail();
+
+    $service = app(CourseInterestService::class);
+
+    $enrolledInterest = $service->register($course, $enrolledEmail);
+    $waitingInterest = $service->register($course, $waitingEmail);
+
+    Preinscription::factory()->create([
+        'group_id' => $group->id,
+        'email' => $enrolledEmail,
+        'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+    ]);
+
+    $notified = $service->notifyInterested($course);
+
+    expect($notified)->toBe(1)
+        ->and($enrolledInterest->fresh()->estado)->toBe(InterestStatus::CONVERTIDO)
+        ->and($enrolledInterest->fresh()->preinscription_id)->not->toBeNull()
+        ->and($waitingInterest->fresh()->estado)->toBe(InterestStatus::NOTIFICADO);
+
+    Mail::assertQueued(CourseSlotAvailableNotification::class, 1);
+    Mail::assertNotQueued(CourseSlotAvailableNotification::class, function (CourseSlotAvailableNotification $mail) use ($enrolledEmail): bool {
+        return $mail->hasTo($enrolledEmail);
+    });
+    Mail::assertQueued(CourseSlotAvailableNotification::class, function (CourseSlotAvailableNotification $mail) use ($waitingEmail): bool {
+        return $mail->hasTo($waitingEmail);
+    });
+});
