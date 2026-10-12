@@ -10,6 +10,7 @@ use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
@@ -190,7 +191,7 @@ class GoogleSheetsSettings extends Page implements HasForms
                 ->success()
                 ->actions([
                     ...(! empty($result['spreadsheet_url']) ? [
-                        \Filament\Notifications\Actions\Action::make('abrir')
+                        Action::make('abrir')
                             ->label('Abrir spreadsheet')
                             ->url($result['spreadsheet_url'], shouldOpenInNewTab: true),
                     ] : []),

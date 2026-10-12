@@ -18,6 +18,7 @@ use App\Services\CourseService;
 use App\Services\EvaluationService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function () {
@@ -123,8 +124,8 @@ it('builds a pdf payload with workload, course dates and verification qr when re
 
     $preinscription = Preinscription::factory()->inscrito()->create([
         'group_id' => $group->id,
-        'nombres' => 'Ana',
-        'apellido_paterno' => 'Perez',
+        'nombres' => fake()->firstName(),
+        'apellido_paterno' => fake()->lastName(),
     ]);
 
     $eval = app(EvaluationService::class);
@@ -169,7 +170,7 @@ it('keeps unique alphanumeric certificate codes across many generations', functi
 it('advances the signature flow and notifies when the certificate becomes ready', function () {
     Notification::fake();
 
-    $student = User::factory()->create(['email' => 'alumno@example.com']);
+    $student = User::factory()->create();
     $course = Course::factory()->create(['attendance_weight' => 0]);
     $group = Group::factory()->create(['course_id' => $course->id]);
     $preinscription = Preinscription::factory()->inscrito()->create([
@@ -198,12 +199,37 @@ it('advances the signature flow and notifies when the certificate becomes ready'
     $certificate = $service->advanceSignature($certificate);
     expect($certificate->signature_status)->toBe(SignatureStatus::LISTO)
         ->and($certificate->listo_en)->not->toBeNull()
+        ->and($certificate->pdf_path)->toBe('certificates/'.$certificate->codigo_unico.'.pdf')
         ->and($certificate->administrativeDelayLabel())->not->toBe('—');
+
+    Storage::disk('cloudinary')->assertExists($certificate->pdf_path);
 
     Notification::assertSentTo($student, CertificateReadyNotification::class);
 
     $service->resendReadyNotification($certificate);
     Notification::assertSentToTimes($student, CertificateReadyNotification::class, 2);
+});
+
+it('persists certificate pdf to cloudinary when reaching listo status via updateSignatureStatus', function () {
+    Notification::fake();
+
+    $student = User::factory()->create();
+    $course = Course::factory()->create(['attendance_weight' => 0]);
+    $group = Group::factory()->create(['course_id' => $course->id]);
+    $preinscription = Preinscription::factory()->inscrito()->create([
+        'group_id' => $group->id,
+        'email' => $student->email,
+    ]);
+
+    $service = app(CertificateService::class);
+    $certificate = $service->generate($preinscription);
+
+    expect($certificate->pdf_path)->toBeNull();
+
+    $certificate = $service->updateSignatureStatus($certificate, SignatureStatus::LISTO);
+
+    expect($certificate->pdf_path)->toBe('certificates/'.$certificate->codigo_unico.'.pdf');
+    Storage::disk('cloudinary')->assertExists($certificate->pdf_path);
 });
 
 it('can emit one instructor certificate per group', function () {

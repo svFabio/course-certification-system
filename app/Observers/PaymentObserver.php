@@ -7,6 +7,7 @@ namespace App\Observers;
 use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Mail\PaymentConfirmedNotification;
+use App\Mail\PaymentRejectedNotification;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -66,21 +67,28 @@ class PaymentObserver
         $preinscription = $payment->preinscription;
         $status = $preinscription->status;
 
+        $shouldReject = false;
+
         if ($status === PreinscriptionStatus::PENDIENTE_PAGO) {
-            $preinscription->update(['status' => PreinscriptionStatus::RECHAZADO]);
-
-            return;
-        }
-
-        // An inscrito participant only loses the seat when this rejected
-        // payment was the one gating the enrollment (AGENTS §2: rejecting a
-        // payment frees the group seat).
-        if ($status === PreinscriptionStatus::INSCRITO && ! $this->hasOtherVerifiedPayment($payment)) {
-            $preinscription->update(['status' => PreinscriptionStatus::RECHAZADO]);
+            $shouldReject = true;
+        } elseif ($status === PreinscriptionStatus::INSCRITO && ! $this->hasOtherVerifiedPayment($payment)) {
+            // An inscrito participant only loses the seat when this rejected
+            // payment was the one gating the enrollment (AGENTS §2: rejecting a
+            // payment frees the group seat).
+            $shouldReject = true;
         }
 
         // Terminal / refund states (retirado, rechazado, devolución pendiente,
-        // reembolsado) are a no-op so the flow stays idempotent.
+        // reembolsado) are a no-op so the flow stays idempotent. When no
+        // transition happens the student is not notified.
+        if (! $shouldReject) {
+            return;
+        }
+
+        $preinscription->update(['status' => PreinscriptionStatus::RECHAZADO]);
+
+        Mail::to($preinscription->email)
+            ->queue(new PaymentRejectedNotification($payment));
     }
 
     protected function hasOtherVerifiedPayment(Payment $payment): bool

@@ -31,4 +31,22 @@ final class DesignTokens
     public const AMBER = '#D97706';
 
     public const SKY = '#0284C7';
+
+    /**
+     * @return array{0: int, 1: int, 2: int}
+     */
+    public static function hexToRgb(string $hex): array
+    {
+        $hex = ltrim($hex, '#');
+
+        if (strlen($hex) === 3) {
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+
+        return [
+            (int) hexdec(substr($hex, 0, 2)),
+            (int) hexdec(substr($hex, 2, 2)),
+            (int) hexdec(substr($hex, 4, 2)),
+        ];
+    }
 }

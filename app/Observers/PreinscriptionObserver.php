@@ -15,7 +15,7 @@ class PreinscriptionObserver
 {
     public function created(Preinscription $preinscription): void
     {
-        $this->evaluateEnablement($preinscription->group_id);
+        $this->evaluateEnablement($preinscription->group_id, allowDemotion: false);
     }
 
     public function updated(Preinscription $preinscription): void
@@ -27,14 +27,19 @@ class PreinscriptionObserver
         $previousGroupId = $preinscription->getOriginal('group_id');
         $currentGroupId = $preinscription->group_id;
 
-        $this->evaluateEnablement($previousGroupId);
+        $this->evaluateEnablement($previousGroupId, allowDemotion: true);
 
         if ($previousGroupId !== $currentGroupId) {
-            $this->evaluateEnablement($currentGroupId);
+            $this->evaluateEnablement($currentGroupId, allowDemotion: false);
         }
     }
 
-    protected function evaluateEnablement(int|string|null $groupId): void
+    public function deleted(Preinscription $preinscription): void
+    {
+        $this->evaluateEnablement($preinscription->group_id, allowDemotion: true);
+    }
+
+    protected function evaluateEnablement(int|string|null $groupId, bool $allowDemotion = true): void
     {
         if ($groupId === null) {
             return;
@@ -42,27 +47,37 @@ class PreinscriptionObserver
 
         $group = Group::find((int) $groupId);
 
-        if ($group === null || $group->status !== GroupStatus::NO_HABILITADO) {
+        if ($group === null) {
             return;
         }
 
+        $threshold = $group->cupo_minimo ?? BusinessRules::MIN_GROUP_CAPACITY;
         $confirmed = $group->preinscriptions()
             ->whereIn('status', [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO])
             ->count();
 
-        $threshold = $group->cupo_minimo ?? BusinessRules::MIN_GROUP_CAPACITY;
+        if ($group->status === GroupStatus::NO_HABILITADO && $confirmed >= $threshold) {
+            $group->status = GroupStatus::HABILITADO;
+            $group->save();
 
-        if ($confirmed < $threshold) {
+            Log::info('Group auto-enabled after reaching minimum capacity.', [
+                'group_id' => $group->id,
+                'confirmed' => $confirmed,
+                'cupo_minimo' => $threshold,
+            ]);
+
             return;
         }
 
-        $group->status = GroupStatus::HABILITADO;
-        $group->save();
+        if ($allowDemotion && $group->status === GroupStatus::HABILITADO && $confirmed < $threshold) {
+            $group->status = GroupStatus::NO_HABILITADO;
+            $group->save();
 
-        Log::info('Group auto-enabled after reaching minimum capacity.', [
-            'group_id' => $group->id,
-            'confirmed' => $confirmed,
-            'cupo_minimo' => $threshold,
-        ]);
+            Log::info('Group auto-disabled after falling below minimum capacity.', [
+                'group_id' => $group->id,
+                'confirmed' => $confirmed,
+                'cupo_minimo' => $threshold,
+            ]);
+        }
     }
 }

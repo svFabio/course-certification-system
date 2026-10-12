@@ -10,9 +10,11 @@ use App\Enums\SignatureStatus;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\Preinscription;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Notifications\CertificateReadyNotification;
 use App\Support\BusinessRules;
+use App\Support\DesignTokens;
 use BaconQrCode\Common\ErrorCorrectionLevel;
 use BaconQrCode\Encoder\Encoder;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -22,6 +24,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 class CertificateService
 {
@@ -210,6 +213,7 @@ class CertificateService
         $certificate = $certificate->fresh(['preinscription', 'instructor', 'course']) ?? $certificate;
 
         if ($status === SignatureStatus::LISTO && $previous !== SignatureStatus::LISTO) {
+            $certificate = $this->regeneratePdf($certificate);
             $this->notifyCertificateReady($certificate);
         }
 
@@ -311,6 +315,21 @@ class CertificateService
 
         $isInstructor = $certificate->isInstructorCertificate();
 
+        $directorNombre = (string) SystemSetting::get('director_academico_nombre', '');
+        $directorCargo = (string) SystemSetting::get('director_academico_cargo', 'Director Académico');
+        $directorFirmaPath = SystemSetting::get('director_academico_firma_path');
+        $firmaDirectorDataUri = $this->buildImageUriFromPath($directorFirmaPath);
+
+        $jefeNombre = (string) SystemSetting::get('jefe_departamento_nombre', '');
+        $jefeCargo = (string) SystemSetting::get('jefe_departamento_cargo', 'Jefe de Departamento');
+        $jefeFirmaPath = SystemSetting::get('jefe_departamento_firma_path');
+        $firmaJefeDataUri = $this->buildImageUriFromPath($jefeFirmaPath);
+
+        $instructorUser = $certificate->course?->instructor;
+        $instructorNombre = $instructorUser?->name ?? 'Docente';
+        $instructorFirmaPath = $instructorUser?->firma_digital_path;
+        $firmaInstructorDataUri = $this->buildImageUriFromPath($instructorFirmaPath);
+
         return Pdf::loadView('pdf.certificado', [
             'certificado' => [
                 'participante' => $certificate->beneficiaryName(),
@@ -327,7 +346,14 @@ class CertificateService
                 'fechas_curso' => $dates['rango'],
                 'emitido_en' => $certificate->emitido_en?->format('d / m / Y') ?? now()->format('d / m / Y'),
                 'codigo_unico' => $certificate->codigo_unico,
-                'instructor' => $certificate->course?->instructor?->name ?? 'Docente',
+                'instructor' => $instructorNombre,
+                'director_nombre' => $directorNombre,
+                'director_cargo' => $directorCargo,
+                'jefe_nombre' => $jefeNombre,
+                'jefe_cargo' => $jefeCargo,
+                'firma_director_data_uri' => $firmaDirectorDataUri,
+                'firma_jefe_data_uri' => $firmaJefeDataUri,
+                'firma_instructor_data_uri' => $firmaInstructorDataUri,
                 'url_verificacion' => $verifyUrl,
                 'qr_data_uri' => $qrDataUri,
                 'logo_data_uri' => $logoDataUri,
@@ -335,12 +361,46 @@ class CertificateService
         ])->setPaper('a4', 'landscape');
     }
 
-    public function download(Certificate $certificate)
+    public function download(Certificate $certificate): Response
     {
-        $pdf = $this->generatePdf($certificate);
+        if (! $this->isReady($certificate)) {
+            throw ValidationException::withMessages([
+                'certificate' => 'El certificado aún no está listo para descargar.',
+            ]);
+        }
+
         $filename = 'certificado-'.Str::slug($certificate->codigo_unico).'.pdf';
 
-        return $pdf->download($filename);
+        if ($certificate->es_escaneado && filled($certificate->pdf_path)) {
+            $disk = $this->resolveStorageDisk($certificate) ?? 'cloudinary';
+
+            return Storage::disk($disk)->download(
+                $certificate->pdf_path,
+                $filename,
+                ['Content-Type' => 'application/pdf']
+            );
+        }
+
+        $disk = $this->resolveStorageDisk($certificate);
+
+        if ($disk === null) {
+            $certificate = $this->regeneratePdf($certificate);
+            $disk = $this->resolveStorageDisk($certificate);
+        }
+
+        if ($disk !== null && filled($certificate->pdf_path)) {
+            try {
+                return Storage::disk($disk)->download(
+                    $certificate->pdf_path,
+                    $filename,
+                    ['Content-Type' => 'application/pdf']
+                );
+            } catch (\Throwable) {
+                // Fallback to on-the-fly rendering if storage streaming fails
+            }
+        }
+
+        return $this->generatePdf($certificate)->download($filename);
     }
 
     public function regeneratePdf(Certificate $certificate): Certificate
@@ -353,18 +413,54 @@ class CertificateService
 
         $pdf = $this->generatePdf($certificate);
         $path = 'certificates/'.$certificate->codigo_unico.'.pdf';
+        $content = $pdf->output();
 
+        $saved = false;
         try {
-            Storage::disk('cloudinary')->put($path, $pdf->output(), [
+            $saved = (bool) Storage::disk('cloudinary')->put($path, $content, [
                 'resource_type' => 'raw',
             ]);
         } catch (\Throwable) {
-            Storage::disk('local')->put($path, $pdf->output());
+            $saved = false;
+        }
+
+        if (! $saved) {
+            try {
+                Storage::disk('local')->put($path, $content);
+            } catch (\Throwable) {
+                // Local fallback attempted
+            }
         }
 
         $certificate->update(['pdf_path' => $path]);
 
         return $certificate->fresh() ?? $certificate;
+    }
+
+    private function resolveStorageDisk(Certificate $certificate): ?string
+    {
+        $path = $certificate->pdf_path;
+        if (! filled($path)) {
+            return null;
+        }
+
+        try {
+            if (Storage::disk('cloudinary')->exists($path)) {
+                return 'cloudinary';
+            }
+        } catch (\Throwable) {
+            // Cloudinary disk unavailable
+        }
+
+        try {
+            if (Storage::disk('local')->exists($path)) {
+                return 'local';
+            }
+        } catch (\Throwable) {
+            // Local disk unavailable
+        }
+
+        return null;
     }
 
     private function createInstructorCertificate(Course $course, string $gruposDetalle): Certificate
@@ -432,8 +528,11 @@ class CertificateService
                 return null;
             }
 
-            $white = imagecolorallocate($image, 255, 255, 255);
-            $black = imagecolorallocate($image, 14, 46, 95);
+            [$wR, $wG, $wB] = DesignTokens::hexToRgb(DesignTokens::WHITE);
+            [$bR, $bG, $bB] = DesignTokens::hexToRgb(DesignTokens::NAVY);
+
+            $white = imagecolorallocate($image, $wR, $wG, $wB);
+            $black = imagecolorallocate($image, $bR, $bG, $bB);
             imagefilledrectangle($image, 0, 0, $size, $size, $white);
 
             for ($y = 0; $y < $modules; $y++) {
@@ -461,5 +560,36 @@ class CertificateService
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    private function buildImageUriFromPath(?string $path): ?string
+    {
+        if (! filled($path)) {
+            return null;
+        }
+
+        try {
+            if (Storage::disk('cloudinary')->exists($path)) {
+                $bytes = Storage::disk('cloudinary')->get($path);
+                if ($bytes !== false && $bytes !== '') {
+                    return 'data:image/png;base64,'.base64_encode($bytes);
+                }
+            }
+        } catch (\Throwable) {
+            // Cloudinary read failed
+        }
+
+        try {
+            if (Storage::disk('local')->exists($path)) {
+                $bytes = Storage::disk('local')->get($path);
+                if ($bytes !== false && $bytes !== '') {
+                    return 'data:image/png;base64,'.base64_encode($bytes);
+                }
+            }
+        } catch (\Throwable) {
+            // Local read failed
+        }
+
+        return null;
     }
 }

@@ -11,6 +11,8 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class InstructorCourseResource extends Resource
 {
@@ -21,6 +23,32 @@ class InstructorCourseResource extends Resource
     public static function canViewAny(): bool
     {
         return auth()->check() && auth()->user()->hasRole(UserRole::INSTRUCTOR->value);
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return auth()->check() && $record->instructor_id === auth()->id();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('instructor_id', auth()->id());
     }
 
     protected static ?string $navigationGroup = 'Mis Cursos';
@@ -57,7 +85,6 @@ class InstructorCourseResource extends Resource
                     ->dateTime()
                     ->sortable(),
             ])
-            ->modifyQueryUsing(fn ($query) => $query->where('instructor_id', auth()->id()))
             ->filters([
                 //
             ])

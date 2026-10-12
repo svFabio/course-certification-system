@@ -63,6 +63,7 @@ class CertificateVerificationComponent extends Component
             'valido' => $isReady,
             'estado_validez' => $isReady ? 'Certificado válido' : 'Registrado — pendiente de firmas',
             'codigo_unico' => $record->codigo_unico,
+            'download_url' => $isReady ? route('certificado.publico.descargar', ['codigo' => $record->codigo_unico]) : null,
         ];
     }
 

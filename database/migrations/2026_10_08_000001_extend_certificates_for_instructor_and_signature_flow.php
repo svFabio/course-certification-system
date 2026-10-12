@@ -18,6 +18,11 @@ return new class extends Migration
         DB::statement('ALTER TABLE certificates ALTER COLUMN preinscription_id DROP NOT NULL');
         DB::statement('ALTER TABLE certificates ALTER COLUMN tipo TYPE VARCHAR(32) USING tipo::text');
 
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE certificates DROP CONSTRAINT IF EXISTS certificates_tipo_check');
+            DB::statement("ALTER TABLE certificates ADD CONSTRAINT certificates_tipo_check CHECK (tipo IN ('aprobacion', 'asistencia', 'instructor'))");
+        }
+
         Schema::table('certificates', function (Blueprint $table): void {
             $table->foreign('preinscription_id')
                 ->references('id')
@@ -50,6 +55,10 @@ return new class extends Migration
 
         DB::statement('DELETE FROM certificates WHERE preinscription_id IS NULL');
         DB::statement('ALTER TABLE certificates ALTER COLUMN preinscription_id SET NOT NULL');
+
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("ALTER TABLE certificates ADD CONSTRAINT certificates_tipo_check CHECK (tipo IN ('aprobacion', 'asistencia'))");
+        }
 
         Schema::table('certificates', function (Blueprint $table): void {
             $table->foreign('preinscription_id')

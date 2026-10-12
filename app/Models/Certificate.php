@@ -23,6 +23,7 @@ class Certificate extends Model
         'grupos_detalle',
         'codigo_unico',
         'pdf_path',
+        'es_escaneado',
         'signature_status',
         'emitido_en',
         'listo_en',
@@ -33,6 +34,7 @@ class Certificate extends Model
         return [
             'tipo' => CertificateType::class,
             'signature_status' => SignatureStatus::class,
+            'es_escaneado' => 'boolean',
             'emitido_en' => 'datetime',
             'listo_en' => 'datetime',
         ];

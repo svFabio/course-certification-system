@@ -13,3 +13,12 @@ bootstrap/cache/*
 .idea
 *.md
 docker-compose.yml
+docker-compose.prod.yml
+Dockerfile
+Dockerfile.prod
+tests/
+phpunit.xml
+.editorconfig
+.phpunit.cache
+database/seeders/DemoCertificateSeeder.php
+public/build

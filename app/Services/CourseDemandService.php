@@ -8,6 +8,8 @@ use App\Enums\GroupStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Models\Course;
 use App\Models\Group;
+use App\Support\BusinessRules;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class CourseDemandService
@@ -45,5 +47,26 @@ class CourseDemandService
         return Course::query()
             ->whereIn('id', $courseIds->all())
             ->get(['id', 'nombre']);
+    }
+
+    /**
+     * Query builder over the courses that currently hold active interests,
+     * exposing the preloaded active interest count per course.
+     */
+    public function coursesWithInterest(): Builder
+    {
+        return Course::query()
+            ->whereHas('courseInterests', fn (Builder $query): Builder => $query->active())
+            ->withCount(['courseInterests as active_interests_count' => fn (Builder $query): Builder => $query->active()])
+            ->orderByDesc('active_interests_count');
+    }
+
+    /**
+     * Whether an active interest count reached the minimum group capacity.
+     * Used to warn administrators without blocking the notifying action.
+     */
+    public function interestThresholdReached(int $activeInterests): bool
+    {
+        return $activeInterests >= BusinessRules::MIN_GROUP_CAPACITY;
     }
 }

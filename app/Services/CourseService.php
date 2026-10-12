@@ -54,6 +54,20 @@ class CourseService
         }
 
         return DB::transaction(function () use ($course): array {
+            $course = Course::whereKey($course->getKey())->lockForUpdate()->firstOrFail();
+
+            if (in_array($course->status, [CourseStatus::FINALIZADO, CourseStatus::CANCELADO], true)) {
+                throw ValidationException::withMessages([
+                    'course' => 'El curso ya está finalizado o cancelado y no puede cerrarse nuevamente.',
+                ]);
+            }
+
+            if ($course->status === CourseStatus::EN_PREPARACION) {
+                throw ValidationException::withMessages([
+                    'course' => 'No se puede cerrar un curso que aún está en preparación.',
+                ]);
+            }
+
             $course->update(['status' => CourseStatus::FINALIZADO]);
 
             $course->groups()->update(['status' => GroupStatus::FINALIZADO]);

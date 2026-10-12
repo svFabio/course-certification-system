@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\CourseStatus;
 use App\Enums\GroupStatus;
+use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Events\GroupSheetsNeedRefresh;
 use App\Models\Group;
@@ -20,9 +22,17 @@ class PreinscriptionService
         return DB::transaction(function () use ($data, $enforceEnabledGroup) {
             $group = Group::where('id', $data['group_id'])->lockForUpdate()->firstOrFail();
 
-            if ($enforceEnabledGroup && $group->status !== GroupStatus::HABILITADO) {
+            if ($enforceEnabledGroup && ! in_array($group->status, [GroupStatus::HABILITADO, GroupStatus::NO_HABILITADO], true)) {
                 throw ValidationException::withMessages([
                     'group_id' => 'El grupo seleccionado no está habilitado para recibir preinscripciones.',
+                ]);
+            }
+
+            $group->loadMissing('course');
+
+            if ($group->course?->status !== CourseStatus::PUBLICADO) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El curso del grupo seleccionado no acepta preinscripciones en este momento.',
                 ]);
             }
 
@@ -110,61 +120,108 @@ class PreinscriptionService
 
     public function moveToGroup(Preinscription $preinscription, Group $destination): Preinscription
     {
-        if ($preinscription->group_id === $destination->id) {
-            throw ValidationException::withMessages([
-                'group_id' => 'El participante ya está asignado a ese grupo.',
-            ]);
-        }
+        return DB::transaction(function () use ($preinscription, $destination): Preinscription {
+            $destination = Group::whereKey($destination->getKey())->lockForUpdate()->firstOrFail();
+            $preinscription = Preinscription::whereKey($preinscription->getKey())->lockForUpdate()->firstOrFail();
 
-        if ($preinscription->group->course_id !== $destination->course_id) {
-            throw ValidationException::withMessages([
-                'group_id' => 'El grupo de destino debe pertenecer al mismo curso.',
-            ]);
-        }
+            if ($preinscription->group_id === $destination->id) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El participante ya está asignado a ese grupo.',
+                ]);
+            }
 
-        if ($destination->status !== GroupStatus::HABILITADO) {
-            throw ValidationException::withMessages([
-                'group_id' => 'El grupo de destino no está habilitado.',
-            ]);
-        }
+            if ($preinscription->group->course_id !== $destination->course_id) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El grupo de destino debe pertenecer al mismo curso.',
+                ]);
+            }
 
-        if (! $this->hasAvailableCapacity($destination)) {
-            throw ValidationException::withMessages([
-                'group_id' => 'El grupo de destino ha alcanzado su capacidad máxima.',
-            ]);
-        }
+            if (! in_array($destination->status, [GroupStatus::HABILITADO, GroupStatus::NO_HABILITADO], true)) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El grupo de destino no está habilitado.',
+                ]);
+            }
 
-        $duplicate = Preinscription::where('ci', $preinscription->ci)
-            ->where('group_id', $destination->id)
-            ->where('id', '!=', $preinscription->id)
-            ->exists();
+            if (! $this->hasAvailableCapacity($destination)) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El grupo de destino ha alcanzado su capacidad máxima.',
+                ]);
+            }
 
-        if ($duplicate) {
-            throw ValidationException::withMessages([
-                'group_id' => 'El participante ya está preinscrito en el grupo de destino.',
-            ]);
-        }
+            $duplicate = Preinscription::where('ci', $preinscription->ci)
+                ->where('group_id', $destination->id)
+                ->where('id', '!=', $preinscription->id)
+                ->exists();
 
-        $previousGroupId = $preinscription->group_id;
+            if ($duplicate) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El participante ya está preinscrito en el grupo de destino.',
+                ]);
+            }
 
-        $preinscription->update(['group_id' => $destination->id]);
+            $previousGroupId = $preinscription->group_id;
 
-        if ($previousGroupId !== null) {
-            GroupSheetsNeedRefresh::dispatch($previousGroupId);
-        }
+            $preinscription->update(['group_id' => $destination->id]);
 
-        GroupSheetsNeedRefresh::dispatch($destination->id);
+            if ($previousGroupId !== null) {
+                GroupSheetsNeedRefresh::dispatch($previousGroupId);
+            }
 
-        return $preinscription->fresh();
+            GroupSheetsNeedRefresh::dispatch($destination->id);
+
+            return $preinscription->fresh();
+        });
     }
 
     public function getAvailableGroups(int $courseId): Collection
     {
         return Group::where('course_id', $courseId)
-            ->where('status', GroupStatus::HABILITADO)
+            ->whereIn('status', [GroupStatus::HABILITADO, GroupStatus::NO_HABILITADO])
             ->withCount(['preinscriptions as confirmed_count' => fn ($q) => $q->whereIn('status', [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO]),
             ])
             ->get()
             ->filter(fn ($group) => $group->confirmed_count < $group->cupo_maximo);
+    }
+
+    public function reactivate(Preinscription $preinscription): Preinscription
+    {
+        if (! in_array($preinscription->status, [PreinscriptionStatus::RECHAZADO, PreinscriptionStatus::RETIRADO], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Solo se pueden reactivar preinscripciones en estado rechazado o retirado.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($preinscription): Preinscription {
+            $group = $preinscription->group_id !== null
+                ? Group::whereKey($preinscription->group_id)->lockForUpdate()->first()
+                : null;
+
+            if ($group === null || $group->status === GroupStatus::CERRADO) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El grupo de la preinscripción no está disponible para reactivarla.',
+                ]);
+            }
+
+            if (! $this->hasAvailableCapacity($group)) {
+                throw ValidationException::withMessages([
+                    'group_id' => 'El grupo ha alcanzado su capacidad máxima; no hay cupo para reactivar la preinscripción.',
+                ]);
+            }
+
+            $preinscription->update(['status' => PreinscriptionStatus::PENDIENTE_PAGO]);
+
+            $preinscription->payments()
+                ->where('estado', PaymentStatus::RECHAZADO->value)
+                ->update([
+                    'estado' => PaymentStatus::PENDIENTE->value,
+                    'motivo_rechazo' => null,
+                ]);
+
+            if ($preinscription->group_id !== null) {
+                GroupSheetsNeedRefresh::dispatch($preinscription->group_id);
+            }
+
+            return $preinscription->fresh();
+        });
     }
 }

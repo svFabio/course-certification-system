@@ -53,14 +53,20 @@ class CertificateFactory extends Factory
     public function instructor(): static
     {
         return $this->state(function (array $attributes) {
-            $course = isset($attributes['course_id'])
-                ? Course::find($attributes['course_id'])
-                : Course::factory()->create();
+            $courseAttr = $attributes['course_id'] ?? null;
+
+            if ($courseAttr instanceof Course) {
+                $course = $courseAttr;
+            } elseif (is_numeric($courseAttr)) {
+                $course = Course::find($courseAttr) ?? Course::factory()->create();
+            } else {
+                $course = Course::factory()->create();
+            }
 
             return [
                 'preinscription_id' => null,
-                'instructor_id' => $attributes['instructor_id'] ?? $course?->instructor_id ?? User::factory(),
-                'course_id' => $course?->id ?? Course::factory(),
+                'instructor_id' => $attributes['instructor_id'] ?? $course->instructor_id ?? User::factory(),
+                'course_id' => $course->id,
                 'tipo' => CertificateType::INSTRUCTOR,
                 'grupos_detalle' => $attributes['grupos_detalle'] ?? 'Grupo A',
             ];

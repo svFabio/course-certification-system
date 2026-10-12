@@ -23,25 +23,27 @@ class PaymentService
         $this->assertAuxiliarCertificateApproved($preinscription);
         $this->assertPhotocopyDelivered($preinscription, $fotocopiaCi);
 
-        if ($fotocopiaCi) {
-            $preinscription->update(['fotocopia_ci' => true]);
-        }
+        return DB::transaction(function () use ($preinscription, $method, $reference, $fotocopiaCi): Payment {
+            if ($fotocopiaCi) {
+                $preinscription->update(['fotocopia_ci' => true]);
+            }
 
-        $payment = Payment::create([
-            'preinscription_id' => $preinscription->id,
-            'monto' => $preinscription->chargeable_price,
-            'metodo' => $method,
-            'numero_comprobante' => $reference,
-            'estado' => PaymentStatus::VERIFICADO,
-            'verificado_por' => auth()->id(),
-            'verificado_en' => now(),
-        ]);
+            $payment = Payment::create([
+                'preinscription_id' => $preinscription->id,
+                'monto' => $preinscription->chargeable_price,
+                'metodo' => $method,
+                'numero_comprobante' => $reference,
+                'estado' => PaymentStatus::VERIFICADO,
+                'verificado_por' => auth()->id(),
+                'verificado_en' => now(),
+            ]);
 
-        if ($preinscription->group_id !== null) {
-            GroupSheetsNeedRefresh::dispatch($preinscription->group_id);
-        }
+            if ($preinscription->group_id !== null) {
+                GroupSheetsNeedRefresh::dispatch($preinscription->group_id);
+            }
 
-        return $payment;
+            return $payment;
+        });
     }
 
     public function verify(Payment $payment): void
@@ -51,34 +53,38 @@ class PaymentService
         $this->assertAuxiliarCertificateApproved($payment->preinscription);
         $this->assertPhotocopyDelivered($payment->preinscription);
 
-        $payment->update([
-            'verificado_por' => auth()->id(),
-            'verificado_en' => now(),
-            'estado' => PaymentStatus::VERIFICADO,
-            'motivo_rechazo' => null,
-        ]);
+        DB::transaction(function () use ($payment): void {
+            $payment->update([
+                'verificado_por' => auth()->id(),
+                'verificado_en' => now(),
+                'estado' => PaymentStatus::VERIFICADO,
+                'motivo_rechazo' => null,
+            ]);
 
-        $payment->loadMissing('preinscription.group');
+            $payment->loadMissing('preinscription.group');
 
-        if ($payment->preinscription?->group_id !== null) {
-            GroupSheetsNeedRefresh::dispatch($payment->preinscription->group_id);
-        }
+            if ($payment->preinscription?->group_id !== null) {
+                GroupSheetsNeedRefresh::dispatch($payment->preinscription->group_id);
+            }
+        });
     }
 
     public function reject(Payment $payment, string $reason): void
     {
-        $payment->update([
-            'estado' => PaymentStatus::RECHAZADO,
-            'motivo_rechazo' => $reason,
-            'verificado_por' => null,
-            'verificado_en' => null,
-        ]);
+        DB::transaction(function () use ($payment, $reason): void {
+            $payment->update([
+                'estado' => PaymentStatus::RECHAZADO,
+                'motivo_rechazo' => $reason,
+                'verificado_por' => null,
+                'verificado_en' => null,
+            ]);
 
-        $payment->loadMissing('preinscription.group');
+            $payment->loadMissing('preinscription.group');
 
-        if ($payment->preinscription?->group_id !== null) {
-            GroupSheetsNeedRefresh::dispatch($payment->preinscription->group_id);
-        }
+            if ($payment->preinscription?->group_id !== null) {
+                GroupSheetsNeedRefresh::dispatch($payment->preinscription->group_id);
+            }
+        });
     }
 
     public function verifyAmount(int $preinscriptionId, float $amount): void

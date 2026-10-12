@@ -13,14 +13,14 @@ use App\Models\User;
 use App\Services\CertificateService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     $this->seed(RolesAndPermissionsSeeder::class);
 });
 
-it('lets a student download a ready certificate pdf', function () {
+it('lets a student download a ready certificate pdf and stores it in cloudinary', function () {
     $student = User::factory()->create([
-        'email' => 'student@umss.edu.bo',
         'password' => Hash::make('password'),
     ]);
     $student->assignRole(UserRole::STUDENT->value);
@@ -31,8 +31,8 @@ it('lets a student download a ready certificate pdf', function () {
     $preinscription = Preinscription::factory()->inscrito()->create([
         'group_id' => $group->id,
         'email' => $student->email,
-        'nombres' => 'Jazmin',
-        'apellido_paterno' => 'Ruiz',
+        'nombres' => fake()->firstName(),
+        'apellido_paterno' => fake()->lastName(),
     ]);
 
     $certificate = Certificate::factory()->create([
@@ -48,6 +48,9 @@ it('lets a student download a ready certificate pdf', function () {
         ->get(route('certificado.descargar', $certificate))
         ->assertOk()
         ->assertHeader('content-type', 'application/pdf');
+
+    expect($certificate->fresh()->pdf_path)->toBe('certificates/CERT-2026-TESTHU31.pdf');
+    Storage::disk('cloudinary')->assertExists('certificates/CERT-2026-TESTHU31.pdf');
 });
 
 it('builds a public verification url for sharing', function () {
@@ -63,7 +66,7 @@ it('builds a public verification url for sharing', function () {
 });
 
 it('rejects download when certificate is not ready', function () {
-    $student = User::factory()->create(['email' => 'student@umss.edu.bo']);
+    $student = User::factory()->create();
     $student->assignRole(UserRole::STUDENT->value);
 
     $course = Course::factory()->create();
@@ -82,4 +85,70 @@ it('rejects download when certificate is not ready', function () {
     $this->actingAs($student)
         ->get(route('certificado.descargar', $certificate))
         ->assertSessionHasErrors();
+});
+
+it('downloads pre-stored certificate directly from storage', function () {
+    $student = User::factory()->create();
+    $student->assignRole(UserRole::STUDENT->value);
+
+    $course = Course::factory()->create();
+    $group = Group::factory()->create(['course_id' => $course->id]);
+    $preinscription = Preinscription::factory()->inscrito()->create([
+        'group_id' => $group->id,
+        'email' => $student->email,
+    ]);
+
+    $path = 'certificates/CERT-PRESTORED.pdf';
+    Storage::disk('cloudinary')->put($path, '%PDF-1.4 Fake PDF Content', ['resource_type' => 'raw']);
+
+    $certificate = Certificate::factory()->create([
+        'preinscription_id' => $preinscription->id,
+        'course_id' => $course->id,
+        'tipo' => CertificateType::APROBACION,
+        'signature_status' => SignatureStatus::LISTO,
+        'codigo_unico' => 'CERT-PRESTORED',
+        'pdf_path' => $path,
+        'emitido_en' => now(),
+    ]);
+
+    $response = $this->actingAs($student)
+        ->get(route('certificado.descargar', $certificate));
+
+    $response->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+});
+
+it('falls back to on-the-fly generation when storage stream encounters an error', function () {
+    $student = User::factory()->create();
+    $student->assignRole(UserRole::STUDENT->value);
+
+    $course = Course::factory()->create();
+    $group = Group::factory()->create(['course_id' => $course->id]);
+    $preinscription = Preinscription::factory()->inscrito()->create([
+        'group_id' => $group->id,
+        'email' => $student->email,
+    ]);
+
+    $certificate = Certificate::factory()->create([
+        'preinscription_id' => $preinscription->id,
+        'course_id' => $course->id,
+        'tipo' => CertificateType::APROBACION,
+        'signature_status' => SignatureStatus::LISTO,
+        'codigo_unico' => 'CERT-2026-STREAMERR',
+        'pdf_path' => 'certificates/CERT-2026-STREAMERR.pdf',
+        'emitido_en' => now(),
+    ]);
+
+    Storage::disk('cloudinary')->put('certificates/CERT-2026-STREAMERR.pdf', 'dummy');
+
+    $diskMock = Mockery::mock(Storage::disk('cloudinary'))->makePartial();
+    $diskMock->shouldReceive('exists')->andReturn(true);
+    $diskMock->shouldReceive('download')->andThrow(new RuntimeException('Storage stream failed'));
+    Storage::set('cloudinary', $diskMock);
+
+    $response = $this->actingAs($student)
+        ->get(route('certificado.descargar', $certificate));
+
+    $response->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
 });

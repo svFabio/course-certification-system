@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Storage;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -15,11 +16,14 @@ abstract class TestCase extends BaseTestCase
         $_ENV['DB_DATABASE'] = 'plataforma_formacion_testing';
         $_SERVER['DB_DATABASE'] = 'plataforma_formacion_testing';
 
-        putenv('DB_HOST=postgres');
-        $_ENV['DB_HOST'] = 'postgres';
-        $_SERVER['DB_HOST'] = 'postgres';
+        $dbHost = (string) (getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? ($_SERVER['DB_HOST'] ?? '127.0.0.1')));
+        putenv("DB_HOST={$dbHost}");
+        $_ENV['DB_HOST'] = $dbHost;
+        $_SERVER['DB_HOST'] = $dbHost;
 
         parent::setUp();
+
+        Storage::fake('cloudinary');
 
         $database = (string) config('database.connections.pgsql.database');
 

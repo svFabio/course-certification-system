@@ -52,11 +52,10 @@ class CertificateResource extends Resource
                 Forms\Components\Placeholder::make('codigo')
                     ->label('Código único')
                     ->content(fn (?Certificate $record): string => $record?->codigo_unico ?? '—'),
-                Forms\Components\Select::make('signature_status')
+                Forms\Components\Placeholder::make('signature_status_label')
                     ->label('Estado de firma')
-                    ->options(SignatureStatus::class)
-                    ->required()
-                    ->helperText('Avance el flujo de firmas hasta «Certificado listo» para habilitar la descarga y notificar al beneficiario.'),
+                    ->content(fn (?Certificate $record): string => $record?->signature_status?->getLabel() ?? '—')
+                    ->helperText('Para avanzar el flujo de firmas use la acción «Avanzar firma» en la tabla o ficha del certificado.'),
                 Forms\Components\Placeholder::make('emitido')
                     ->label('Fecha de emisión')
                     ->content(fn (?Certificate $record): string => $record?->emitido_en?->format('d/m/Y H:i') ?? '—'),
@@ -108,6 +107,16 @@ class CertificateResource extends Resource
                     ->label('Emitido')
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
+                Tables\Columns\IconColumn::make('es_escaneado')
+                    ->label('Escaneado')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-document-arrow-up')
+                    ->falseIcon('heroicon-o-sparkles')
+                    ->trueColor('warning')
+                    ->falseColor('success')
+                    ->tooltip(fn (Certificate $record): string => $record->es_escaneado
+                        ? 'PDF escaneado físico (reemplazo manual)'
+                        : 'PDF digital autogenerado'),
                 Tables\Columns\TextColumn::make('listo_en')
                     ->label('Listo')
                     ->dateTime('d/m/Y H:i')
@@ -184,9 +193,61 @@ class CertificateResource extends Resource
                             ->success()
                             ->send();
                     }),
+                Tables\Actions\Action::make('subirPdfEscaneado')
+                    ->label('Subir PDF Escaneado Físico')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->color('warning')
+                    ->modalHeading('Reemplazar por PDF Escaneado Físico')
+                    ->modalDescription('Suba el documento PDF escaneado con firmas y sellos físicos. Este archivo se entregará a los estudiantes y en la verificación pública en lugar de la versión autogenerada.')
+                    ->form([
+                        Forms\Components\FileUpload::make('pdf_escaneado_path')
+                            ->label('Archivo PDF Escaneado')
+                            ->disk('cloudinary')
+                            ->directory('certificates/scanned')
+                            ->acceptedFileTypes(['application/pdf'])
+                            ->maxSize(15360)
+                            ->required()
+                            ->helperText('Formato PDF (máximo 15MB).'),
+                    ])
+                    ->action(function (Certificate $record, array $data): void {
+                        $uploaded = $data['pdf_escaneado_path'];
+                        $path = is_array($uploaded) ? (reset($uploaded) ?: '') : (string) $uploaded;
+
+                        $record->update([
+                            'pdf_path' => $path,
+                            'es_escaneado' => true,
+                        ]);
+
+                        Notification::make()
+                            ->title('PDF escaneado subido correctamente')
+                            ->body('El certificado ahora sirve la versión escaneada física.')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('restaurarPdfDigital')
+                    ->label('Restaurar Versión Digital')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->visible(fn (Certificate $record): bool => (bool) $record->es_escaneado)
+                    ->requiresConfirmation()
+                    ->modalHeading('Restaurar PDF Digital Autogenerado')
+                    ->modalDescription('¿Desea descartar el PDF escaneado físico y volver a generar el documento digital con estampas y código QR?')
+                    ->action(function (Certificate $record, CertificateService $service): void {
+                        $record->update([
+                            'es_escaneado' => false,
+                        ]);
+
+                        if ($service->isReady($record)) {
+                            $service->regeneratePdf($record);
+                        }
+
+                        Notification::make()
+                            ->title('Versión digital restaurada')
+                            ->body('El certificado volvió a su formato autogenerado.')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make()
-                    ->label('Ajustar estado'),
             ])
             ->bulkActions([
                 //
@@ -204,7 +265,6 @@ class CertificateResource extends Resource
         return [
             'index' => Pages\ListCertificates::route('/'),
             'view' => Pages\ViewCertificate::route('/{record}'),
-            'edit' => Pages\EditCertificate::route('/{record}/edit'),
         ];
     }
 

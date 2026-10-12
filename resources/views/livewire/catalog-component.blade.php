@@ -106,14 +106,57 @@
                         </div>
                     </div>
 
-                    <div class="p-4 bg-umss-gray-100/60 border-t border-umss-gray-100">
-                        <button type="button" @click="open = true" aria-haspopup="dialog"
-                            class="btn-primary w-full">
-                            Preinscribirse
-                        </button>
-                    </div>
+                    @if ($atCapacity[$course->id])
+                        {{-- Course at capacity: single interest-registration entry point --}}
+                        <div class="p-4 bg-umss-amber-light/60 border-t border-umss-gray-100">
+                            @if ($interestSubmitted && $interestCourseId === $course->id)
+                                @if ($interestAlreadyRegistered)
+                                    <p class="text-xs text-umss-amber-dark font-medium text-center">
+                                        Ya estás anotado(a) para este curso. Te avisaremos cuando haya cupo disponible.
+                                    </p>
+                                @else
+                                    <p class="text-xs text-umss-green-dark font-medium text-center">
+                                        ¡Listo! Te avisaremos por correo cuando haya cupo disponible en este curso.
+                                    </p>
+                                @endif
+                            @else
+                                <button type="button" wire:click="openInterest({{ $course->id }})"
+                                    class="btn-primary w-full">
+                                    Avisarme cuando haya cupo
+                                </button>
+
+                                @if ($interestCourseId === $course->id)
+                                    <form wire:submit="registerInterest" class="mt-3 space-y-2">
+                                        <input type="email" wire:model="interestEmail"
+                                            placeholder="Tu correo electrónico"
+                                            class="input-umss w-full text-sm font-sans focus:border-umss-navy focus:ring-1 focus:ring-umss-navy">
+                                        @error('interestEmail')
+                                            <p class="text-umss-red text-xs mt-1 font-medium">{{ $message }}</p>
+                                        @enderror
+                                        <div class="flex items-center gap-2">
+                                            <button type="submit" class="btn-primary w-full">
+                                                Registrarme
+                                            </button>
+                                            <button type="button" wire:click="closeInterest"
+                                                class="shrink-0 text-xs font-semibold text-umss-gray-700 hover:text-umss-navy">
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                    </form>
+                                @endif
+                            @endif
+                        </div>
+                    @else
+                        <div class="p-4 bg-umss-gray-100/60 border-t border-umss-gray-100">
+                            <button type="button" @click="open = true" aria-haspopup="dialog"
+                                class="btn-primary w-full">
+                                Preinscribirse
+                            </button>
+                        </div>
+                    @endif
 
                     {{-- Preinscription details modal (prices and available groups) --}}
+                    @if (! $atCapacity[$course->id])
                     <div x-show="open" x-cloak
                         @keydown.escape.window="open = false"
                         class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
@@ -163,12 +206,23 @@
                                                 @php
                                                     $inscritos = $group->inscritos_count ?? 0;
                                                     $full = $inscritos >= $group->cupo_maximo;
+                                                    $isHabilitado = $group->status === \App\Enums\GroupStatus::HABILITADO;
+                                                    $cupoMinimo = $group->cupo_minimo ?? \App\Support\BusinessRules::MIN_GROUP_CAPACITY;
                                                 @endphp
                                                 <div class="flex justify-between items-center gap-3 px-4 py-3 text-xs">
                                                     <div>
-                                                        <span class="font-semibold text-umss-black">{{ $group->nombre }}</span>
-                                                        <span class="text-umss-gray-700 ml-1">{{ $group->hora_inicio->format('H:i') }} - {{ $group->hora_fin->format('H:i') }}</span>
-                                                        <span class="text-umss-gray-700 ml-1 font-mono text-[11px]">({{ $inscritos }}/{{ $group->cupo_maximo }})</span>
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="font-semibold text-umss-black">{{ $group->nombre }}</span>
+                                                            @if ($isHabilitado)
+                                                                <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-umss-green-light text-umss-green-dark">Habilitado</span>
+                                                            @else
+                                                                <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-umss-amber-light text-umss-amber-dark">En preinscripción ({{ $inscritos }}/{{ $cupoMinimo }} cupos mínimos)</span>
+                                                            @endif
+                                                        </div>
+                                                        <div class="mt-0.5">
+                                                            <span class="text-umss-gray-700">{{ $group->hora_inicio->format('H:i') }} - {{ $group->hora_fin->format('H:i') }}</span>
+                                                            <span class="text-umss-gray-700 ml-1 font-mono text-[11px]">({{ $inscritos }}/{{ $group->cupo_maximo }} cupos)</span>
+                                                        </div>
                                                     </div>
                                                     @if ($full)
                                                         <span class="text-umss-red font-semibold text-xs px-2 py-0.5 rounded bg-umss-red/10 shrink-0">Lleno</span>
@@ -186,6 +240,7 @@
                             </div>
                         </div>
                     </div>
+                    @endif
                 </div>
             @endforeach
         </div>

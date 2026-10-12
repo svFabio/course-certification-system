@@ -1,0 +1,108 @@
+# ==============================================================================
+# Render.com Blueprint (Infrastructure-as-Code)
+# Plataforma de Formación Continua UMSS
+# ==============================================================================
+
+envVarGroups:
+  - name: umss-shared-env
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_SSLMODE
+        value: require
+      - key: SESSION_DRIVER
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: FILESYSTEM_DISK
+        value: cloudinary
+
+      # ─── Secrets & URLs to fill in Render Dashboard ─────────────────────────
+      - key: APP_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: ASSET_URL
+        sync: false
+
+      # Neon Postgres connection string:
+      # e.g.: postgresql://user:password@ep-xyz.us-east-2.aws.neon.tech/neondb?sslmode=require
+      - key: DATABASE_URL
+        sync: false
+
+      # Cloudinary credentials (AGENTS.md Sec. 3)
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+      # Mailer (SMTP)
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_ENCRYPTION
+        value: tls
+      - key: MAIL_FROM_ADDRESS
+        sync: false
+      - key: MAIL_FROM_NAME
+        value: "Formación Continua UMSS"
+
+      # Google Sheets integration
+      - key: GOOGLE_SHEETS_SPREADSHEET_ID
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON_PATH
+        value: storage/app/google/credentials.json
+
+services:
+  # ─── 1. Web Service (Laravel HTTP / Filament Admin / Livewire) ──────────────
+  - type: web
+    name: umss-certification-web
+    runtime: docker
+    dockerfilePath: ./Dockerfile.prod
+    plan: starter
+    region: oregon
+    healthCheckPath: /up
+    envVars:
+      - fromGroup: umss-shared-env
+
+  # ─── 2. Background Queue Worker (Mails & Certificates Async Processing) ────
+  - type: worker
+    name: umss-queue-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile.prod
+    dockerCommand: php artisan queue:work --tries=3 --timeout=90 --sleep=3 --max-jobs=1000 --max-time=3600
+    plan: starter
+    region: oregon
+    envVars:
+      - fromGroup: umss-shared-env
+
+  # ─── 3. Cron Job Scheduler (schedule:run) ──────────────────────────────────
+  - type: cron
+    name: umss-cron-scheduler
+    runtime: docker
+    dockerfilePath: ./Dockerfile.prod
+    dockerCommand: php artisan schedule:run --no-interaction
+    schedule: "* * * * *"
+    plan: starter
+    region: oregon
+    envVars:
+      - fromGroup: umss-shared-env

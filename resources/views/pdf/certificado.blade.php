@@ -7,15 +7,15 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'DejaVu Sans', sans-serif;
-            color: #121212;
-            background: #FFFFFF;
+            color: {{ \App\Support\DesignTokens::BLACK }};
+            background: {{ \App\Support\DesignTokens::WHITE }};
         }
         .page {
             position: relative;
             width: 297mm;
             height: 210mm;
             overflow: hidden;
-            background: #FFFFFF;
+            background: {{ \App\Support\DesignTokens::WHITE }};
         }
 
         .frame {
@@ -24,7 +24,7 @@
             left: 7mm;
             right: 7mm;
             bottom: 7mm;
-            border: 1.8pt solid #0E2E5F;
+            border: 1.8pt solid {{ \App\Support\DesignTokens::NAVY }};
             z-index: 1;
         }
         .frame-inner {
@@ -33,7 +33,7 @@
             left: 9mm;
             right: 9mm;
             bottom: 9mm;
-            border: 0.6pt solid #E01D2E;
+            border: 0.6pt solid {{ \App\Support\DesignTokens::RED }};
             z-index: 1;
         }
 
@@ -41,7 +41,7 @@
             position: absolute;
             top: 0; right: -38mm;
             width: 100mm; height: 210mm;
-            background: #0E2E5F;
+            background: {{ \App\Support\DesignTokens::NAVY }};
             border-radius: 85mm 0 0 85mm;
             z-index: 0;
         }
@@ -49,7 +49,7 @@
             position: absolute;
             top: 20mm; right: -30mm;
             width: 82mm; height: 170mm;
-            background: #0A2247;
+            background: {{ \App\Support\DesignTokens::NAVY_DARK }};
             border-radius: 72mm 0 0 72mm;
             z-index: 0;
         }
@@ -57,7 +57,7 @@
             position: absolute;
             top: 50mm; right: -18mm;
             width: 52mm; height: 110mm;
-            background: #E01D2E;
+            background: {{ \App\Support\DesignTokens::RED }};
             border-radius: 48mm 0 0 48mm;
             opacity: 0.65;
             z-index: 0;
@@ -66,7 +66,7 @@
             position: absolute;
             left: -42mm; bottom: -48mm;
             width: 115mm; height: 100mm;
-            background: #0E2E5F;
+            background: {{ \App\Support\DesignTokens::NAVY }};
             border-radius: 0 85mm 0 0;
             z-index: 0;
         }
@@ -74,7 +74,7 @@
             position: absolute;
             left: -28mm; bottom: -36mm;
             width: 85mm; height: 72mm;
-            background: #E01D2E;
+            background: {{ \App\Support\DesignTokens::RED }};
             border-radius: 0 65mm 0 0;
             opacity: 0.35;
             z-index: 0;
@@ -105,47 +105,47 @@
             font-weight: bold;
             letter-spacing: 6px;
             text-transform: uppercase;
-            color: #0E2E5F;
+            color: {{ \App\Support\DesignTokens::NAVY }};
             line-height: 1.05;
         }
         .title-sub {
             font-size: 9px;
-            color: #4A4A4A;
+            color: {{ \App\Support\DesignTokens::GRAY_700 }};
             margin-top: 2mm;
             letter-spacing: 0.4px;
         }
         .title-line {
             width: 42mm;
             height: 1.5px;
-            background: #E01D2E;
+            background: {{ \App\Support\DesignTokens::RED }};
             margin-top: 2.5mm;
         }
 
         .badge-cell { width: 38mm; text-align: right; }
         .doc-badge {
             display: inline-block;
-            border: 1.5px solid #0E2E5F;
+            border: 1.5px solid {{ \App\Support\DesignTokens::NAVY }};
             padding: 2.5mm 3mm;
             text-align: center;
-            background: #FFFFFF;
+            background: {{ \App\Support\DesignTokens::WHITE }};
         }
         .doc-badge-top {
             font-size: 7px;
             font-weight: bold;
-            color: #0E2E5F;
+            color: {{ \App\Support\DesignTokens::NAVY }};
             text-transform: uppercase;
             letter-spacing: 0.6px;
         }
         .doc-badge-mid {
             font-size: 10px;
             font-weight: bold;
-            color: #E01D2E;
+            color: {{ \App\Support\DesignTokens::RED }};
             margin-top: 1mm;
             letter-spacing: 1px;
         }
         .doc-badge-bot {
             font-size: 6px;
-            color: #4A4A4A;
+            color: {{ \App\Support\DesignTokens::GRAY_700 }};
             margin-top: 1mm;
             text-transform: uppercase;
         }
@@ -154,14 +154,14 @@
             margin-top: 11mm;
             font-size: 30px;
             font-weight: bold;
-            color: #121212;
+            color: {{ \App\Support\DesignTokens::BLACK }};
             line-height: 1.15;
         }
 
         .phrase {
             margin-top: 4mm;
             font-size: 11px;
-            color: #4A4A4A;
+            color: {{ \App\Support\DesignTokens::GRAY_700 }};
         }
 
         .meta {
@@ -180,14 +180,14 @@
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #0E2E5F;
+            color: {{ \App\Support\DesignTokens::NAVY }};
             margin-bottom: 1.5mm;
         }
         .meta .value {
             display: block;
             font-size: 12.5px;
-            color: #121212;
-            border-bottom: 1px solid #0E2E5F;
+            color: {{ \App\Support\DesignTokens::BLACK }};
+            border-bottom: 1px solid {{ \App\Support\DesignTokens::NAVY }};
             padding-bottom: 1.8mm;
             min-height: 5.5mm;
         }
@@ -196,28 +196,28 @@
             display: inline-block;
             margin-top: 4mm;
             padding: 1.5mm 4mm;
-            border: 1px solid #0E2E5F;
-            color: #0E2E5F;
+            border: 1px solid {{ \App\Support\DesignTokens::NAVY }};
+            color: {{ \App\Support\DesignTokens::NAVY }};
             font-size: 9px;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 1px;
-            background: #F5F5F5;
+            background: {{ \App\Support\DesignTokens::GRAY_100 }};
         }
 
         .verify-block {
             margin-top: 6mm;
             font-size: 8.5px;
-            color: #4A4A4A;
+            color: {{ \App\Support\DesignTokens::GRAY_700 }};
             line-height: 1.55;
         }
         .verify-block strong {
-            color: #0E2E5F;
+            color: {{ \App\Support\DesignTokens::NAVY }};
             font-family: 'DejaVu Sans Mono', monospace;
             font-size: 9px;
         }
         .verify-url {
-            color: #0284C7;
+            color: {{ \App\Support\DesignTokens::SKY }};
             word-break: break-all;
             font-size: 7.5px;
         }
@@ -232,24 +232,34 @@
         .bottom-table { width: 100%; border-collapse: collapse; }
         .bottom-table td { vertical-align: bottom; }
 
-        .sig { text-align: center; width: 40%; padding-right: 3mm; }
+        .sig { text-align: center; width: 40%; padding-right: 3mm; vertical-align: bottom; }
+        .sig-container {
+            height: 18mm;
+            text-align: center;
+            margin-bottom: 1mm;
+        }
+        .sig-stamp {
+            max-height: 18mm;
+            max-width: 45mm;
+            display: inline-block;
+        }
         .sig-line {
-            border-top: 1px solid #4A4A4A;
+            border-top: 1px solid {{ \App\Support\DesignTokens::GRAY_700 }};
             width: 48mm;
             margin: 0 auto 2mm auto;
         }
         .sig-role {
             font-size: 8px;
-            color: #4A4A4A;
+            color: {{ \App\Support\DesignTokens::GRAY_700 }};
             line-height: 1.35;
         }
-        .sig-role strong { color: #121212; }
+        .sig-role strong { color: {{ \App\Support\DesignTokens::BLACK }}; }
 
         .qr-frame {
             display: inline-block;
-            border: 1px solid #0E2E5F;
+            border: 1px solid {{ \App\Support\DesignTokens::NAVY }};
             padding: 1.5mm;
-            background: #FFFFFF;
+            background: {{ \App\Support\DesignTokens::WHITE }};
         }
         .qr-frame img {
             width: 26mm;
@@ -260,13 +270,13 @@
             margin-top: 1.5mm;
             font-size: 6.5px;
             font-family: 'DejaVu Sans Mono', monospace;
-            color: #0E2E5F;
+            color: {{ \App\Support\DesignTokens::NAVY }};
             font-weight: bold;
         }
         .brand-foot {
             margin-top: 1.5mm;
             font-size: 6px;
-            color: #4A4A4A;
+            color: {{ \App\Support\DesignTokens::GRAY_700 }};
             letter-spacing: 0.6px;
             text-transform: uppercase;
         }
@@ -352,18 +362,34 @@
             <table class="bottom-table">
                 <tr>
                     <td class="sig">
+                        <div class="sig-container">
+                            @if (! empty($certificado['firma_director_data_uri']))
+                                <img src="{{ $certificado['firma_director_data_uri'] }}" class="sig-stamp" alt="Firma Director">
+                            @endif
+                        </div>
                         <div class="sig-line"></div>
                         <div class="sig-role">
-                            <strong>Director Académico</strong><br>
-                            Formación Continua
+                            <strong>{{ ! empty($certificado['director_nombre']) ? $certificado['director_nombre'] : 'Director Académico' }}</strong><br>
+                            {{ ! empty($certificado['director_cargo']) ? $certificado['director_cargo'] : 'Formación Continua' }}
                         </div>
                     </td>
                     <td class="sig">
+                        <div class="sig-container">
+                            @if (! empty($certificado['es_instructor']))
+                                @if (! empty($certificado['firma_jefe_data_uri']))
+                                    <img src="{{ $certificado['firma_jefe_data_uri'] }}" class="sig-stamp" alt="Firma Jefe de Departamento">
+                                @endif
+                            @else
+                                @if (! empty($certificado['firma_instructor_data_uri']))
+                                    <img src="{{ $certificado['firma_instructor_data_uri'] }}" class="sig-stamp" alt="Firma Docente">
+                                @endif
+                            @endif
+                        </div>
                         <div class="sig-line"></div>
                         <div class="sig-role">
                             @if (! empty($certificado['es_instructor']))
-                                <strong>Jefe de Departamento</strong><br>
-                                Formación Continua
+                                <strong>{{ ! empty($certificado['jefe_nombre']) ? $certificado['jefe_nombre'] : 'Jefe de Departamento' }}</strong><br>
+                                {{ ! empty($certificado['jefe_cargo']) ? $certificado['jefe_cargo'] : 'Formación Continua' }}
                             @else
                                 <strong>{{ $certificado['instructor'] }}</strong><br>
                                 Docente del curso
