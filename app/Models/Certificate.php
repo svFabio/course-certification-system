@@ -72,7 +72,7 @@ class Certificate extends Model
     public function administrativeDelayLabel(): string
     {
         $start = $this->emitido_en;
-        $end = $this->listo_en ?? ($this->signature_status === SignatureStatus::LISTO ? now() : now());
+        $end = $this->listo_en ?? now();
 
         if ($start === null) {
             return '—';
