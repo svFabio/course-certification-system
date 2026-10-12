@@ -44,5 +44,11 @@ php artisan filament:cache-components --no-interaction
 # ─── Fix permissions ──────────────────────────────────────────────────────────
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 
+# ─── In-container queue worker for Free Tier ──────────────────────────────────
+if [ "$1" = "apache2-foreground" ] || [ -z "$1" ]; then
+    echo "[entrypoint.prod] Starting background queue worker on free tier"
+    php artisan queue:work --tries=3 --sleep=3 --max-time=3600 > /dev/null 2>&1 &
+fi
+
 echo "[entrypoint.prod] Ready. Handing off to: $@"
 exec "$@"

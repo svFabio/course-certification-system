@@ -73,36 +73,13 @@ envVarGroups:
         value: storage/app/google/credentials.json
 
 services:
-  # ─── 1. Web Service (Laravel HTTP / Filament Admin / Livewire) ──────────────
+  # ─── 1. Web Service (Laravel HTTP / Filament Admin / Livewire + In-container Worker) ──
   - type: web
     name: umss-certification-web
     runtime: docker
     dockerfilePath: ./Dockerfile.prod
-    plan: starter
+    plan: free
     region: oregon
     healthCheckPath: /up
-    envVars:
-      - fromGroup: umss-shared-env
-
-  # ─── 2. Background Queue Worker (Mails & Certificates Async Processing) ────
-  - type: worker
-    name: umss-queue-worker
-    runtime: docker
-    dockerfilePath: ./Dockerfile.prod
-    dockerCommand: php artisan queue:work --tries=3 --timeout=90 --sleep=3 --max-jobs=1000 --max-time=3600
-    plan: starter
-    region: oregon
-    envVars:
-      - fromGroup: umss-shared-env
-
-  # ─── 3. Cron Job Scheduler (schedule:run) ──────────────────────────────────
-  - type: cron
-    name: umss-cron-scheduler
-    runtime: docker
-    dockerfilePath: ./Dockerfile.prod
-    dockerCommand: php artisan schedule:run --no-interaction
-    schedule: "* * * * *"
-    plan: starter
-    region: oregon
     envVars:
       - fromGroup: umss-shared-env
