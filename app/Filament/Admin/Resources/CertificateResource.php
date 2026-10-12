@@ -198,7 +198,8 @@ class CertificateResource extends Resource
                     ->label('Reenviar notificación')
                     ->icon('heroicon-o-envelope')
                     ->color('warning')
-                    ->visible(fn (Certificate $record): bool => $record->signature_status === SignatureStatus::LISTO)
+                    ->visible(fn (Certificate $record): bool => $record->signature_status === SignatureStatus::LISTO
+                        && filled(config('mail.mailers.'.config('mail.default').'.username')))
                     ->requiresConfirmation()
                     ->modalHeading('Reenviar notificación')
                     ->modalDescription('Se enviará nuevamente el correo de disponibilidad del certificado.')
