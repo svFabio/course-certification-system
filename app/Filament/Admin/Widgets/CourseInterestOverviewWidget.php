@@ -19,6 +19,11 @@ class CourseInterestOverviewWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    public static function canView(): bool
+    {
+        return app(CourseDemandService::class)->coursesWithInterest()->exists();
+    }
+
     public function table(Table $table): Table
     {
         return $table
