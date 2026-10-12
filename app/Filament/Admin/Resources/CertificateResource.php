@@ -237,18 +237,15 @@ class CertificateResource extends Resource
                             ->required()
                             ->helperText('Formato PDF (máximo 15MB).'),
                     ])
-                    ->action(function (Certificate $record, array $data): void {
+                    ->action(function (Certificate $record, array $data, CertificateService $service): void {
                         $uploaded = $data['pdf_escaneado_path'];
                         $path = is_array($uploaded) ? (reset($uploaded) ?: '') : (string) $uploaded;
 
-                        $record->update([
-                            'pdf_path' => $path,
-                            'es_escaneado' => true,
-                        ]);
+                        $service->attachScannedPdf($record, $path);
 
                         Notification::make()
                             ->title('PDF escaneado subido correctamente')
-                            ->body('El certificado ahora sirve la versión escaneada física.')
+                            ->body('El certificado ahora sirve la versión escaneada física y está listo para descarga.')
                             ->success()
                             ->send();
                     }),
@@ -261,13 +258,7 @@ class CertificateResource extends Resource
                     ->modalHeading('Restaurar PDF Digital Autogenerado')
                     ->modalDescription('¿Desea descartar el PDF escaneado físico y volver a generar el documento digital con estampas y código QR?')
                     ->action(function (Certificate $record, CertificateService $service): void {
-                        $record->update([
-                            'es_escaneado' => false,
-                        ]);
-
-                        if ($service->isReady($record)) {
-                            $service->regeneratePdf($record);
-                        }
+                        $service->restoreDigitalPdf($record);
 
                         Notification::make()
                             ->title('Versión digital restaurada')

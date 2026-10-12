@@ -233,11 +233,40 @@ class CertificateService
         $certificate = $certificate->fresh(['preinscription', 'instructor', 'course']) ?? $certificate;
 
         if ($status === SignatureStatus::LISTO && $previous !== SignatureStatus::LISTO) {
-            $certificate = $this->regeneratePdf($certificate);
+            if (! $certificate->es_escaneado) {
+                $certificate = $this->regeneratePdf($certificate);
+            }
             $this->notifyCertificateReady($certificate);
         }
 
         return $certificate;
+    }
+
+    public function attachScannedPdf(Certificate $certificate, string $path): Certificate
+    {
+        $certificate->update([
+            'pdf_path' => $path,
+            'es_escaneado' => true,
+        ]);
+
+        if ($certificate->signature_status !== SignatureStatus::LISTO) {
+            return $this->updateSignatureStatus($certificate, SignatureStatus::LISTO);
+        }
+
+        return $certificate->fresh() ?? $certificate;
+    }
+
+    public function restoreDigitalPdf(Certificate $certificate): Certificate
+    {
+        $certificate->update([
+            'es_escaneado' => false,
+        ]);
+
+        if ($this->isReady($certificate)) {
+            return $this->regeneratePdf($certificate);
+        }
+
+        return $certificate->fresh() ?? $certificate;
     }
 
     public function notifyCertificateReady(Certificate $certificate): void
@@ -392,13 +421,21 @@ class CertificateService
         $filename = 'certificado-'.Str::slug($certificate->codigo_unico).'.pdf';
 
         if ($certificate->es_escaneado && filled($certificate->pdf_path)) {
-            $disk = $this->resolveStorageDisk($certificate) ?? 'cloudinary';
+            $disk = $this->resolveStorageDisk($certificate);
 
-            return Storage::disk($disk)->download(
-                $certificate->pdf_path,
-                $filename,
-                ['Content-Type' => 'application/pdf']
-            );
+            if ($disk === null) {
+                abort(404, 'El archivo del certificado escaneado no se encuentra disponible.');
+            }
+
+            try {
+                return Storage::disk($disk)->download(
+                    $certificate->pdf_path,
+                    $filename,
+                    ['Content-Type' => 'application/pdf']
+                );
+            } catch (\Throwable) {
+                abort(404, 'El archivo del certificado escaneado no se encuentra disponible.');
+            }
         }
 
         $disk = $this->resolveStorageDisk($certificate);
