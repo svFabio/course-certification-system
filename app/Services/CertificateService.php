@@ -171,7 +171,27 @@ class CertificateService
 
     public function verificationUrl(Certificate $certificate): string
     {
-        return route('certificado.verificar', ['codigo' => $certificate->codigo_unico], absolute: true);
+        return $this->publicAbsoluteUrl(
+            route('certificado.verificar', ['codigo' => $certificate->codigo_unico], absolute: false)
+        );
+    }
+
+    public function publicDownloadUrl(Certificate $certificate): string
+    {
+        return $this->publicAbsoluteUrl(
+            route('certificado.publico.descargar', ['codigo' => $certificate->codigo_unico], absolute: false)
+        );
+    }
+
+    /**
+     * Build an absolute URL using APP_PUBLIC_URL when set (e.g. Render), else APP_URL.
+     */
+    public function publicAbsoluteUrl(string $path): string
+    {
+        $base = rtrim((string) config('app.public_url', config('app.url')), '/');
+        $path = '/'.ltrim($path, '/');
+
+        return $base.$path;
     }
 
     /**

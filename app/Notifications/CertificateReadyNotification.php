@@ -28,10 +28,6 @@ class CertificateReadyNotification extends Notification implements ShouldQueue
         $verifyUrl = $service->verificationUrl($this->certificate);
         $isInstructor = $this->certificate->isInstructorCertificate();
 
-        $downloadUrl = $isInstructor
-            ? url('/instructor/certificates')
-            : url('/estudiante/certificates');
-
         $name = $notifiable->name
             ?? $this->certificate->beneficiaryName();
 
@@ -43,16 +39,33 @@ class CertificateReadyNotification extends Notification implements ShouldQueue
             ? 'Tu certificado digital como instructor ya está listo para descargar.'
             : 'Tu certificado digital ya está listo para descargar.';
 
-        $actionLabel = $isInstructor ? 'Ir a Mis certificados' : 'Ir a Mis certificados';
+        // Estudiantes no se auto-registran: descarga pública por código (sin login).
+        // Usa APP_PUBLIC_URL (Render) cuando está configurado.
+        $downloadUrl = $service->publicDownloadUrl($this->certificate);
 
-        return (new MailMessage)
+        $actionUrl = $isInstructor
+            ? $service->publicAbsoluteUrl('/instructor/certificates')
+            : $downloadUrl;
+
+        $actionLabel = $isInstructor ? 'Ir a Mis certificados' : 'Descargar certificado PDF';
+
+        $message = (new MailMessage)
             ->subject($subject)
             ->greeting('Hola '.$name.',')
             ->line($line)
             ->line('Curso: '.($this->certificate->course?->nombre ?? 'Formación Continua'))
             ->line('Código: '.$this->certificate->codigo_unico)
-            ->action($actionLabel, $downloadUrl)
-            ->line('También puedes verificarlo públicamente: '.$verifyUrl)
+            ->action($actionLabel, $actionUrl);
+
+        if (! $isInstructor) {
+            $message
+                ->line('Enlace directo de descarga: '.$downloadUrl)
+                ->line('Verificación pública: '.$verifyUrl);
+        } else {
+            $message->line('También puedes verificarlo públicamente: '.$verifyUrl);
+        }
+
+        return $message
             ->line('Para el certificado físico, acércate a la oficina de Formación Continua con tu documento de identidad.');
     }
 }
