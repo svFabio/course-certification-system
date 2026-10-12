@@ -167,6 +167,33 @@ class CertificateResource extends Resource
                             ->success()
                             ->send();
                     }),
+                Tables\Actions\Action::make('aprobarDirectamente')
+                    ->label('Aprobar certificado')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->visible(fn (Certificate $record): bool => $record->signature_status !== SignatureStatus::LISTO)
+                    ->requiresConfirmation()
+                    ->modalHeading('Aprobar certificado directamente')
+                    ->modalDescription('Se marcará el certificado como listo (omitiendo los pasos intermedios), se generará el PDF y se notificará al beneficiario.')
+                    ->action(function (Certificate $record, CertificateService $service): void {
+                        try {
+                            $service->updateSignatureStatus($record, SignatureStatus::LISTO);
+                        } catch (ValidationException $e) {
+                            Notification::make()
+                                ->title('No se pudo aprobar el certificado')
+                                ->body(collect($e->errors())->flatten()->implode(' '))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title('Certificado aprobado')
+                            ->body('El PDF fue generado y el beneficiario fue notificado.')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\Action::make('reenviarNotificacion')
                     ->label('Reenviar notificación')
                     ->icon('heroicon-o-envelope')
