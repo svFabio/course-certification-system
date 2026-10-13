@@ -78,6 +78,7 @@ class CertificateService
         $course->loadMissing([
             'groups.preinscriptions.grades.evaluationCriteria',
             'groups.preinscriptions.attendances',
+            'groups.preinscriptions.certificate',
             'groups.sessions',
             'instructor',
         ]);
@@ -91,7 +92,7 @@ class CertificateService
                         continue;
                     }
 
-                    if ($preinscription->certificate()->exists()) {
+                    if ($preinscription->relationLoaded('certificate') ? $preinscription->certificate !== null : $preinscription->certificate()->exists()) {
                         continue;
                     }
 

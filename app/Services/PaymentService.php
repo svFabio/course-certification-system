@@ -7,7 +7,6 @@ namespace App\Services;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
-use App\Enums\TipoParticipante;
 use App\Events\GroupSheetsNeedRefresh;
 use App\Models\Payment;
 use App\Models\Preinscription;
@@ -184,7 +183,7 @@ class PaymentService
 
     protected function assertAuxiliarCertificateApproved(Preinscription $preinscription): void
     {
-        if ($preinscription->tipo_participante === TipoParticipante::AUXILIAR->value && ! $preinscription->hasApprovedAuxiliarCertificate()) {
+        if ($preinscription->isAuxiliar() && ! $preinscription->hasApprovedAuxiliarCertificate()) {
             throw ValidationException::withMessages([
                 'auxiliar_certificado' => 'El 50% de descuento para participantes auxiliares requiere que el certificado emitido por Jefatura sea aprobado por el administrador antes de verificar el pago.',
             ]);

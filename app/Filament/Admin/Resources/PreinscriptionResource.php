@@ -199,7 +199,7 @@ class PreinscriptionResource extends Resource
                     ->label('Certif. auxiliar')
                     ->badge()
                     ->formatStateUsing(function ($record): ?string {
-                        if ($record->tipo_participante !== TipoParticipante::AUXILIAR->value) {
+                        if (! $record->isAuxiliar()) {
                             return null;
                         }
 
@@ -210,7 +210,7 @@ class PreinscriptionResource extends Resource
                         };
                     })
                     ->color(function ($record): ?string {
-                        if ($record->tipo_participante !== TipoParticipante::AUXILIAR->value) {
+                        if (! $record->isAuxiliar()) {
                             return null;
                         }
 
@@ -254,7 +254,7 @@ class PreinscriptionResource extends Resource
                     ->label('Aprobar certificado auxiliar')
                     ->icon('heroicon-o-document-check')
                     ->color('success')
-                    ->visible(fn (Preinscription $record): bool => $record->tipo_participante === TipoParticipante::AUXILIAR->value
+                    ->visible(fn (Preinscription $record): bool => $record->isAuxiliar()
                         && $record->auxiliar_certificado_aprobado !== true
                         && $record->auxiliar_certificado_path !== null)
                     ->requiresConfirmation()
@@ -277,7 +277,7 @@ class PreinscriptionResource extends Resource
                     ->label('Rechazar certificado auxiliar')
                     ->icon('heroicon-o-document-x-mark')
                     ->color('danger')
-                    ->visible(fn (Preinscription $record): bool => $record->tipo_participante === TipoParticipante::AUXILIAR->value
+                    ->visible(fn (Preinscription $record): bool => $record->isAuxiliar()
                         && $record->auxiliar_certificado_aprobado !== true
                         && $record->auxiliar_certificado_path !== null)
                     ->requiresConfirmation()

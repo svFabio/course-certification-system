@@ -22,7 +22,7 @@ class GradePolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $grade->evaluationCriteria->course->instructor_id;
+            return $user->id === $grade->evaluationCriteria?->course?->instructor_id;
         }
 
         return false;
@@ -40,7 +40,7 @@ class GradePolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $grade->evaluationCriteria->course->instructor_id;
+            return $user->id === $grade->evaluationCriteria?->course?->instructor_id;
         }
 
         return false;

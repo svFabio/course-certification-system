@@ -257,7 +257,7 @@ class PreinscriptionComponent extends Component
         RateLimiter::hit($ipKey, 3600);
 
         $this->registeredData = [
-            'nombres' => "{$this->nombres} {$this->apellidoPaterno} {$this->apellidoMaterno}",
+            'nombres' => $preinscription->full_name,
             'ci' => $this->ci,
             'curso' => $this->group->course->nombre,
             'grupo' => "{$this->group->nombre} ({$this->group->hora_inicio->format('H:i')} - {$this->group->hora_fin->format('H:i')})",

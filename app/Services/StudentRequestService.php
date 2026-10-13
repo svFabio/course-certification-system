@@ -89,8 +89,10 @@ class StudentRequestService
             $request->setRawAttributes($locked->fresh()->getAttributes());
         });
 
-        Mail::to($preinscription->email)
-            ->queue(new StudentRequestResolvedNotification($request->fresh()));
+        if (filled($preinscription?->email)) {
+            Mail::to($preinscription->email)
+                ->queue(new StudentRequestResolvedNotification($request->fresh()));
+        }
 
         return $request;
     }

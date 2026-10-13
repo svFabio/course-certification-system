@@ -18,6 +18,10 @@ class SessionObserver
     {
         if ($session->isDirty(['fecha', 'hora_inicio', 'hora_fin', 'group_id'])) {
             GroupSheetsNeedRefresh::dispatch($session->group_id);
+
+            if ($session->wasChanged('group_id') && $session->getOriginal('group_id')) {
+                GroupSheetsNeedRefresh::dispatch((int) $session->getOriginal('group_id'));
+            }
         }
     }
 

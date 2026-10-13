@@ -191,13 +191,17 @@ class AttendanceService
 
     public function getAttendanceStats(Session $session): array
     {
-        $total = $session->attendances()->count();
-        $presentes = $session->attendances()->where('status', AttendanceStatus::PRESENTE)->count();
-        $ausentes = $session->attendances()->where('status', AttendanceStatus::AUSENTE)->count();
-        $justificados = $session->attendances()->where('status', AttendanceStatus::JUSTIFICADO)->count();
+        $counts = $session->attendances()
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $presentes = (int) ($counts[AttendanceStatus::PRESENTE->value] ?? 0);
+        $ausentes = (int) ($counts[AttendanceStatus::AUSENTE->value] ?? 0);
+        $justificados = (int) ($counts[AttendanceStatus::JUSTIFICADO->value] ?? 0);
 
         return [
-            'total' => $total,
+            'total' => (int) $counts->sum(),
             'presentes' => $presentes,
             'ausentes' => $ausentes,
             'justificados' => $justificados,
