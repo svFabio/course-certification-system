@@ -15,14 +15,13 @@ use Google\Service\Sheets\ValueRange;
 
 class GoogleSheetsService
 {
-    private Sheets $service;
+    private ?Sheets $service = null;
 
     private string $spreadsheetId;
 
     public function __construct()
     {
         $this->spreadsheetId = SystemSetting::get('google_sheets_spreadsheet_id', '');
-        $this->service = $this->buildService();
     }
 
     public function duplicateTemplateTab(string $templateTabName, string $newTabName): void
@@ -43,7 +42,7 @@ class GoogleSheetsService
             ]),
         ]);
 
-        $this->service->spreadsheets->batchUpdate($this->spreadsheetId, $requestBody);
+        $this->service()->spreadsheets->batchUpdate($this->spreadsheetId, $requestBody);
     }
 
     public function writeCells(string $range, array $values): void
@@ -52,7 +51,7 @@ class GoogleSheetsService
             'values' => $values,
         ]);
 
-        $this->service->spreadsheets_values->update(
+        $this->service()->spreadsheets_values->update(
             $this->spreadsheetId,
             $range,
             $body,
@@ -62,7 +61,7 @@ class GoogleSheetsService
 
     public function checkTabExists(string $tabName): bool
     {
-        $spreadsheet = $this->service->spreadsheets->get($this->spreadsheetId);
+        $spreadsheet = $this->service()->spreadsheets->get($this->spreadsheetId);
 
         foreach ($spreadsheet->getSheets() as $sheet) {
             if ($sheet->getProperties()->getTitle() === $tabName) {
@@ -75,7 +74,7 @@ class GoogleSheetsService
 
     public function getSheetIdByName(string $tabName): int
     {
-        $spreadsheet = $this->service->spreadsheets->get($this->spreadsheetId);
+        $spreadsheet = $this->service()->spreadsheets->get($this->spreadsheetId);
 
         foreach ($spreadsheet->getSheets() as $sheet) {
             if ($sheet->getProperties()->getTitle() === $tabName) {
@@ -88,7 +87,7 @@ class GoogleSheetsService
 
     public function readCells(string $range): array
     {
-        $response = $this->service->spreadsheets_values->get($this->spreadsheetId, $range);
+        $response = $this->service()->spreadsheets_values->get($this->spreadsheetId, $range);
 
         return $response->getValues() ?? [];
     }
@@ -101,7 +100,7 @@ class GoogleSheetsService
             ]),
         ]);
 
-        $created = $this->service->spreadsheets->create($spreadsheet);
+        $created = $this->service()->spreadsheets->create($spreadsheet);
 
         return $created->getSpreadsheetId();
     }
@@ -128,7 +127,7 @@ class GoogleSheetsService
         $requestBody = new BatchUpdateSpreadsheetRequest;
         $requestBody->setRequests($requests);
 
-        $this->service->spreadsheets->batchUpdate($this->spreadsheetId, $requestBody);
+        $this->service()->spreadsheets->batchUpdate($this->spreadsheetId, $requestBody);
     }
 
     public function populateTemplateTabs(): void
@@ -152,7 +151,7 @@ class GoogleSheetsService
             ]),
         ]);
 
-        $this->service->spreadsheets->batchUpdate($this->spreadsheetId, $requestBody);
+        $this->service()->spreadsheets->batchUpdate($this->spreadsheetId, $requestBody);
     }
 
     public function deleteTab(string $tabName): void
@@ -168,12 +167,17 @@ class GoogleSheetsService
             ]),
         ]);
 
-        $this->service->spreadsheets->batchUpdate($this->spreadsheetId, $requestBody);
+        $this->service()->spreadsheets->batchUpdate($this->spreadsheetId, $requestBody);
     }
 
     public function setSpreadsheetId(string $spreadsheetId): void
     {
         $this->spreadsheetId = $spreadsheetId;
+    }
+
+    private function service(): Sheets
+    {
+        return $this->service ??= $this->buildService();
     }
 
     public static function getAuthMethod(): string
@@ -188,8 +192,18 @@ class GoogleSheetsService
         return ! empty($refreshToken) && self::getAuthMethod() === 'oauth';
     }
 
+    public static function isOAuthEnvConfigured(): bool
+    {
+        return filled(config('services.google.sheets.oauth.client_id'))
+            && filled(config('services.google.sheets.oauth.client_secret'));
+    }
+
     public static function getOAuthRedirectUrl(): string
     {
+        if (! self::isOAuthEnvConfigured()) {
+            return '';
+        }
+
         $client = new Client;
         $client->setClientId(config('services.google.sheets.oauth.client_id'));
         $client->setClientSecret(config('services.google.sheets.oauth.client_secret'));
@@ -201,6 +215,38 @@ class GoogleSheetsService
         return $client->createAuthUrl();
     }
 
+    /**
+     * Lightweight connectivity check against the configured spreadsheet.
+     *
+     * @return array{ok: bool, message: string, spreadsheet_url?: string}
+     */
+    public function testConnection(): array
+    {
+        if (! self::isConfigured()) {
+            return [
+                'ok' => false,
+                'message' => 'Google Sheets aún no está configurado. Guarde credenciales, habilite la exportación y asegúrese de tener un Spreadsheet ID.',
+            ];
+        }
+
+        try {
+            $spreadsheet = $this->service()->spreadsheets->get($this->spreadsheetId);
+            $title = $spreadsheet->getProperties()?->getTitle() ?? 'Sin título';
+            $url = 'https://docs.google.com/spreadsheets/d/'.$this->spreadsheetId;
+
+            return [
+                'ok' => true,
+                'message' => "Conexión correcta. Spreadsheet: «{$title}».",
+                'spreadsheet_url' => $url,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'ok' => false,
+                'message' => 'No se pudo conectar: '.$e->getMessage(),
+            ];
+        }
+    }
+
     public function getOAuthUserEmail(): ?string
     {
         if (! self::isOAuthConnected()) {
@@ -209,7 +255,7 @@ class GoogleSheetsService
 
         try {
             $accessToken = json_decode(SystemSetting::get('google_sheets_access_token', '{}'), true);
-            $client = $this->service->getClient();
+            $client = $this->service()->getClient();
             $client->setAccessToken($accessToken);
 
             if ($client->isAccessTokenExpired()) {
@@ -264,7 +310,7 @@ class GoogleSheetsService
 
     private function getCredentialsPath(): string
     {
-        $path = config('services.google.sheets.credentials_path', storage_path('app/google/credentials.json'));
+        $path = self::resolveCredentialsPath();
 
         if (! file_exists($path)) {
             throw new \RuntimeException(
@@ -274,6 +320,21 @@ class GoogleSheetsService
         }
 
         return $path;
+    }
+
+    public static function resolveCredentialsPath(): string
+    {
+        $path = (string) config('services.google.sheets.credentials_path', storage_path('app/google/credentials.json'));
+
+        if ($path === '') {
+            return storage_path('app/google/credentials.json');
+        }
+
+        if (str_starts_with($path, DIRECTORY_SEPARATOR) || preg_match('/^[A-Za-z]:[\\\\\\/]/', $path) === 1) {
+            return $path;
+        }
+
+        return base_path($path);
     }
 
     public static function isConfigured(): bool
@@ -288,10 +349,8 @@ class GoogleSheetsService
                 && self::isOAuthConnected();
         }
 
-        $credentialsPath = config('services.google.sheets.credentials_path', storage_path('app/google/credentials.json'));
-
         return $enabled
             && ! empty($spreadsheetId)
-            && file_exists($credentialsPath);
+            && file_exists(self::resolveCredentialsPath());
     }
 }

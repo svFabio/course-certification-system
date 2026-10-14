@@ -250,7 +250,7 @@ it('generates a downloadable boleta with a correlative for verified payment', fu
 it('stores an auxiliar certificate file to the cloudinary disk', function () {
     Storage::fake('cloudinary');
 
-    $ci = '7894561';
+    $ci = (string) fake()->numerify('#######');
     $file = UploadedFile::fake()->create('certificado.pdf', 200, 'application/pdf');
     $path = $file->store(preg_replace('/[^a-zA-Z0-9]+/', '-', mb_strtolower($ci)), 'cloudinary');
 

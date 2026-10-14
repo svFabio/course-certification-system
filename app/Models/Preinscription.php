@@ -40,6 +40,7 @@ class Preinscription extends Model
         return [
             'group_id' => 'integer',
             'status' => PreinscriptionStatus::class,
+            'tipo_participante' => TipoParticipante::class,
             'fotocopia_ci' => 'boolean',
             'auxiliar_certificado_aprobado' => 'boolean',
             'auxiliar_certificado_aprobado_en' => 'datetime',
@@ -54,6 +55,11 @@ class Preinscription extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function studentRequests(): HasMany
+    {
+        return $this->hasMany(StudentRequest::class);
     }
 
     public function attendances(): HasMany
@@ -81,37 +87,56 @@ class Preinscription extends Model
         return trim($this->nombres.' '.$this->apellido_paterno.' '.($this->apellido_materno ?? ''));
     }
 
+    public function isAuxiliar(): bool
+    {
+        return $this->tipo_participante === TipoParticipante::AUXILIAR
+            || $this->tipo_participante === TipoParticipante::AUXILIAR->value;
+    }
+
     public function hasApprovedAuxiliarCertificate(): bool
     {
-        return $this->tipo_participante === TipoParticipante::AUXILIAR->value
-            && $this->auxiliar_certificado_aprobado === true;
+        return $this->isAuxiliar() && $this->auxiliar_certificado_aprobado === true;
     }
 
     public function getPriceAttribute(): float
     {
-        $course = $this->group->course;
+        $course = $this->group?->course;
+        if (! $course) {
+            return 0.0;
+        }
 
-        return match ($this->tipo_participante) {
-            TipoParticipante::UMSS->value => (float) $course->precio_umss,
-            TipoParticipante::EXTERNO->value => (float) $course->precio_externo,
-            TipoParticipante::AUXILIAR->value => (float) $course->precio_auxiliar,
-            default => throw new \InvalidArgumentException("Invalid participant type: {$this->tipo_participante}"),
+        $tipo = $this->tipo_participante instanceof TipoParticipante
+            ? $this->tipo_participante
+            : TipoParticipante::tryFrom((string) $this->tipo_participante);
+
+        return match ($tipo) {
+            TipoParticipante::UMSS => (float) $course->precio_umss,
+            TipoParticipante::EXTERNO => (float) $course->precio_externo,
+            TipoParticipante::AUXILIAR => (float) $course->precio_auxiliar,
+            default => throw new \InvalidArgumentException('Invalid participant type: '.($this->tipo_participante instanceof TipoParticipante ? $this->tipo_participante->value : (string) $this->tipo_participante)),
         };
     }
 
     public function getChargeablePriceAttribute(): float
     {
-        $course = $this->group->course;
+        $course = $this->group?->course;
+        if (! $course) {
+            return 0.0;
+        }
 
-        if ($this->tipo_participante === TipoParticipante::AUXILIAR->value && ! $this->hasApprovedAuxiliarCertificate()) {
+        $tipo = $this->tipo_participante instanceof TipoParticipante
+            ? $this->tipo_participante
+            : TipoParticipante::tryFrom((string) $this->tipo_participante);
+
+        if ($tipo === TipoParticipante::AUXILIAR && ! $this->hasApprovedAuxiliarCertificate()) {
             return (float) $course->precio_umss;
         }
 
-        return match ($this->tipo_participante) {
-            TipoParticipante::UMSS->value => (float) $course->precio_umss,
-            TipoParticipante::EXTERNO->value => (float) $course->precio_externo,
-            TipoParticipante::AUXILIAR->value => (float) $course->precio_auxiliar,
-            default => throw new \InvalidArgumentException("Invalid participant type: {$this->tipo_participante}"),
+        return match ($tipo) {
+            TipoParticipante::UMSS => (float) $course->precio_umss,
+            TipoParticipante::EXTERNO => (float) $course->precio_externo,
+            TipoParticipante::AUXILIAR => (float) $course->precio_auxiliar,
+            default => throw new \InvalidArgumentException('Invalid participant type: '.($this->tipo_participante instanceof TipoParticipante ? $this->tipo_participante->value : (string) $this->tipo_participante)),
         };
     }
 }

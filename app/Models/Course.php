@@ -65,6 +65,11 @@ class Course extends Model
         return $this->hasMany(Certificate::class);
     }
 
+    public function courseInterests(): HasMany
+    {
+        return $this->hasMany(CourseInterest::class);
+    }
+
     public function getPortadaUrlAttribute(): ?string
     {
         if (! $this->portada_path) {

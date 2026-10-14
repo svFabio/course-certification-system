@@ -135,8 +135,8 @@ docker compose exec app ./vendor/bin/pint
 # Regenerar migraciones (base limpia)
 docker compose exec app php artisan migrate:fresh --seed
 
-# Si cambias archivos de frontend (Vue, CSS), reconstruir la imagen
-docker compose build && docker compose up -d
+# Si cambias archivos de frontend (Vue, CSS), regenera los assets
+docker compose run --rm assets sh -c "npm ci && npm run build"
 ```
 
 ## Contribuir

@@ -9,10 +9,24 @@ services:
       POSTGRES_DB: ${DB_DATABASE:-plataforma_formacion}
       POSTGRES_USER: ${DB_USERNAME:-plataforma}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    command: postgres -c max_connections=150 -c shared_buffers=128MB
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-plataforma} -d ${DB_DATABASE:-plataforma_formacion}"]
       interval: 5s
       retries: 5
+
+  assets:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    command: >
+      sh -c "if [ ! -f public/build/manifest.json ]; then
+        npm ci && npm run build;
+      else
+        echo '[assets] public/build already present — skipping';
+      fi"
 
   app:
     build:
@@ -22,9 +36,13 @@ services:
       - '8000:80'
     volumes:
       - .:/var/www/html
+      # Named volume avoids slow Composer extracts on Windows bind mounts
+      - vendor:/var/www/html/vendor
     depends_on:
       postgres:
         condition: service_healthy
+      assets:
+        condition: service_completed_successfully
     environment:
       APP_URL: http://localhost:8000
       DB_CONNECTION: pgsql
@@ -36,3 +54,5 @@ services:
 
 volumes:
   pgdata:
+  vendor:
+  node_modules:

@@ -22,7 +22,7 @@ class AttendancePolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $attendance->session->group->course->instructor_id;
+            return $user->id === $attendance->session?->group?->course?->instructor_id;
         }
 
         return false;
@@ -40,7 +40,7 @@ class AttendancePolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $attendance->session->group->course->instructor_id;
+            return $user->id === $attendance->session?->group?->course?->instructor_id;
         }
 
         return false;
@@ -53,7 +53,7 @@ class AttendancePolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $attendance->session->group->course->instructor_id;
+            return $user->id === $attendance->session?->group?->course?->instructor_id;
         }
 
         return false;
@@ -66,7 +66,7 @@ class AttendancePolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $attendance->session->group->course->instructor_id;
+            return $user->id === $attendance->session?->group?->course?->instructor_id;
         }
 
         return false;
@@ -79,7 +79,7 @@ class AttendancePolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $attendance->session->group->course->instructor_id;
+            return $user->id === $attendance->session?->group?->course?->instructor_id;
         }
 
         return false;

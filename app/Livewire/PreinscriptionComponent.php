@@ -11,8 +11,10 @@ use App\Enums\TipoParticipante;
 use App\Models\Group;
 use App\Models\Preinscription;
 use App\Services\PreinscriptionService;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Rule as LivewireRule;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -58,7 +60,7 @@ class PreinscriptionComponent extends Component
     {
         $groupModel = $group instanceof Group ? $group : Group::with('course')->findOrFail($group);
 
-        if ($groupModel->status !== GroupStatus::HABILITADO
+        if (! in_array($groupModel->status, [GroupStatus::HABILITADO, GroupStatus::NO_HABILITADO], true)
             || $groupModel->course?->status !== CourseStatus::PUBLICADO) {
             session()->flash('error', 'El grupo seleccionado ya no está disponible para preinscripciones. Explore el catálogo para ver las opciones vigentes.');
 
@@ -212,30 +214,50 @@ class PreinscriptionComponent extends Component
 
         $certificatePath = null;
         if ($validated['tipoParticipante'] === TipoParticipante::AUXILIAR->value && $this->auxiliarCertificado) {
-            $certificatePath = $this->auxiliarCertificado->store(
-                preg_replace('/[^a-zA-Z0-9]+/', '-', mb_strtolower((string) $validated['ci'])),
-                'cloudinary'
-            );
+            $folder = preg_replace('/[^a-zA-Z0-9]+/', '-', mb_strtolower((string) $validated['ci']));
+            try {
+                $certificatePath = $this->auxiliarCertificado->store($folder, 'cloudinary');
+            } catch (\Throwable $e) {
+                Log::warning('Cloudinary upload failed for auxiliary certificate.', [
+                    'error' => $e->getMessage(),
+                ]);
+                $this->addError('auxiliarCertificado', 'No se pudo subir el comprobante. Por favor intenta nuevamente.');
+                $this->stepConfirmation = false;
+
+                return;
+            }
         }
 
-        $preinscription = $service->register([
-            'group_id' => $validated['groupId'],
-            'ci' => $validated['ci'],
-            'cod_sis' => in_array($validated['tipoParticipante'], [TipoParticipante::UMSS->value, TipoParticipante::AUXILIAR->value], true) ? ($validated['codSis'] ?? null) : null,
-            'nombres' => $validated['nombres'],
-            'apellido_paterno' => $validated['apellidoPaterno'],
-            'apellido_materno' => $validated['apellidoMaterno'] ?? null,
-            'celular' => $validated['celular'] ?? null,
-            'email' => $validated['email'],
-            'tipo_participante' => $validated['tipoParticipante'],
-            'auxiliar_certificado_path' => $certificatePath,
-        ]);
+        try {
+            $preinscription = $service->register([
+                'group_id' => $validated['groupId'],
+                'ci' => $validated['ci'],
+                'cod_sis' => in_array($validated['tipoParticipante'], [TipoParticipante::UMSS->value, TipoParticipante::AUXILIAR->value], true) ? ($validated['codSis'] ?? null) : null,
+                'nombres' => $validated['nombres'],
+                'apellido_paterno' => $validated['apellidoPaterno'],
+                'apellido_materno' => $validated['apellidoMaterno'] ?? null,
+                'celular' => $validated['celular'] ?? null,
+                'email' => $validated['email'],
+                'tipo_participante' => $validated['tipoParticipante'],
+                'auxiliar_certificado_path' => $certificatePath,
+            ]);
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $key => $messages) {
+                $mappedKey = $key === 'group_id' ? 'groupId' : $key;
+                foreach ($messages as $message) {
+                    $this->addError($mappedKey, $message);
+                }
+            }
+            $this->stepConfirmation = false;
+
+            return;
+        }
 
         RateLimiter::hit($ciKey, 3600);
         RateLimiter::hit($ipKey, 3600);
 
         $this->registeredData = [
-            'nombres' => "{$this->nombres} {$this->apellidoPaterno} {$this->apellidoMaterno}",
+            'nombres' => $preinscription->full_name,
             'ci' => $this->ci,
             'curso' => $this->group->course->nombre,
             'grupo' => "{$this->group->nombre} ({$this->group->hora_inicio->format('H:i')} - {$this->group->hora_fin->format('H:i')})",

@@ -19,10 +19,6 @@ if ! grep -q "APP_KEY=base64:" /var/www/html/.env; then
     php artisan key:generate --no-interaction
 fi
 
-# Fix storage permissions
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
-
 # Run migrations
 echo "[entrypoint] Running migrations"
 php artisan migrate --force --no-interaction
@@ -35,5 +31,17 @@ fi
 
 # Clear config cache so env changes are picked up
 php artisan config:clear
+
+# Ensure demo users exist (tests or a fresh volume can leave the DB empty)
+if ! php artisan tinker --execute="echo App\\Models\\User::query()->exists() ? '1' : '0';" 2>/dev/null | grep -q '1'; then
+    echo "[entrypoint] No users found — running db:seed"
+    php artisan db:seed --force --no-interaction
+fi
+
+# Fix storage permissions AFTER artisan (CLI runs as root and may recreate logs)
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+touch /var/www/html/storage/logs/laravel.log
+chown www-data:www-data /var/www/html/storage/logs/laravel.log
 
 exec "$@"

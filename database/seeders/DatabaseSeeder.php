@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             UsersSeeder::class,
             CoursesSeeder::class,
             HolidaySeeder::class,
+            DemoCertificateSeeder::class,
         ]);
     }
 }

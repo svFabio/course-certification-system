@@ -6,6 +6,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Instructor\Pages\GradeMatrix;
 use App\Filament\Instructor\Pages\InstructorDashboard;
+use App\Filament\Instructor\Pages\InstructorProfileSettings;
 use App\Filament\Instructor\Pages\MarkAttendance;
 use App\Filament\Instructor\Resources;
 use App\Filament\Instructor\Widgets\InstructorCoursesWidget;
@@ -53,11 +54,13 @@ class InstructorPanelProvider extends PanelProvider
             ->resources([
                 Resources\InstructorCourseResource::class,
                 Resources\InstructorSessionResource::class,
+                Resources\InstructorCertificateResource::class,
             ])
             ->pages([
                 InstructorDashboard::class,
                 MarkAttendance::class,
                 GradeMatrix::class,
+                InstructorProfileSettings::class,
             ])
             ->widgets([
                 InstructorStatsOverviewWidget::class,

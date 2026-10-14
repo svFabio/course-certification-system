@@ -10,6 +10,7 @@ use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
@@ -17,13 +18,17 @@ class GoogleSheetsSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static ?string $navigationIcon = 'heroicon-o-table-cells';
 
     protected static ?string $navigationGroup = 'Configuración';
 
     protected static ?int $navigationSort = 100;
 
+    protected static ?string $navigationLabel = 'Google Sheets';
+
     protected static ?string $title = 'Configuración de Google Sheets';
+
+    protected static ?string $slug = 'google-sheets-settings';
 
     protected static string $view = 'filament.pages.settings.google-sheets-settings';
 
@@ -33,16 +38,17 @@ class GoogleSheetsSettings extends Page implements HasForms
 
     public bool $isOAuthConnected = false;
 
+    public bool $isOAuthEnvConfigured = false;
+
+    public bool $isSheetsConfigured = false;
+
     public string $oauthRedirectUrl = '';
+
+    public string $oauthCallbackUri = '';
 
     public function mount(): void
     {
-        $this->isOAuthConnected = GoogleSheetsService::isOAuthConnected();
-        $this->oauthRedirectUrl = GoogleSheetsService::getOAuthRedirectUrl();
-
-        $this->oauthUserEmail = $this->isOAuthConnected
-            ? app(GoogleSheetsService::class)->getOAuthUserEmail()
-            : null;
+        $this->refreshStatus();
 
         $this->form->fill([
             'spreadsheet_id' => SystemSetting::get('google_sheets_spreadsheet_id', ''),
@@ -56,27 +62,37 @@ class GoogleSheetsSettings extends Page implements HasForms
     {
         return $form
             ->schema([
-                Forms\Components\Radio::make('auth_method')
-                    ->label('Método de autenticación')
-                    ->options([
-                        'service_account' => 'Service Account (recomendado para servidores)',
-                        'oauth' => 'Cuenta Google personal',
-                    ])
-                    ->default('service_account')
-                    ->live()
-                    ->required(),
-                Forms\Components\Textarea::make('credentials_json')
-                    ->label('Service Account JSON')
-                    ->placeholder('Pegue el contenido del archivo JSON de credenciales')
-                    ->rows(8)
-                    ->visible(fn (Forms\Get $get) => $get('auth_method') === 'service_account'),
-                Forms\Components\TextInput::make('spreadsheet_id')
-                    ->label('Spreadsheet ID')
-                    ->placeholder('Deje vacío para crear automáticamente')
-                    ->maxLength(255),
-                Forms\Components\Toggle::make('enabled')
-                    ->label('Habilitar exportación')
-                    ->default(true),
+                Forms\Components\Section::make('Autenticación')
+                    ->description('Elija cómo la plataforma se conectará a Google Sheets para exportar planillas de caja y docente.')
+                    ->schema([
+                        Forms\Components\Radio::make('auth_method')
+                            ->label('Método de autenticación')
+                            ->options([
+                                'service_account' => 'Service Account (recomendado para servidores)',
+                                'oauth' => 'Cuenta Google personal (OAuth)',
+                            ])
+                            ->default('service_account')
+                            ->live()
+                            ->required(),
+                        Forms\Components\Textarea::make('credentials_json')
+                            ->label('JSON de Service Account')
+                            ->helperText('Pegue aquí el contenido completo del archivo JSON descargado desde Google Cloud Console.')
+                            ->placeholder('{ "type": "service_account", "project_id": "...", ... }')
+                            ->rows(10)
+                            ->visible(fn (Forms\Get $get): bool => $get('auth_method') === 'service_account'),
+                    ]),
+                Forms\Components\Section::make('Spreadsheet')
+                    ->schema([
+                        Forms\Components\TextInput::make('spreadsheet_id')
+                            ->label('Spreadsheet ID')
+                            ->helperText('Deje vacío y pulse Guardar para crear uno nuevo automáticamente (requiere credenciales válidas).')
+                            ->placeholder('1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms')
+                            ->maxLength(255),
+                        Forms\Components\Toggle::make('enabled')
+                            ->label('Habilitar exportación a Google Sheets')
+                            ->helperText('Si está desactivado, los botones de exportar en Grupos no enviarán datos.')
+                            ->default(true),
+                    ]),
             ])
             ->statePath('data');
     }
@@ -85,7 +101,19 @@ class GoogleSheetsSettings extends Page implements HasForms
     {
         $data = $this->form->getState();
 
-        if ($data['auth_method'] === 'service_account' && ! empty($data['credentials_json'])) {
+        if ($data['auth_method'] === 'service_account' && filled($data['credentials_json'] ?? null)) {
+            $decoded = json_decode((string) $data['credentials_json'], true);
+
+            if (! is_array($decoded) || ($decoded['type'] ?? null) !== 'service_account') {
+                Notification::make()
+                    ->title('JSON inválido')
+                    ->body('El contenido debe ser un JSON de Service Account válido (campo "type": "service_account").')
+                    ->danger()
+                    ->send();
+
+                return;
+            }
+
             $path = storage_path('app/google/credentials.json');
             $dir = dirname($path);
 
@@ -93,18 +121,18 @@ class GoogleSheetsSettings extends Page implements HasForms
                 mkdir($dir, 0755, true);
             }
 
-            file_put_contents($path, $data['credentials_json']);
+            file_put_contents($path, json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         }
 
         SystemSetting::set('google_sheets_auth_method', $data['auth_method']);
         SystemSetting::set('google_sheets_spreadsheet_id', $data['spreadsheet_id'] ?? '');
         SystemSetting::set('google_sheets_credentials_json', $data['credentials_json'] ?? '');
-        SystemSetting::set('google_sheets_enabled', $data['enabled'] ? '1' : '0');
+        SystemSetting::set('google_sheets_enabled', ! empty($data['enabled']) ? '1' : '0');
 
-        $canCreate = ($data['auth_method'] === 'service_account')
+        $canCreate = ($data['auth_method'] === 'service_account' && filled($data['credentials_json'] ?? null))
             || ($data['auth_method'] === 'oauth' && GoogleSheetsService::isOAuthConnected());
 
-        if ($canCreate && empty($data['spreadsheet_id'])) {
+        if ($canCreate && blank($data['spreadsheet_id'] ?? null)) {
             try {
                 $service = app(GoogleSheetsService::class);
                 $id = $service->createSpreadsheet('UMSS Cursos - Planillas');
@@ -117,24 +145,78 @@ class GoogleSheetsSettings extends Page implements HasForms
 
                 Notification::make()
                     ->title('Spreadsheet creado')
+                    ->body('Se creó el libro «UMSS Cursos - Planillas» en Google Sheets.')
                     ->success()
                     ->send();
             } catch (\Exception $e) {
                 Notification::make()
-                    ->title('Error')
+                    ->title('No se pudo crear el spreadsheet')
                     ->body($e->getMessage())
                     ->danger()
                     ->send();
+
+                $this->refreshStatus();
 
                 return;
             }
         }
 
         $this->form->fill($data);
+        $this->refreshStatus();
 
         Notification::make()
             ->title('Configuración guardada')
             ->success()
             ->send();
+    }
+
+    public function testConnection(): void
+    {
+        try {
+            $result = app(GoogleSheetsService::class)->testConnection();
+        } catch (\Throwable $e) {
+            Notification::make()
+                ->title('Error al probar la conexión')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        if ($result['ok']) {
+            Notification::make()
+                ->title('Conexión exitosa')
+                ->body($result['message'])
+                ->success()
+                ->actions([
+                    ...(! empty($result['spreadsheet_url']) ? [
+                        Action::make('abrir')
+                            ->label('Abrir spreadsheet')
+                            ->url($result['spreadsheet_url'], shouldOpenInNewTab: true),
+                    ] : []),
+                ])
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title('Sin conexión')
+            ->body($result['message'])
+            ->warning()
+            ->send();
+    }
+
+    private function refreshStatus(): void
+    {
+        $this->isOAuthEnvConfigured = GoogleSheetsService::isOAuthEnvConfigured();
+        $this->isOAuthConnected = GoogleSheetsService::isOAuthConnected();
+        $this->isSheetsConfigured = GoogleSheetsService::isConfigured();
+        $this->oauthRedirectUrl = GoogleSheetsService::getOAuthRedirectUrl();
+        $this->oauthCallbackUri = (string) config('services.google.sheets.oauth.redirect_uri');
+        $this->oauthUserEmail = $this->isOAuthConnected
+            ? app(GoogleSheetsService::class)->getOAuthUserEmail()
+            : null;
     }
 }

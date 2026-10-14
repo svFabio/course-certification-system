@@ -19,3 +19,4 @@ yarn-error.log
 apply_fixes*.py
 storage/app/google/credentials.json
 *.deb
+.codegraph/

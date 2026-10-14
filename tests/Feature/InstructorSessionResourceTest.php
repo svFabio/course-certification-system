@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\UserRole;
+use App\Filament\Instructor\Resources\InstructorSessionResource;
 use App\Filament\Instructor\Resources\InstructorSessionResource\Pages\CreateInstructorSession;
 use App\Filament\Instructor\Resources\InstructorSessionResource\Pages\EditInstructorSession;
 use App\Filament\Instructor\Resources\InstructorSessionResource\Pages\ListInstructorSessions;
@@ -12,6 +13,7 @@ use App\Models\Session;
 use App\Models\User;
 use Carbon\Carbon;
 use Filament\Facades\Filament;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -261,4 +263,18 @@ it('rejects postposing via the table action to a weekend date', function () {
         ->assertHasTableActionErrors(['nueva_fecha']);
 
     expect($session->fresh()->es_pospuesta)->toBeFalse();
+});
+
+it('returns 404 when an instructor attempts to mount edit page for another instructor session', function () {
+    $data = sessionResourceTwoInstructorFixture();
+
+    $otherSession = Session::factory()->create(['group_id' => $data['otherGroup']->id]);
+
+    $this->actingAs($data['instructor']);
+
+    $this->get(InstructorSessionResource::getUrl('edit', ['record' => $otherSession]))
+        ->assertNotFound();
+
+    expect(fn () => Livewire::test(EditInstructorSession::class, ['record' => $otherSession->getKey()]))
+        ->toThrow(ModelNotFoundException::class);
 });

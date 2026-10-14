@@ -23,7 +23,7 @@ class CertificatePolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $certificate->course->instructor_id;
+            return $user->id === $certificate->course?->instructor_id;
         }
 
         if ($user->hasRole(UserRole::STUDENT->value)) {

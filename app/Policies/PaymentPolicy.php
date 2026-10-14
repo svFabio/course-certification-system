@@ -22,7 +22,7 @@ class PaymentPolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $payment->preinscription->group->course->instructor_id;
+            return $user->id === $payment->preinscription?->group?->course?->instructor_id;
         }
 
         return false;
@@ -40,7 +40,7 @@ class PaymentPolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $payment->preinscription->group->course->instructor_id;
+            return $user->id === $payment->preinscription?->group?->course?->instructor_id;
         }
 
         return false;
@@ -53,7 +53,7 @@ class PaymentPolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $payment->preinscription->group->course->instructor_id;
+            return $user->id === $payment->preinscription?->group?->course?->instructor_id;
         }
 
         return false;
@@ -66,7 +66,7 @@ class PaymentPolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $payment->preinscription->group->course->instructor_id;
+            return $user->id === $payment->preinscription?->group?->course?->instructor_id;
         }
 
         return false;
@@ -79,7 +79,7 @@ class PaymentPolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $payment->preinscription->group->course->instructor_id;
+            return $user->id === $payment->preinscription?->group?->course?->instructor_id;
         }
 
         return false;

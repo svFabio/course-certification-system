@@ -109,29 +109,31 @@ it('validates evaluation criteria total equals 100', function () {
 
 it('enforces unique ci per group in preinscriptions', function () {
     $group = Group::factory()->create();
+    $ci = (string) fake()->numerify('########');
 
     Preinscription::factory()->create([
         'group_id' => $group->id,
-        'ci' => '12345678',
+        'ci' => $ci,
     ]);
 
     expect(fn () => Preinscription::factory()->create([
         'group_id' => $group->id,
-        'ci' => '12345678',
+        'ci' => $ci,
     ]))->toThrow(QueryException::class);
 });
 
 it('allows same ci in different groups', function () {
     $group1 = Group::factory()->create();
     $group2 = Group::factory()->create();
+    $ci = (string) fake()->numerify('########');
 
     $p1 = Preinscription::factory()->create([
         'group_id' => $group1->id,
-        'ci' => '87654321',
+        'ci' => $ci,
     ]);
     $p2 = Preinscription::factory()->create([
         'group_id' => $group2->id,
-        'ci' => '87654321',
+        'ci' => $ci,
     ]);
 
     expect($p1->exists)->toBeTrue();
@@ -148,28 +150,28 @@ it('rejects preinscription when group capacity is full', function () {
 
     $service->register([
         'group_id' => $group->id,
-        'ci' => '1111111',
-        'nombres' => 'Juan',
-        'apellido_paterno' => 'Perez',
-        'email' => 'juan@example.com',
+        'ci' => (string) fake()->numerify('#######'),
+        'nombres' => fake()->firstName(),
+        'apellido_paterno' => fake()->lastName(),
+        'email' => fake()->userName().'@gmail.com',
         'tipo_participante' => 'umss',
     ]);
 
     $service->register([
         'group_id' => $group->id,
-        'ci' => '2222222',
-        'nombres' => 'Maria',
-        'apellido_paterno' => 'Gomez',
-        'email' => 'maria@example.com',
+        'ci' => (string) fake()->numerify('#######'),
+        'nombres' => fake()->firstName(),
+        'apellido_paterno' => fake()->lastName(),
+        'email' => fake()->userName().'@gmail.com',
         'tipo_participante' => 'externo',
     ]);
 
     expect(fn () => $service->register([
         'group_id' => $group->id,
-        'ci' => '3333333',
-        'nombres' => 'Carlos',
-        'apellido_paterno' => 'Lopez',
-        'email' => 'carlos@example.com',
+        'ci' => (string) fake()->numerify('#######'),
+        'nombres' => fake()->firstName(),
+        'apellido_paterno' => fake()->lastName(),
+        'email' => fake()->userName().'@gmail.com',
         'tipo_participante' => 'auxiliar',
     ]))->toThrow(ValidationException::class);
 });
@@ -204,7 +206,7 @@ it('calculates weighted final grade correctly via EvaluationService', function (
 it('generates certificate with correct type and matching course_id via CertificateService', function () {
     $course = Course::factory()->create();
     $group = Group::factory()->create(['course_id' => $course->id]);
-    $preinscription = Preinscription::factory()->create(['group_id' => $group->id]);
+    $preinscription = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
 
     // Combined-sum invariant: attendance_weight + criteria sum must equal 100.
     $course->update(['attendance_weight' => 0]);
@@ -223,6 +225,7 @@ it('generates certificate with correct type and matching course_id via Certifica
     expect($certificate->course_id)->toBe($course->id);
     expect($certificate->tipo)->toBe(CertificateType::APROBACION);
     expect($certificate->codigo_unico)->toStartWith('CERT-');
+    expect($certificate->signature_status->getLabel())->toBe('Pendiente de firma');
 });
 
 it('supports cod_sis, fotocopia_ci in preinscriptions and aula in groups', function () {
@@ -230,14 +233,15 @@ it('supports cod_sis, fotocopia_ci in preinscriptions and aula in groups', funct
         'aula' => 'Laboratorio 3',
     ]);
 
+    $codSis = (string) fake()->numerify('#########');
     $preinscription = Preinscription::factory()->create([
         'group_id' => $group->id,
-        'cod_sis' => '202002515',
+        'cod_sis' => $codSis,
         'fotocopia_ci' => true,
     ]);
 
     expect($group->aula)->toBe('Laboratorio 3');
-    expect($preinscription->cod_sis)->toBe('202002515');
+    expect($preinscription->cod_sis)->toBe($codSis);
     expect($preinscription->fotocopia_ci)->toBeTrue();
 });
 

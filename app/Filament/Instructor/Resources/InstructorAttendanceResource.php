@@ -14,6 +14,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class InstructorAttendanceResource extends Resource
 {
@@ -24,6 +25,33 @@ class InstructorAttendanceResource extends Resource
     public static function canViewAny(): bool
     {
         return auth()->check() && auth()->user()->hasRole(UserRole::INSTRUCTOR->value);
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return auth()->check() && $record->session?->group?->course?->instructor_id === auth()->id();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return auth()->check() && $record->session?->group?->course?->instructor_id === auth()->id();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->whereHas('session.group.course', fn ($q) => $q->where('instructor_id', auth()->id()))
+            ->with(['session', 'preinscription']);
     }
 
     protected static ?string $navigationGroup = 'Mis Cursos';
@@ -81,7 +109,6 @@ class InstructorAttendanceResource extends Resource
                     ->dateTime()
                     ->sortable(),
             ])
-            ->modifyQueryUsing(fn ($query) => $query->whereHas('session.group.course', fn ($q) => $q->where('instructor_id', auth()->id())))
             ->filters([
                 //
             ]);

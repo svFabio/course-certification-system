@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
+use App\Enums\SignatureStatus;
 use App\Models\Certificate;
+use App\Services\CertificateService;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -35,20 +37,34 @@ class CertificateVerificationComponent extends Component
         $this->searched = true;
         $this->certificate = null;
 
-        $record = Certificate::with(['preinscription', 'course'])
+        $record = Certificate::with(['preinscription', 'instructor', 'course.groups.sessions'])
             ->where('codigo_unico', trim($this->codigo))
             ->first();
 
-        if ($record) {
-            $this->certificate = [
-                'nombre' => $record->preinscription?->full_name,
-                'curso' => $record->course?->nombre,
-                'tipo' => $record->tipo?->getLabel(),
-                'emitido_en' => $record->emitido_en?->format('d/m/Y'),
-                'signature_status' => $record->signature_status?->getLabel(),
-                'codigo_unico' => $record->codigo_unico,
-            ];
+        if ($record === null) {
+            return;
         }
+
+        $dates = app(CertificateService::class)->courseDateRange($record->course);
+        $isReady = $record->signature_status === SignatureStatus::LISTO;
+
+        $this->certificate = [
+            'nombre' => $record->beneficiaryName(),
+            'rol' => $record->isInstructorCertificate() ? 'Instructor' : 'Participante',
+            'curso' => $record->course?->nombre,
+            'tipo' => $record->tipo?->getLabel(),
+            'grupos' => $record->isInstructorCertificate() ? ($record->grupos_detalle ?: null) : null,
+            'carga_horaria' => $record->course?->carga_horaria
+                ? $record->course->carga_horaria.' horas'
+                : null,
+            'fechas_curso' => $dates['rango'],
+            'emitido_en' => $record->emitido_en?->format('d/m/Y'),
+            'signature_status' => $record->signature_status?->getLabel(),
+            'valido' => $isReady,
+            'estado_validez' => $isReady ? 'Certificado válido' : 'Registrado — pendiente de firmas',
+            'codigo_unico' => $record->codigo_unico,
+            'download_url' => $isReady ? route('certificado.publico.descargar', ['codigo' => $record->codigo_unico]) : null,
+        ];
     }
 
     public function render()

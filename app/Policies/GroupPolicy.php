@@ -22,7 +22,7 @@ class GroupPolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $group->course->instructor_id;
+            return $user->id === $group->course?->instructor_id;
         }
 
         return false;
@@ -40,7 +40,7 @@ class GroupPolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $group->course->instructor_id;
+            return $user->id === $group->course?->instructor_id;
         }
 
         return false;

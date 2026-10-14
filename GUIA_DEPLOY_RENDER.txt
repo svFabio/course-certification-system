@@ -1,0 +1,168 @@
+================================================================================
+GUIA DETALLADA DE DESPLIEGUE EN RENDER.COM CON NEON POSTGRESQL
+Plataforma de Formacion Continua UMSS
+================================================================================
+
+Este documento detalla paso a paso como desplegar la plataforma en Render.com
+utilizando el archivo de Blueprint 'render.yaml', conectandola a una base de
+datos PostgreSQL serverless en Neon.tech y utilizando Cloudinary para el
+almacenamiento de certificados y multimedia.
+
+--------------------------------------------------------------------------------
+1. REQUISITOS PREVIOS (ANTES DE DESPLEGAR)
+--------------------------------------------------------------------------------
+
+A. Cuenta en GitHub:
+   - Asegurate de que los ultimos commits de la rama 'main' esten subidos a tu
+     repositorio en GitHub:
+     git push origin main
+
+B. Base de Datos en Neon (PostgreSQL):
+   - Registrate o inicia sesion en https://neon.tech
+   - Crea un nuevo proyecto (Project Name: p.ej. "umss-formacion-continua")
+   - Selecciona la region mas cercana a tu servidor de Render (ej. AWS us-east-2
+     o us-east-1 para coincidir con Render Oregon u Ohio).
+   - En el Dashboard de Neon, copia la cadena de conexion completa (Connection String):
+     Formato:
+     postgresql://[usuario]:[password]@[endpoint].neon.tech/[dbname]?sslmode=require
+
+C. Almacenamiento en Cloudinary:
+   - Obtener de tu panel de Cloudinary:
+     CLOUDINARY_URL
+     CLOUDINARY_CLOUD_NAME
+     CLOUDINARY_API_KEY
+     CLOUDINARY_API_SECRET
+
+D. Credenciales de Correo (SMTP):
+   - Para envio de notificaciones encoladas:
+     MAIL_HOST (ej. smtp.gmail.com o tu proveedor)
+     MAIL_PORT (587 o 465)
+     MAIL_USERNAME (tu correo)
+     MAIL_PASSWORD (contraseña de aplicacion de Google o token SMTP)
+     MAIL_ENCRYPTION (tls o ssl)
+     MAIL_FROM_ADDRESS (correo institucional o remitente)
+
+E. Clave de Aplicacion Laravel:
+   - Genera una APP_KEY ejecutando localmente:
+     php artisan key:generate --show
+   - Guarda este string (ej. base64:xxxxxxxxxxxxxxxxxxxx)
+
+--------------------------------------------------------------------------------
+2. PASOS PARA EL DESPLIEGUE EN RENDER (BLUEPRINT)
+--------------------------------------------------------------------------------
+
+Paso 1: Conectar Repositorio en Render
+   1. Ingresa a https://dashboard.render.com
+   2. Haz clic en el boton superior derecho: "New +" -> "Blueprint".
+   3. Conecta tu cuenta de GitHub (si no esta conectada) y selecciona el
+      repositorio: "03-course-certification-system".
+   4. Render analizara automaticamente el archivo 'render.yaml'.
+
+Paso 2: Revision de Servicios Detectados
+   Render detectara la creacion de:
+   - 1 Grupo de variables de entorno: 'umss-shared-env'
+   - 1 Web Service: 'umss-certification-web' (Docker con Dockerfile.prod)
+   - 1 Background Worker: 'umss-queue-worker' (procesador de colas)
+   - 1 Cron Job: 'umss-cron-scheduler' (ejecutor de tareas programadas cada 1 min)
+
+Paso 3: Carga de Secretos y Variables de Entorno
+   En la pantalla de configuracion del Blueprint o en el menu "Environment Groups",
+   Render te solicitara completar las variables marcadas como 'sync: false':
+
+   - APP_KEY:
+     El valor generado previamente (base64:...).
+   - APP_URL:
+     La URL publica de tu Web Service (ej. https://umss-certification-web.onrender.com).
+     (Nota: si aun no conoces el dominio final, puedes poner una temporal y
+     actualizarla tras el primer deploy).
+   - ASSET_URL:
+     El mismo valor que APP_URL.
+   - DATABASE_URL:
+     Pega aqui la cadena de conexion completa de Neon copiada en el punto 1.B:
+     postgresql://usuario:password@endpoint.neon.tech/neondb?sslmode=require
+   - CLOUDINARY_URL:
+     cloudinary://api_key:api_secret@cloud_name
+   - CLOUDINARY_CLOUD_NAME:
+     Tu cloud name de Cloudinary.
+   - CLOUDINARY_API_KEY:
+     Tu API Key.
+   - CLOUDINARY_API_SECRET:
+     Tu API Secret.
+   - MAIL_HOST, MAIL_USERNAME, MAIL_PASSWORD, MAIL_FROM_ADDRESS:
+     Tus credenciales SMTP.
+   - GOOGLE_SHEETS_SPREADSHEET_ID:
+     El ID de la hoja de Google Sheets si usas exportacion automatica.
+
+Paso 4: Aplicar y Construir
+   1. Haz clic en "Apply".
+   2. Render iniciara el build del contenedor Docker en paralelo:
+      - Stage 1: Compilacion de Tailwind/Vite con Node 20.
+      - Stage 2: Instalacion de dependencias Composer optimizadas (--no-dev).
+      - Stage 3: Empaquetado en Apache 8.3 con OPcache.
+   3. Al finalizar el build, el entrypoint de produccion (entrypoint.prod.sh):
+      - Verificara APP_KEY y la conexion a Neon.
+      - Enlazara Apache al puerto dinamico inyectado por Render ($PORT).
+      - Ejecutara automaticamente: php artisan migrate --force
+      - Compilara los caches de produccion: config, routes, views, icons, filament.
+      - Levantara el servidor web en 0.0.0.0:$PORT.
+
+--------------------------------------------------------------------------------
+3. MIGRACION INICIAL Y DATOS BASE (SEEDERS)
+--------------------------------------------------------------------------------
+
+Por seguridad institucional, el entrypoint de produccion NO ejecuta seeders
+automaticamente ni crea usuarios demo.
+
+Para sembrar los roles, permisos y usuario administrador inicial en Neon:
+1. En el Dashboard de Render, entra a tu servicio 'umss-certification-web'.
+2. Ve a la pestaña "Shell" (consola SSH integrada de Render).
+3. Ejecuta el seeder de roles y permisos:
+   php artisan db:seed --class=RolesAndPermissionsSeeder --force
+4. (Opcional) Crea tu usuario administrador mediante Tinker:
+   php artisan tinker
+   >>> $user = App\Models\User::create([
+           'name' => 'Admin UMSS',
+           'email' => 'admin@umss.edu.bo',
+           'password' => bcrypt('TuPasswordSeguro123!'),
+       ]);
+   >>> $user->assignRole('admin');
+   >>> exit
+
+--------------------------------------------------------------------------------
+4. VERIFICACION POST-DEPLOY
+--------------------------------------------------------------------------------
+
+A. Health Check:
+   - Visita: https://tu-app.onrender.com/up
+   - Debe responder con HTTP 200 (OK).
+
+B. Verificacion de Certificados y Catalogo:
+   - Pagina principal: https://tu-app.onrender.com
+   - Panel administrativo Filament: https://tu-app.onrender.com/admin
+   - Panel de docentes: https://tu-app.onrender.com/instructor
+   - Panel de estudiantes: https://tu-app.onrender.com/student
+
+C. Colas de Procesamiento:
+   - Revisa los logs de 'umss-queue-worker' en Render.
+   - Debe indicar: "Processing jobs from the [default] queue".
+
+D. Base de Datos en Neon:
+   - En la consola de Neon (https://console.neon.tech), podras ver las tablas
+     creadas por las migraciones y las conexiones activas en tiempo real.
+
+--------------------------------------------------------------------------------
+5. RESOLUCION DE PROBLEMAS COMUNES (TROUBLESHOOTING)
+--------------------------------------------------------------------------------
+
+Problema: Error "502 Bad Gateway" o timeout al iniciar el Web Service en Render.
+Solucion: Revisa los logs en Render. Si el health check '/up' falla, verifica
+          que la variable DATABASE_URL tenga 'sslmode=require' para Neon.
+
+Problema: Errores de estilo o scripts no encontrados (404 en assets).
+Solucion: Asegurate de que APP_URL y ASSET_URL tengan el protocolo https://
+          exacto asignado por Render (sin barra final '/').
+
+Problema: Los correos o notificaciones no llegan a los estudiantes.
+Solucion: Revisa que el servicio 'umss-queue-worker' este en estado "Live" en
+          Render y que las credenciales SMTP no tengan bloqueos de 2FA.
+================================================================================

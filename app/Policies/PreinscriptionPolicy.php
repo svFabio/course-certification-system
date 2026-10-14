@@ -24,7 +24,7 @@ class PreinscriptionPolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $preinscription->group->course->instructor_id;
+            return $user->id === $preinscription->group?->course?->instructor_id;
         }
 
         if ($user->hasRole(UserRole::STUDENT->value)) {
@@ -46,7 +46,7 @@ class PreinscriptionPolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $preinscription->group->course->instructor_id;
+            return $user->id === $preinscription->group?->course?->instructor_id;
         }
 
         return false;
@@ -59,7 +59,7 @@ class PreinscriptionPolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $preinscription->group->course->instructor_id;
+            return $user->id === $preinscription->group?->course?->instructor_id;
         }
 
         return false;
@@ -72,7 +72,7 @@ class PreinscriptionPolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $preinscription->group->course->instructor_id;
+            return $user->id === $preinscription->group?->course?->instructor_id;
         }
 
         return false;
@@ -85,7 +85,7 @@ class PreinscriptionPolicy
         }
 
         if ($user->hasRole(UserRole::INSTRUCTOR->value)) {
-            return $user->id === $preinscription->group->course->instructor_id;
+            return $user->id === $preinscription->group?->course?->instructor_id;
         }
 
         return false;

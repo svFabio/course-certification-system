@@ -81,24 +81,17 @@ class Group extends Model
             return 0.0;
         }
 
-        $confirmed = $this->confirmed_count ?? $this->preinscriptions()
-            ->whereIn('status', [
-                PreinscriptionStatus::PENDIENTE_PAGO,
-                PreinscriptionStatus::INSCRITO,
-            ])
-            ->count();
-
-        return round(($confirmed / $this->cupo_maximo) * 100, 1);
+        return round(($this->cupos_ocupados / $this->cupo_maximo) * 100, 1);
     }
 
     public function getCuposOcupadosAttribute(): int
     {
-        return $this->preinscriptions()
+        return (int) ($this->confirmed_count ?? $this->preinscriptions()
             ->whereIn('status', [
                 PreinscriptionStatus::PENDIENTE_PAGO,
                 PreinscriptionStatus::INSCRITO,
             ])
-            ->count();
+            ->count());
     }
 
     public function getCuposDisponiblesAttribute(): int

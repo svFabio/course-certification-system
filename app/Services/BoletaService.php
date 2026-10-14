@@ -33,7 +33,9 @@ class BoletaService
                 'participante' => $preinscription->full_name,
                 'ci' => $preinscription->ci,
                 'cod_sis' => $preinscription->cod_sis,
-                'tipo_participante' => TipoParticipante::tryFrom($preinscription->tipo_participante)?->getLabel() ?? $preinscription->tipo_participante,
+                'tipo_participante' => $preinscription->tipo_participante instanceof TipoParticipante
+                    ? $preinscription->tipo_participante->getLabel()
+                    : (TipoParticipante::tryFrom((string) $preinscription->tipo_participante)?->getLabel() ?? (string) $preinscription->tipo_participante),
                 'curso' => $course->nombre,
                 'carga_horaria' => $course->carga_horaria,
                 'grupo' => $group->nombre,
