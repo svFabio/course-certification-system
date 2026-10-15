@@ -40,10 +40,10 @@
         </div>
         <div class="card-umss p-6 bg-white border border-umss-gray-100 hover:border-umss-navy/30 transition shadow-sm hover:shadow-md">
             <div class="w-10 h-10 rounded-lg bg-umss-navy/10 flex items-center justify-center text-umss-navy mb-4 font-bold text-lg">
-                📍
+                📋
             </div>
-            <h3 class="font-bold text-base mb-2 text-umss-navy">Asistencia Geolocalizada</h3>
-            <p class="text-umss-gray-700 text-xs leading-relaxed">Registro ágil de asistencia presencial mediante escaneo QR y validación perimetral por GPS.</p>
+            <h3 class="font-bold text-base mb-2 text-umss-navy">Control de Asistencia QR</h3>
+            <p class="text-umss-gray-700 text-xs leading-relaxed">Registro ágil de asistencia presencial mediante escaneo de código QR provisto por el docente en la sesión.</p>
         </div>
     </div>
 </x-app-layout>

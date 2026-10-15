@@ -362,11 +362,7 @@
             <table class="bottom-table">
                 <tr>
                     <td class="sig">
-                        <div class="sig-container">
-                            @if (! empty($certificado['firma_director_data_uri']))
-                                <img src="{{ $certificado['firma_director_data_uri'] }}" class="sig-stamp" alt="Firma Director">
-                            @endif
-                        </div>
+                        <div class="sig-container"></div>
                         <div class="sig-line"></div>
                         <div class="sig-role">
                             <strong>{{ ! empty($certificado['director_nombre']) ? $certificado['director_nombre'] : 'Director Académico' }}</strong><br>
@@ -374,17 +370,7 @@
                         </div>
                     </td>
                     <td class="sig">
-                        <div class="sig-container">
-                            @if (! empty($certificado['es_instructor']))
-                                @if (! empty($certificado['firma_jefe_data_uri']))
-                                    <img src="{{ $certificado['firma_jefe_data_uri'] }}" class="sig-stamp" alt="Firma Jefe de Departamento">
-                                @endif
-                            @else
-                                @if (! empty($certificado['firma_instructor_data_uri']))
-                                    <img src="{{ $certificado['firma_instructor_data_uri'] }}" class="sig-stamp" alt="Firma Docente">
-                                @endif
-                            @endif
-                        </div>
+                        <div class="sig-container"></div>
                         <div class="sig-line"></div>
                         <div class="sig-role">
                             @if (! empty($certificado['es_instructor']))

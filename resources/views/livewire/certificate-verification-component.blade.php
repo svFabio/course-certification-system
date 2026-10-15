@@ -82,7 +82,7 @@
                     @if (! empty($certificate['download_url']))
                         <div class="mt-6 pt-5 border-t border-umss-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                             <p class="text-xs text-umss-gray-700 leading-relaxed text-center sm:text-left">
-                                Documento oficial con firma digital emitido por la Universidad Mayor de San Simón.
+                                Documento oficial verificable emitido por la Universidad Mayor de San Simón.
                             </p>
                             <a href="{{ $certificate['download_url'] }}" target="_blank"
                                 class="btn-primary inline-flex items-center gap-2 px-5 py-2.5 bg-umss-navy hover:bg-umss-navy-dark text-umss-white font-semibold text-sm tracking-wide rounded-lg shadow-sm transition whitespace-nowrap">

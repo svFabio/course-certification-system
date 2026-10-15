@@ -234,40 +234,11 @@ class CertificateService
         $certificate = $certificate->fresh(['preinscription', 'instructor', 'course']) ?? $certificate;
 
         if ($status === SignatureStatus::LISTO && $previous !== SignatureStatus::LISTO) {
-            if (! $certificate->es_escaneado) {
-                $certificate = $this->regeneratePdf($certificate);
-            }
+            $certificate = $this->regeneratePdf($certificate);
             $this->notifyCertificateReady($certificate);
         }
 
         return $certificate;
-    }
-
-    public function attachScannedPdf(Certificate $certificate, string $path): Certificate
-    {
-        $certificate->update([
-            'pdf_path' => $path,
-            'es_escaneado' => true,
-        ]);
-
-        if ($certificate->signature_status !== SignatureStatus::LISTO) {
-            return $this->updateSignatureStatus($certificate, SignatureStatus::LISTO);
-        }
-
-        return $certificate->fresh() ?? $certificate;
-    }
-
-    public function restoreDigitalPdf(Certificate $certificate): Certificate
-    {
-        $certificate->update([
-            'es_escaneado' => false,
-        ]);
-
-        if ($this->isReady($certificate)) {
-            return $this->regeneratePdf($certificate);
-        }
-
-        return $certificate->fresh() ?? $certificate;
     }
 
     public function notifyCertificateReady(Certificate $certificate): void
@@ -367,18 +338,12 @@ class CertificateService
 
         $directorNombre = (string) SystemSetting::get('director_academico_nombre', '');
         $directorCargo = (string) SystemSetting::get('director_academico_cargo', 'Director Académico');
-        $directorFirmaPath = SystemSetting::get('director_academico_firma_path');
-        $firmaDirectorDataUri = $this->buildImageUriFromPath($directorFirmaPath);
 
         $jefeNombre = (string) SystemSetting::get('jefe_departamento_nombre', '');
         $jefeCargo = (string) SystemSetting::get('jefe_departamento_cargo', 'Jefe de Departamento');
-        $jefeFirmaPath = SystemSetting::get('jefe_departamento_firma_path');
-        $firmaJefeDataUri = $this->buildImageUriFromPath($jefeFirmaPath);
 
         $instructorUser = $certificate->course?->instructor;
         $instructorNombre = $instructorUser?->name ?? 'Docente';
-        $instructorFirmaPath = $instructorUser?->firma_digital_path;
-        $firmaInstructorDataUri = $this->buildImageUriFromPath($instructorFirmaPath);
 
         return Pdf::loadView('pdf.certificado', [
             'certificado' => [
@@ -401,9 +366,6 @@ class CertificateService
                 'director_cargo' => $directorCargo,
                 'jefe_nombre' => $jefeNombre,
                 'jefe_cargo' => $jefeCargo,
-                'firma_director_data_uri' => $firmaDirectorDataUri,
-                'firma_jefe_data_uri' => $firmaJefeDataUri,
-                'firma_instructor_data_uri' => $firmaInstructorDataUri,
                 'url_verificacion' => $verifyUrl,
                 'qr_data_uri' => $qrDataUri,
                 'logo_data_uri' => $logoDataUri,
@@ -420,24 +382,6 @@ class CertificateService
         }
 
         $filename = 'certificado-'.Str::slug($certificate->codigo_unico).'.pdf';
-
-        if ($certificate->es_escaneado && filled($certificate->pdf_path)) {
-            $disk = $this->resolveStorageDisk($certificate);
-
-            if ($disk === null) {
-                abort(404, 'El archivo del certificado escaneado no se encuentra disponible.');
-            }
-
-            try {
-                return Storage::disk($disk)->download(
-                    $certificate->pdf_path,
-                    $filename,
-                    ['Content-Type' => 'application/pdf']
-                );
-            } catch (\Throwable) {
-                abort(404, 'El archivo del certificado escaneado no se encuentra disponible.');
-            }
-        }
 
         $disk = $this->resolveStorageDisk($certificate);
 
@@ -618,36 +562,5 @@ class CertificateService
         } catch (\Throwable) {
             return null;
         }
-    }
-
-    private function buildImageUriFromPath(?string $path): ?string
-    {
-        if (! filled($path)) {
-            return null;
-        }
-
-        try {
-            if (Storage::disk('cloudinary')->exists($path)) {
-                $bytes = Storage::disk('cloudinary')->get($path);
-                if ($bytes !== false && $bytes !== '') {
-                    return 'data:image/png;base64,'.base64_encode($bytes);
-                }
-            }
-        } catch (\Throwable) {
-            // Cloudinary read failed
-        }
-
-        try {
-            if (Storage::disk('local')->exists($path)) {
-                $bytes = Storage::disk('local')->get($path);
-                if ($bytes !== false && $bytes !== '') {
-                    return 'data:image/png;base64,'.base64_encode($bytes);
-                }
-            }
-        } catch (\Throwable) {
-            // Local read failed
-        }
-
-        return null;
     }
 }

@@ -107,9 +107,8 @@
 | Instructor | `/instructor` | `instructor` |
 | Público | `/` | Sin autenticación |
 
-## 13. Geolocalización
+## 13. Registro de Asistencia
 
-- **Precisión requerida**: `enableHighAccuracy: true`
-- **Timeout**: 10 segundos
-- **Formula**: Haversine para calcular distancia entre dos puntos
-- **Implementación**: `App\Support\BusinessRules::haversineDistance()`
+- **Mecanismo**: Escaneo de código QR provisto en la sesión.
+- **Validación**: Asociación estricta de la sesión al grupo e inscripción confirmada del estudiante.
+- **Cálculo de distancia**: Utilidad matemática `App\Support\BusinessRules::haversineDistance()` para telemetría opcional.

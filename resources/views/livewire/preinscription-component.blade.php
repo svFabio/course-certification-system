@@ -209,7 +209,7 @@
                     <hr class="border-umss-gray-100">
                     <div class="flex justify-between items-center">
                         <span class="text-xs text-umss-gray-700 uppercase">Costo a pagar</span>
-                        <span class="text-xl font-bold text-umss-navy">Bs. {{ number_format($this->precioCalculado, 2) }}</span>
+                        <span class="text-xl font-bold text-umss-navy">Bs. {{ number_format((float) ($this->precioCalculado ?? 0), 2) }}</span>
                     </div>
                 </div>
 

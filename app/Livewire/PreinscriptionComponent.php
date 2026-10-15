@@ -127,7 +127,7 @@ class PreinscriptionComponent extends Component
             return null;
         }
 
-        return (float) $this->group->course->precio_auxiliar;
+        return (float) ($this->group->course?->precio_auxiliar ?? 0.0);
     }
 
     protected function rules(): array
@@ -242,6 +242,7 @@ class PreinscriptionComponent extends Component
                 'auxiliar_certificado_path' => $certificatePath,
             ]);
         } catch (ValidationException $e) {
+            RateLimiter::hit($ipKey, 3600);
             foreach ($e->errors() as $key => $messages) {
                 $mappedKey = $key === 'group_id' ? 'groupId' : $key;
                 foreach ($messages as $message) {

@@ -47,7 +47,7 @@ class SheetExportBuilder
         $rows = [];
         $rows[] = ['PLANILLA DE CAJA / INSCRIPCIÓN'];
         $rows[] = ['Curso: '.$course->nombre, '', 'Período: '.$course->periodo];
-        $rows[] = ['Instructor: '.$instructor->name, '', 'Horario: '.$this->group->hora_inicio->format('H:i').' - '.$this->group->hora_fin->format('H:i')];
+        $rows[] = ['Instructor: '.($instructor?->name ?? 'Por asignar'), '', 'Horario: '.$this->group->hora_inicio->format('H:i').' - '.$this->group->hora_fin->format('H:i')];
         $rows[] = [
             'Precio UMSS: '.$course->precio_umss,
             '',
@@ -90,7 +90,7 @@ class SheetExportBuilder
         $rows = [];
         $rows[] = ['PLANILLA DOCENTE - NOTAS Y ASISTENCIA'];
         $rows[] = ['Curso: '.$course->nombre, '', 'Aula: '.($this->group->aula ?? ''), '', 'Período: '.$course->periodo];
-        $rows[] = ['Instructor: '.$instructor->name, '', 'Horario: '.$this->group->hora_inicio->format('H:i').' - '.$this->group->hora_fin->format('H:i')];
+        $rows[] = ['Instructor: '.($instructor?->name ?? 'Por asignar'), '', 'Horario: '.$this->group->hora_inicio->format('H:i').' - '.$this->group->hora_fin->format('H:i')];
         $rows[] = [];
 
         $sessionCount = $sessions->count();

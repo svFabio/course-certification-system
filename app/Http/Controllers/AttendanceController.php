@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\AttendanceScanResult;
-use App\Enums\AttendanceStatus;
 use App\Services\AttendanceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Config;
 
 class AttendanceController extends Controller
 {
@@ -22,15 +20,13 @@ class AttendanceController extends Controller
         $validated = $request->validate([
             'session_code' => 'required_without:session_id|string',
             'session_id' => 'required_without:session_code|integer',
-            'lat' => 'required|numeric|between:-90,90',
-            'lng' => 'required|numeric|between:-180,180',
+            'lat' => 'nullable|numeric|between:-90,90',
+            'lng' => 'nullable|numeric|between:-180,180',
             'preinscription_id' => 'nullable|integer',
             'ci' => 'nullable|string',
         ], [
-            'lat.required' => 'La latitud es obligatoria.',
             'lat.numeric' => 'La latitud debe ser un valor numérico.',
             'lat.between' => 'La latitud debe estar entre -90 y 90.',
-            'lng.required' => 'La longitud es obligatoria.',
             'lng.numeric' => 'La longitud debe ser un valor numérico.',
             'lng.between' => 'La longitud debe estar entre -180 y 180.',
         ]);
@@ -74,23 +70,20 @@ class AttendanceController extends Controller
             ], 422);
         }
 
+        $lat = isset($validated['lat']) && $validated['lat'] !== null ? (float) $validated['lat'] : null;
+        $lng = isset($validated['lng']) && $validated['lng'] !== null ? (float) $validated['lng'] : null;
+
         $attendance = $this->attendanceService->registerFromQR(
             $session,
             $preinscription->id,
-            (float) $validated['lat'],
-            (float) $validated['lng'],
+            $lat,
+            $lng,
         );
 
-        $isWithinRadius = $attendance->status === AttendanceStatus::PRESENTE;
-
         return response()->json([
-            'message' => $isWithinRadius
-                ? 'Asistencia registrada correctamente.'
-                : 'Fuera de rango. Su registro será enviado para revisión.',
-            'status' => $isWithinRadius ? AttendanceScanResult::PRESENTE->value : AttendanceScanResult::PARA_REVISION->value,
+            'message' => 'Asistencia registrada correctamente.',
+            'status' => AttendanceScanResult::PRESENTE->value,
             'attendance_status' => $attendance->status->value,
-            'distance_metros' => $attendance->distancia_metros,
-            'max_distance' => Config::get('attendance.radius_meters'),
             'attendance' => $attendance,
         ]);
     }

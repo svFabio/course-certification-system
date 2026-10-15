@@ -16,7 +16,7 @@ use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
-it('registers attendance successfully when student is within radius', function () {
+it('registers attendance successfully via qr scan without requiring coordinates', function () {
     $user = User::factory()->create();
     $course = Course::factory()->create(['instructor_id' => $user->id]);
     $group = Group::factory()->create(['course_id' => $course->id]);
@@ -30,8 +30,6 @@ it('registers attendance successfully when student is within radius', function (
         ->withoutMiddleware(ValidateCsrfToken::class)
         ->postJson('/api/asistencia/registrar', [
             'session_id' => $session->id,
-            'lat' => -17.78331,
-            'lng' => -66.15001,
         ]);
 
     $response->assertOk()
@@ -47,7 +45,7 @@ it('registers attendance successfully when student is within radius', function (
     ]);
 });
 
-it('flags attendance for review when student is outside radius', function () {
+it('registers attendance with optional coordinates when provided', function () {
     $user = User::factory()->create();
     $course = Course::factory()->create(['instructor_id' => $user->id]);
     $group = Group::factory()->create(['course_id' => $course->id]);
@@ -57,25 +55,26 @@ it('flags attendance for review when student is outside radius', function () {
         'email' => $user->email,
     ]);
 
-    // Coordinates far from lab
     $response = $this->actingAs($user)
         ->withoutMiddleware(ValidateCsrfToken::class)
         ->postJson('/api/asistencia/registrar', [
             'session_id' => $session->id,
-            'lat' => -17.8000,
-            'lng' => -66.2000,
+            'lat' => -17.3938,
+            'lng' => -66.1470,
         ]);
 
     $response->assertOk()
         ->assertJson([
-            'status' => AttendanceScanResult::PARA_REVISION->value,
-            'attendance_status' => AttendanceStatus::AUSENTE->value,
+            'status' => AttendanceScanResult::PRESENTE->value,
+            'attendance_status' => AttendanceStatus::PRESENTE->value,
         ]);
 
     $this->assertDatabaseHas('attendances', [
         'session_id' => $session->id,
         'preinscription_id' => $preinscription->id,
-        'status' => AttendanceStatus::AUSENTE->value,
+        'status' => AttendanceStatus::PRESENTE->value,
+        'lat' => -17.3938,
+        'lng' => -66.1470,
     ]);
 });
 
@@ -97,8 +96,6 @@ it('rejects attendance registration when the instructor does not own the session
         ->withoutMiddleware(ValidateCsrfToken::class)
         ->postJson('/api/asistencia/registrar', [
             'session_id' => $session->id,
-            'lat' => -17.78331,
-            'lng' => -66.15001,
         ]);
 
     $response->assertStatus(403)
@@ -129,8 +126,6 @@ it('allows an admin to register attendance on any session group', function () {
         ->postJson('/api/asistencia/registrar', [
             'session_id' => $session->id,
             'preinscription_id' => $preinscription->id,
-            'lat' => -17.78331,
-            'lng' => -66.15001,
         ]);
 
     $response->assertOk();
@@ -158,8 +153,6 @@ it('rejects a preinscription that does not belong to the session group', functio
         ->postJson('/api/asistencia/registrar', [
             'session_id' => $session->id,
             'preinscription_id' => $foreignPreinscription->id,
-            'lat' => -17.78331,
-            'lng' => -66.15001,
         ]);
 
     $response->assertStatus(422);
