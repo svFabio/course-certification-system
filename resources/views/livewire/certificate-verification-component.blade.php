@@ -70,10 +70,6 @@
                             <dd class="font-medium text-umss-black mt-0.5">{{ $certificate['emitido_en'] ?? 'N/A' }}</dd>
                         </div>
                         <div>
-                            <dt class="text-xs font-semibold text-umss-gray-700 uppercase tracking-wider">Estado de firma</dt>
-                            <dd class="font-medium text-umss-navy mt-0.5">{{ $certificate['signature_status'] ?? 'N/A' }}</dd>
-                        </div>
-                        <div>
                             <dt class="text-xs font-semibold text-umss-gray-700 uppercase tracking-wider">Código único</dt>
                             <dd class="font-mono text-xs font-bold text-umss-black mt-0.5">{{ $certificate['codigo_unico'] ?? 'N/A' }}</dd>
                         </div>

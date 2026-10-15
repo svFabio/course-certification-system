@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Student\Widgets;
 
-use App\Enums\SignatureStatus;
 use App\Enums\UserRole;
 use App\Filament\Student\Resources\StudentCertificateResource;
 use App\Filament\Student\Resources\StudentPreinscriptionResource;
@@ -28,23 +27,18 @@ class StudentOverviewWidget extends BaseWidget
 
         $preinscriptions = Preinscription::where('email', $email)->count();
 
-        $certificatesQuery = Certificate::whereHas(
+        $certificatesCount = Certificate::whereHas(
             'preinscription',
             fn ($q) => $q->where('email', $email),
-        );
-
-        $ready = (clone $certificatesQuery)->where('signature_status', SignatureStatus::LISTO)->count();
-        $pending = (clone $certificatesQuery)->where('signature_status', '!=', SignatureStatus::LISTO)->count();
+        )->count();
 
         return [
             Stat::make('Mis preinscripciones', (string) $preinscriptions)
                 ->description('Cursos en los que te preinscribiste')
                 ->color('info')
                 ->url(StudentPreinscriptionResource::getUrl('index')),
-            Stat::make('Certificados listos', (string) $ready)
-                ->description($pending > 0
-                    ? "{$pending} en proceso de firma"
-                    : 'Disponibles para descargar')
+            Stat::make('Mis certificados', (string) $certificatesCount)
+                ->description('Disponibles para descargar')
                 ->color('success')
                 ->url(StudentCertificateResource::getUrl('index')),
         ];

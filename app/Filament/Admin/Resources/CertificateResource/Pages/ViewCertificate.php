@@ -6,6 +6,7 @@ namespace App\Filament\Admin\Resources\CertificateResource\Pages;
 
 use App\Filament\Admin\Resources\CertificateResource;
 use App\Filament\Concerns\HasBackButton;
+use Filament\Actions;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\ViewRecord;
@@ -30,12 +31,7 @@ class ViewCertificate extends ViewRecord
                         ->label('Grupo(s)')
                         ->visible(fn ($record): bool => $record->isInstructorCertificate()),
                     Infolists\Components\TextEntry::make('codigo_unico')->label('Código')->copyable(),
-                    Infolists\Components\TextEntry::make('signature_status')->badge()->label('Estado de firma'),
-                    Infolists\Components\TextEntry::make('demora')
-                        ->label('Demora administrativa')
-                        ->state(fn ($record): string => $record->administrativeDelayLabel()),
                     Infolists\Components\TextEntry::make('emitido_en')->dateTime('d/m/Y H:i')->label('Emitido'),
-                    Infolists\Components\TextEntry::make('listo_en')->dateTime('d/m/Y H:i')->label('Listo'),
                 ])
                 ->columns(2),
         ]);
@@ -45,6 +41,12 @@ class ViewCertificate extends ViewRecord
     {
         return [
             $this->getBackAction(),
+            Actions\Action::make('descargar')
+                ->label('Descargar PDF')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('success')
+                ->url(fn (): string => route('certificado.descargar', $this->record))
+                ->openUrlInNewTab(),
         ];
     }
 }

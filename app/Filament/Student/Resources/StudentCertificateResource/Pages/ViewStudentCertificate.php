@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Student\Resources\StudentCertificateResource\Pages;
 
-use App\Enums\SignatureStatus;
 use App\Filament\Student\Resources\StudentCertificateResource;
 use App\Services\CertificateService;
 use Filament\Actions;
@@ -22,13 +21,11 @@ class ViewStudentCertificate extends ViewRecord
                 ->label('Descargar PDF')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')
-                ->visible(fn (): bool => $this->record->signature_status === SignatureStatus::LISTO)
                 ->url(fn (): string => route('certificado.descargar', $this->record))
                 ->openUrlInNewTab(),
             Actions\Action::make('copiarEnlace')
                 ->label('Copiar enlace de verificación')
                 ->icon('heroicon-o-link')
-                ->visible(fn (): bool => $this->record->signature_status === SignatureStatus::LISTO)
                 ->action(function (): void {
                     $url = app(CertificateService::class)->verificationUrl($this->record);
                     $this->js('window.navigator.clipboard.writeText('.json_encode($url).')');

@@ -6,7 +6,6 @@ namespace App\Services;
 
 use App\Enums\CertificateType;
 use App\Enums\PreinscriptionStatus;
-use App\Enums\SignatureStatus;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\Preinscription;
@@ -60,14 +59,18 @@ class CertificateService
         $finalGrade = $this->evaluationService->finalGrade($preinscription);
         $type = $this->calculateCertificateType($finalGrade);
 
-        return Certificate::create([
+        $certificate = Certificate::create([
             'preinscription_id' => $preinscription->id,
             'course_id' => $preinscription->group->course_id,
             'tipo' => $type,
             'codigo_unico' => $this->generateUniqueCode(),
-            'signature_status' => SignatureStatus::PENDIENTE,
             'emitido_en' => now(),
         ]);
+
+        $certificate = $this->regeneratePdf($certificate);
+        $this->notifyCertificateReady($certificate);
+
+        return $certificate;
     }
 
     /**
@@ -167,7 +170,7 @@ class CertificateService
 
     public function isReady(Certificate $certificate): bool
     {
-        return $certificate->signature_status === SignatureStatus::LISTO;
+        return filled($certificate->pdf_path);
     }
 
     public function verificationUrl(Certificate $certificate): string
@@ -193,52 +196,6 @@ class CertificateService
         $path = '/'.ltrim($path, '/');
 
         return $base.$path;
-    }
-
-    /**
-     * HU-29: advance one step in the authority signature workflow.
-     *
-     * @throws ValidationException
-     */
-    public function advanceSignature(Certificate $certificate): Certificate
-    {
-        $next = $certificate->signature_status->next();
-
-        if ($next === null) {
-            throw ValidationException::withMessages([
-                'signature_status' => 'El certificado ya completó el flujo de firmas.',
-            ]);
-        }
-
-        return $this->updateSignatureStatus($certificate, $next);
-    }
-
-    /**
-     * @throws ValidationException
-     */
-    public function updateSignatureStatus(Certificate $certificate, SignatureStatus $status): Certificate
-    {
-        $previous = $certificate->signature_status;
-
-        $payload = ['signature_status' => $status];
-
-        if ($status === SignatureStatus::LISTO && $previous !== SignatureStatus::LISTO) {
-            $payload['listo_en'] = now();
-        }
-
-        if ($status !== SignatureStatus::LISTO) {
-            $payload['listo_en'] = null;
-        }
-
-        $certificate->update($payload);
-        $certificate = $certificate->fresh(['preinscription', 'instructor', 'course']) ?? $certificate;
-
-        if ($status === SignatureStatus::LISTO && $previous !== SignatureStatus::LISTO) {
-            $certificate = $this->regeneratePdf($certificate);
-            $this->notifyCertificateReady($certificate);
-        }
-
-        return $certificate;
     }
 
     public function notifyCertificateReady(Certificate $certificate): void
@@ -271,18 +228,10 @@ class CertificateService
     }
 
     /**
-     * HU-30: manually resend readiness notification.
-     *
-     * @throws ValidationException
+     * Resend certificate availability notification.
      */
     public function resendReadyNotification(Certificate $certificate): void
     {
-        if ($certificate->signature_status !== SignatureStatus::LISTO) {
-            throw ValidationException::withMessages([
-                'certificate' => 'Solo se puede reenviar la notificación cuando el certificado está listo.',
-            ]);
-        }
-
         $this->notifyCertificateReady($certificate);
     }
 
@@ -321,12 +270,6 @@ class CertificateService
 
     public function generatePdf(Certificate $certificate)
     {
-        if (! $this->isReady($certificate)) {
-            throw ValidationException::withMessages([
-                'certificate' => 'El certificado aún no está listo para descargar.',
-            ]);
-        }
-
         $certificate->loadMissing(['preinscription', 'instructor', 'course.instructor', 'course.groups.sessions']);
 
         $verifyUrl = $this->verificationUrl($certificate);
@@ -375,12 +318,6 @@ class CertificateService
 
     public function download(Certificate $certificate): Response
     {
-        if (! $this->isReady($certificate)) {
-            throw ValidationException::withMessages([
-                'certificate' => 'El certificado aún no está listo para descargar.',
-            ]);
-        }
-
         $filename = 'certificado-'.Str::slug($certificate->codigo_unico).'.pdf';
 
         $disk = $this->resolveStorageDisk($certificate);
@@ -407,12 +344,6 @@ class CertificateService
 
     public function regeneratePdf(Certificate $certificate): Certificate
     {
-        if (! $this->isReady($certificate)) {
-            throw ValidationException::withMessages([
-                'certificate' => 'El certificado aún no está listo para generar PDF.',
-            ]);
-        }
-
         $pdf = $this->generatePdf($certificate);
         $path = 'certificates/'.$certificate->codigo_unico.'.pdf';
         $content = $pdf->output();
@@ -467,16 +398,20 @@ class CertificateService
 
     private function createInstructorCertificate(Course $course, string $gruposDetalle): Certificate
     {
-        return Certificate::create([
+        $certificate = Certificate::create([
             'preinscription_id' => null,
             'instructor_id' => $course->instructor_id,
             'course_id' => $course->id,
             'tipo' => CertificateType::INSTRUCTOR,
             'grupos_detalle' => $gruposDetalle,
             'codigo_unico' => $this->generateUniqueCode(),
-            'signature_status' => SignatureStatus::PENDIENTE,
             'emitido_en' => now(),
         ]);
+
+        $certificate = $this->regeneratePdf($certificate);
+        $this->notifyCertificateReady($certificate);
+
+        return $certificate;
     }
 
     private function generateUniqueCode(): string

@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Enums\CertificateType;
 use App\Enums\CourseStatus;
 use App\Enums\GroupStatus;
-use App\Enums\SignatureStatus;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\Group;
@@ -69,7 +68,6 @@ it('closes a course and generates certificates for enrolled students and the ins
 
     expect($certPassed)->not->toBeNull()
         ->and($certPassed->tipo)->toBe(CertificateType::APROBACION)
-        ->and($certPassed->signature_status)->toBe(SignatureStatus::PENDIENTE)
         ->and($certPassed->codigo_unico)->toMatch('/^CERT-\d{4}-[A-Z0-9]{8}$/')
         ->and($certFailed->tipo)->toBe(CertificateType::ASISTENCIA)
         ->and($certInstructor)->not->toBeNull()
@@ -134,7 +132,6 @@ it('builds a pdf payload with workload, course dates and verification qr when re
 
     $service = app(CertificateService::class);
     $certificate = $service->generate($preinscription);
-    $certificate->update(['signature_status' => SignatureStatus::LISTO]);
 
     $dates = $service->courseDateRange($course->fresh());
     expect($dates['rango'])->toBe('01/04/2026 – 15/04/2026');
@@ -167,7 +164,7 @@ it('keeps unique alphanumeric certificate codes across many generations', functi
         ->and($codes->every(fn (string $code) => (bool) preg_match('/^CERT-\d{4}-[A-Z0-9]{8}$/', $code)))->toBeTrue();
 });
 
-it('advances the signature flow and notifies when the certificate becomes ready', function () {
+it('generates certificate with PDF and dispatches notification directly upon creation', function () {
     Notification::fake();
 
     $student = User::factory()->create();
@@ -185,22 +182,7 @@ it('advances the signature flow and notifies when the certificate becomes ready'
     $service = app(CertificateService::class);
     $certificate = $service->generate($preinscription);
 
-    expect($certificate->signature_status)->toBe(SignatureStatus::PENDIENTE);
-
-    $certificate = $service->advanceSignature($certificate);
-    expect($certificate->signature_status)->toBe(SignatureStatus::FIRMADO_JEFE_DEPTO);
-
-    $certificate = $service->advanceSignature($certificate);
-    expect($certificate->signature_status)->toBe(SignatureStatus::FIRMADO_DIRECTOR_ACADEMICO);
-
-    $certificate = $service->advanceSignature($certificate);
-    expect($certificate->signature_status)->toBe(SignatureStatus::FIRMADO_DECANO);
-
-    $certificate = $service->advanceSignature($certificate);
-    expect($certificate->signature_status)->toBe(SignatureStatus::LISTO)
-        ->and($certificate->listo_en)->not->toBeNull()
-        ->and($certificate->pdf_path)->toBe('certificates/'.$certificate->codigo_unico.'.pdf')
-        ->and($certificate->administrativeDelayLabel())->not->toBe('—');
+    expect($certificate->pdf_path)->toBe('certificates/'.$certificate->codigo_unico.'.pdf');
 
     Storage::disk('cloudinary')->assertExists($certificate->pdf_path);
 
@@ -208,28 +190,6 @@ it('advances the signature flow and notifies when the certificate becomes ready'
 
     $service->resendReadyNotification($certificate);
     Notification::assertSentToTimes($student, CertificateReadyNotification::class, 2);
-});
-
-it('persists certificate pdf to cloudinary when reaching listo status via updateSignatureStatus', function () {
-    Notification::fake();
-
-    $student = User::factory()->create();
-    $course = Course::factory()->create(['attendance_weight' => 0]);
-    $group = Group::factory()->create(['course_id' => $course->id]);
-    $preinscription = Preinscription::factory()->inscrito()->create([
-        'group_id' => $group->id,
-        'email' => $student->email,
-    ]);
-
-    $service = app(CertificateService::class);
-    $certificate = $service->generate($preinscription);
-
-    expect($certificate->pdf_path)->toBeNull();
-
-    $certificate = $service->updateSignatureStatus($certificate, SignatureStatus::LISTO);
-
-    expect($certificate->pdf_path)->toBe('certificates/'.$certificate->codigo_unico.'.pdf');
-    Storage::disk('cloudinary')->assertExists($certificate->pdf_path);
 });
 
 it('can emit one instructor certificate per group', function () {

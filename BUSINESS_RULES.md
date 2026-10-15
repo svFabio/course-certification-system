@@ -48,12 +48,10 @@
 - **Tipos de certificado**:
   - **Aprobación**: Nota promedio ≥ 70
   - **Asistencia**: Nota promedio < 70
+  - **Instructor**: Certificado emitido al docente del curso
 - **Código único**: Generado automáticamente para cada certificado.
-- **Flujo de firma**:
-  1. `pendiente`: Certificado generado, esperando firma
-  2. `firmado`: Certificado firmado digitalmente
-  3. `rechazado`: Firma rechazada
-- **Verificación**: Disponible vía código QR o código único.
+- **Emisión directa**: Al generarse el certificado tras la finalización del curso y registro de notas, el documento queda emitido y listo para descarga inmediata.
+- **Verificación**: Disponible públicamente vía código QR impreso en el documento o mediante búsqueda por código único.
 
 ## 7. Preinscripción
 
@@ -93,11 +91,11 @@
 | `finalizado` | Curso completado |
 | `cancelado` | Curso cancelado |
 
-## 11. Firmado Digital de Certificados
+## 11. Emisión y Verificación de Certificados
 
-- **Flujo**: Generación → Revisión → Firma → Verificación
-- Los certificados firmados incluyen código QR verificable en línea.
-- La verificación se realiza consultando el código único en la base de datos.
+- **Flujo**: Finalización del curso y notas → Emisión directa del certificado → Descarga inmediata → Verificación pública.
+- Los certificados emitidos incluyen código QR y código único verificable en línea.
+- La verificación se realiza consultando el código único en la base de datos pública.
 
 ## 12. Acceso a Paneles
 
