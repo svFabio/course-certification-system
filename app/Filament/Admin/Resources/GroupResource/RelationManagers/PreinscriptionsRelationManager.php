@@ -17,6 +17,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
 use Illuminate\Validation\ValidationException;
@@ -72,6 +73,7 @@ class PreinscriptionsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['certificate']))
             ->columns([
                 Tables\Columns\TextColumn::make('ci')
                     ->label('CI')
@@ -86,6 +88,13 @@ class PreinscriptionsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge(),
+                Tables\Columns\TextColumn::make('certificate.codigo_unico')
+                    ->label('Certificado')
+                    ->badge()
+                    ->placeholder('Sin emitir')
+                    ->color(fn ($state) => $state ? 'success' : 'gray')
+                    ->url(fn (Preinscription $record): ?string => $record->certificate ? route('certificado.descargar', $record->certificate) : null)
+                    ->openUrlInNewTab(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Fecha de registro')
                     ->dateTime()
@@ -102,6 +111,13 @@ class PreinscriptionsRelationManager extends RelationManager
                     }),
             ])
             ->actions([
+                Tables\Actions\Action::make('imprimirCertificado')
+                    ->label('Imprimir Certificado')
+                    ->icon('heroicon-o-printer')
+                    ->color('success')
+                    ->url(fn (Preinscription $record): string => route('certificado.descargar', $record->certificate))
+                    ->openUrlInNewTab()
+                    ->visible(fn (Preinscription $record): bool => $record->certificate !== null),
                 Tables\Actions\Action::make('registrarPago')
                     ->label('Validar Pago')
                     ->icon('heroicon-o-currency-dollar')

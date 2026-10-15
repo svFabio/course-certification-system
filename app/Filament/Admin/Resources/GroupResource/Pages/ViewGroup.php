@@ -19,6 +19,13 @@ class ViewGroup extends ViewRecord
     {
         return [
             $this->getBackAction(),
+            Actions\Action::make('imprimirCertificados')
+                ->label('Imprimir Certificados del Grupo')
+                ->icon('heroicon-o-printer')
+                ->color('success')
+                ->url(fn (): string => route('admin.grupos.certificados.zip', $this->record))
+                ->openUrlInNewTab()
+                ->visible(fn (): bool => $this->record->certificates()->exists()),
             Actions\EditAction::make(),
         ];
     }

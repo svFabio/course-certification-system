@@ -8,6 +8,7 @@ use App\Enums\CertificateType;
 use App\Enums\PreinscriptionStatus;
 use App\Models\Certificate;
 use App\Models\Course;
+use App\Models\Group;
 use App\Models\Preinscription;
 use App\Models\SystemSetting;
 use App\Models\User;
@@ -23,7 +24,9 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
+use ZipArchive;
 
 class CertificateService
 {
@@ -497,5 +500,93 @@ class CertificateService
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    public function downloadCourseCertificatesZip(Course $course): BinaryFileResponse
+    {
+        $certificates = $course->certificates()->with(['preinscription', 'instructor'])->get();
+
+        if ($certificates->isEmpty()) {
+            throw new \RuntimeException('El curso no tiene certificados emitidos para descargar.');
+        }
+
+        $zipName = 'certificados-curso-'.Str::slug($course->nombre).'.zip';
+
+        return $this->createCertificatesZip($certificates, $zipName);
+    }
+
+    public function downloadGroupCertificatesZip(Group $group): BinaryFileResponse
+    {
+        $group->loadMissing('course');
+        $certificates = $group->certificates()->with(['preinscription', 'instructor'])->get();
+
+        if ($certificates->isEmpty()) {
+            throw new \RuntimeException('El grupo no tiene certificados emitidos para descargar.');
+        }
+
+        $courseSlug = Str::slug($group->course->nombre ?? 'curso');
+        $groupSlug = Str::slug($group->nombre);
+        $zipName = "certificados-{$courseSlug}-{$groupSlug}.zip";
+
+        return $this->createCertificatesZip($certificates, $zipName);
+    }
+
+    public function createCertificatesZip(Collection $certificates, string $zipName): BinaryFileResponse
+    {
+        $tempDir = storage_path('app/temp');
+        if (! file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $zipPath = $tempDir.'/'.uniqid('certs_', true).'.zip';
+
+        $zip = new ZipArchive;
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            throw new \RuntimeException('No se pudo inicializar el archivo ZIP.');
+        }
+
+        foreach ($certificates as $cert) {
+            $content = $this->getCertificatePdfContent($cert);
+            $cleanName = Str::slug($cert->beneficiaryName());
+            $filename = "{$cleanName}-{$cert->codigo_unico}.pdf";
+            $zip->addFromString($filename, $content);
+        }
+
+        $zip->close();
+
+        return response()->download($zipPath, $zipName, [
+            'Content-Type' => 'application/zip',
+        ])->deleteFileAfterSend(true);
+    }
+
+    public function getCertificatePdfContent(Certificate $certificate): string
+    {
+        $disk = $this->resolveStorageDisk($certificate);
+
+        if ($disk !== null && filled($certificate->pdf_path)) {
+            try {
+                $content = Storage::disk($disk)->get($certificate->pdf_path);
+                if (filled($content)) {
+                    return $content;
+                }
+            } catch (\Throwable) {
+                // Fallback to regeneration
+            }
+        }
+
+        $certificate = $this->regeneratePdf($certificate);
+        $disk = $this->resolveStorageDisk($certificate);
+        if ($disk !== null && filled($certificate->pdf_path)) {
+            try {
+                $content = Storage::disk($disk)->get($certificate->pdf_path);
+                if (filled($content)) {
+                    return $content;
+                }
+            } catch (\Throwable) {
+                // Fallback to on-the-fly rendering
+            }
+        }
+
+        return $this->generatePdf($certificate)->output();
     }
 }

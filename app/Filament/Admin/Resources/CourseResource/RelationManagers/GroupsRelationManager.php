@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\CourseResource\RelationManagers;
 
 use App\Enums\GroupStatus;
+use App\Filament\Admin\Resources\GroupResource;
 use App\Models\Group;
 use App\Support\BusinessRules;
 use Carbon\Carbon;
@@ -83,6 +84,7 @@ class GroupsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->recordUrl(fn (Group $record): string => GroupResource::getUrl('view', ['record' => $record]))
             ->columns([
                 Tables\Columns\TextColumn::make('nombre')
                     ->label('Nombre')
@@ -107,6 +109,18 @@ class GroupsRelationManager extends RelationManager
                 Tables\Actions\CreateAction::make(),
             ])
             ->actions([
+                Tables\Actions\Action::make('verGrupo')
+                    ->label('Ver Grupo')
+                    ->icon('heroicon-o-eye')
+                    ->color('primary')
+                    ->url(fn (Group $record): string => GroupResource::getUrl('view', ['record' => $record])),
+                Tables\Actions\Action::make('imprimirCertificados')
+                    ->label('Certificados')
+                    ->icon('heroicon-o-printer')
+                    ->color('success')
+                    ->url(fn (Group $record): string => route('admin.grupos.certificados.zip', $record))
+                    ->openUrlInNewTab()
+                    ->visible(fn (Group $record): bool => $record->certificates()->exists()),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

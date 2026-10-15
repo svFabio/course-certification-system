@@ -7,6 +7,8 @@ use App\Enums\UserRole;
 use App\Filament\Admin\Resources\CertificateResource\Pages\ListCertificates;
 use App\Filament\Admin\Resources\CourseResource;
 use App\Filament\Admin\Resources\CourseResource\RelationManagers\CertificatesRelationManager;
+use App\Filament\Admin\Resources\GroupResource\Pages\ViewGroup;
+use App\Filament\Admin\Resources\GroupResource\RelationManagers\PreinscriptionsRelationManager;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\Group;
@@ -206,4 +208,70 @@ it('does not produce N+1 queries when loading certificates in CertificatesRelati
 
     $queryCount = count(DB::getQueryLog());
     expect($queryCount)->toBeLessThanOrEqual(10);
+});
+
+it('exposes hierarchical certificate actions and links in course and group views', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole(UserRole::ADMIN->value);
+    $this->actingAs($admin);
+
+    $course = Course::factory()->create(['nombre' => 'Arquitectura de Datos']);
+    $group = Group::factory()->create(['course_id' => $course->id, 'nombre' => 'Grupo Alfa']);
+    $preinscription = Preinscription::factory()->create(['group_id' => $group->id]);
+
+    $cert = Certificate::factory()->create([
+        'course_id' => $course->id,
+        'preinscription_id' => $preinscription->id,
+        'codigo_unico' => 'CERT-HIER-001',
+    ]);
+
+    // ViewCourse action exists
+    Livewire::test(CourseResource\Pages\ViewCourse::class, ['record' => $course->id])
+        ->assertActionExists('imprimirCertificados');
+
+    // GroupsRelationManager has link to group and print action
+    Livewire::test(CourseResource\RelationManagers\GroupsRelationManager::class, [
+        'ownerRecord' => $course,
+        'pageClass' => CourseResource\Pages\ViewCourse::class,
+    ])
+        ->assertCanSeeTableRecords([$group])
+        ->assertTableActionExists('verGrupo')
+        ->assertTableActionExists('imprimirCertificados');
+
+    // ViewGroup header action exists
+    Livewire::test(ViewGroup::class, ['record' => $group->id])
+        ->assertActionExists('imprimirCertificados');
+
+    // PreinscriptionsRelationManager displays certificate and action
+    Livewire::test(PreinscriptionsRelationManager::class, [
+        'ownerRecord' => $group,
+        'pageClass' => ViewGroup::class,
+    ])
+        ->assertCanSeeTableRecords([$preinscription])
+        ->assertSee('CERT-HIER-001')
+        ->assertTableActionExists('imprimirCertificado');
+});
+
+it('downloads course and group certificates as zip archives', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole(UserRole::ADMIN->value);
+    $this->actingAs($admin);
+
+    $course = Course::factory()->create(['nombre' => 'Curso de Prueba ZIP']);
+    $group = Group::factory()->create(['course_id' => $course->id, 'nombre' => 'Grupo 1']);
+    $preinscription = Preinscription::factory()->create(['group_id' => $group->id]);
+
+    Certificate::factory()->create([
+        'course_id' => $course->id,
+        'preinscription_id' => $preinscription->id,
+        'codigo_unico' => 'ZIP-TEST-001',
+    ]);
+
+    $responseCourse = $this->get(route('admin.cursos.certificados.zip', $course));
+    $responseCourse->assertOk();
+    expect($responseCourse->headers->get('content-type'))->toBe('application/zip');
+
+    $responseGroup = $this->get(route('admin.grupos.certificados.zip', $group));
+    $responseGroup->assertOk();
+    expect($responseGroup->headers->get('content-type'))->toBe('application/zip');
 });

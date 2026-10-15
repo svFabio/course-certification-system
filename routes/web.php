@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CertificateDownloadController;
+use App\Http\Controllers\CertificateZipDownloadController;
 use App\Http\Controllers\GoogleSheetsCallbackController;
 use App\Http\Controllers\GoogleSheetsDisconnectController;
 use App\Http\Middleware\EnsureUserIsAdmin;
@@ -18,6 +19,10 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware('auth')->group(function () {
     Route::get('/certificados/{certificate}/descargar', CertificateDownloadController::class)
         ->name('certificado.descargar');
+    Route::get('/cursos/{course}/certificados/zip', [CertificateZipDownloadController::class, 'downloadCourse'])
+        ->name('admin.cursos.certificados.zip');
+    Route::get('/grupos/{group}/certificados/zip', [CertificateZipDownloadController::class, 'downloadGroup'])
+        ->name('admin.grupos.certificados.zip');
 });
 
 Route::middleware(['auth', EnsureUserIsAdmin::class])->group(function () {
