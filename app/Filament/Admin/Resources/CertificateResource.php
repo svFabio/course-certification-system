@@ -7,15 +7,14 @@ namespace App\Filament\Admin\Resources;
 use App\Enums\CertificateType;
 use App\Filament\Admin\Resources\CertificateResource\Pages;
 use App\Models\Certificate;
-use App\Services\CertificateService;
+use App\Models\Group;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Grouping\Group as TableGroup;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Validation\ValidationException;
 
 class CertificateResource extends Resource
 {
@@ -80,17 +79,37 @@ class CertificateResource extends Resource
                 Tables\Columns\TextColumn::make('course.nombre')
                     ->label('Curso')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('grupo')
+                    ->label('Grupo')
+                    ->state(fn (Certificate $record): string => $record->isInstructorCertificate()
+                        ? ($record->grupos_detalle ?: 'Todos los grupos')
+                        : ($record->preinscription?->group?->nombre ?? '—'))
+                    ->badge()
+                    ->color('gray'),
                 Tables\Columns\TextColumn::make('tipo')
                     ->label('Tipo')
                     ->badge(),
                 Tables\Columns\TextColumn::make('codigo_unico')
                     ->label('Código único')
                     ->searchable()
-                    ->copyable(),
+                    ->copyable()
+                    ->url(fn (Certificate $record): string => route('certificado.descargar', $record))
+                    ->openUrlInNewTab(),
                 Tables\Columns\TextColumn::make('emitido_en')
                     ->label('Emitido')
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
+            ])
+            ->defaultGroup('course_id')
+            ->groups([
+                TableGroup::make('course_id')
+                    ->label('Curso')
+                    ->getTitleFromRecordUsing(fn (Certificate $record): string => $record->course?->nombre ?? 'Sin curso')
+                    ->collapsible(),
+                TableGroup::make('tipo')
+                    ->label('Tipo de certificado')
+                    ->getTitleFromRecordUsing(fn (Certificate $record): string => $record->tipo?->getLabel() ?? 'Sin tipo')
+                    ->collapsible(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('course_id')
@@ -98,43 +117,26 @@ class CertificateResource extends Resource
                     ->relationship('course', 'nombre')
                     ->searchable()
                     ->preload(),
+                Tables\Filters\SelectFilter::make('grupo')
+                    ->label('Grupo')
+                    ->options(fn (): array => Group::query()
+                        ->with('course')
+                        ->orderBy('course_id')
+                        ->get()
+                        ->mapWithKeys(fn (Group $g) => [$g->id => "{$g->course->nombre} — {$g->nombre}"])
+                        ->toArray()
+                    )
+                    ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
+                        ? $query->whereHas('preinscription', fn (Builder $q) => $q->where('group_id', $data['value']))
+                        : $query
+                    )
+                    ->searchable()
+                    ->preload(),
                 Tables\Filters\SelectFilter::make('tipo')
                     ->label('Tipo')
                     ->options(CertificateType::class),
             ])
             ->actions([
-                Tables\Actions\Action::make('descargar')
-                    ->label('Descargar PDF')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->color('success')
-                    ->url(fn (Certificate $record): string => route('certificado.descargar', $record))
-                    ->openUrlInNewTab(),
-                Tables\Actions\Action::make('reenviarNotificacion')
-                    ->label('Reenviar notificación')
-                    ->icon('heroicon-o-envelope')
-                    ->color('warning')
-                    ->visible(fn (): bool => filled(config('mail.mailers.'.config('mail.default').'.username')))
-                    ->requiresConfirmation()
-                    ->modalHeading('Reenviar notificación')
-                    ->modalDescription('Se enviará nuevamente el correo de disponibilidad del certificado.')
-                    ->action(function (Certificate $record, CertificateService $service): void {
-                        try {
-                            $service->resendReadyNotification($record);
-                        } catch (ValidationException $e) {
-                            Notification::make()
-                                ->title('No se pudo reenviar')
-                                ->body(collect($e->errors())->flatten()->implode(' '))
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
-                        Notification::make()
-                            ->title('Notificación reenviada')
-                            ->success()
-                            ->send();
-                    }),
                 Tables\Actions\ViewAction::make(),
             ])
             ->bulkActions([
@@ -145,7 +147,7 @@ class CertificateResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['preinscription', 'instructor', 'course']);
+            ->with(['preinscription.group', 'instructor', 'course']);
     }
 
     public static function getPages(): array

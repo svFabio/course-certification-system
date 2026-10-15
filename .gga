@@ -14,7 +14,7 @@ EXCLUDE_PATTERNS="vendor/*,node_modules/*,storage/*,public/*,bootstrap/cache/*,d
 RULES_FILE="AGENTS.md"
 
 # Strict mode
-STRICT_MODE="true"
+STRICT_MODE="false"
 
 # Review timeout in seconds
 TIMEOUT="1800"

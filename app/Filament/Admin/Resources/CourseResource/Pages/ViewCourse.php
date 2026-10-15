@@ -32,7 +32,7 @@ class ViewCourse extends ViewRecord
                 ->color('danger')
                 ->requiresConfirmation()
                 ->modalHeading('Cerrar curso y emitir certificados')
-                ->modalDescription('Se marcará el curso como finalizado y se generarán certificados digitales (estudiantes inscritos + instructor). Quedarán en estado «Pendiente de firma».')
+                ->modalDescription('Se marcará el curso como finalizado y se generarán certificados digitales listos para descarga (estudiantes inscritos + instructor).')
                 ->visible(fn (): bool => app(CourseService::class)->canClose($this->record))
                 ->action(function (CourseService $courseService): void {
                     try {
@@ -53,7 +53,7 @@ class ViewCourse extends ViewRecord
                         ->title('Curso cerrado correctamente')
                         ->body($count === 0
                             ? 'No había certificados pendientes por generar.'
-                            : "Se generaron {$count} certificado(s) en estado pendiente de firma.")
+                            : "Se generaron {$count} certificado(s) emitidos correctamente.")
                         ->success()
                         ->actions([
                             NotificationAction::make('verCertificados')
@@ -80,7 +80,7 @@ class ViewCourse extends ViewRecord
                         ->title($count === 0 ? 'Sin certificados nuevos' : 'Certificados generados')
                         ->body($count === 0
                             ? 'Todos los beneficiarios ya tienen certificado.'
-                            : "Se generaron {$count} certificado(s) pendientes de firma.")
+                            : "Se generaron {$count} certificado(s) emitidos correctamente.")
                         ->success()
                         ->send();
                 }),
@@ -100,7 +100,7 @@ class ViewCourse extends ViewRecord
                         ->title($count === 0 ? 'Sin certificados nuevos' : 'Certificados de instructor generados')
                         ->body($count === 0
                             ? 'Ya existen certificados de instructor por grupo.'
-                            : "Se generaron {$count} certificado(s) de instructor pendientes de firma.")
+                            : "Se generaron {$count} certificado(s) de instructor emitidos correctamente.")
                         ->success()
                         ->send();
                 }),
