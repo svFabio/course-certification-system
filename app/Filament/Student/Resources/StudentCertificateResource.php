@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Student\Resources;
 
-use App\Enums\SignatureStatus;
 use App\Enums\UserRole;
 use App\Filament\Student\Resources\StudentCertificateResource\Pages;
 use App\Models\Certificate;
@@ -71,27 +70,12 @@ class StudentCertificateResource extends Resource
                     Infolists\Components\TextEntry::make('course.nombre')->label('Curso'),
                     Infolists\Components\TextEntry::make('tipo')->badge()->label('Tipo'),
                     Infolists\Components\TextEntry::make('codigo_unico')->label('Código')->copyable(),
-                    Infolists\Components\TextEntry::make('signature_status')
-                        ->badge()
-                        ->label('Estado')
-                        ->formatStateUsing(fn (?SignatureStatus $state): string => $state?->getLabel() ?? '—')
-                        ->color(fn (?SignatureStatus $state): string => match ($state) {
-                            SignatureStatus::LISTO => 'success',
-                            SignatureStatus::PENDIENTE => 'warning',
-                            default => 'info',
-                        }),
                     Infolists\Components\TextEntry::make('emitido_en')->dateTime('d/m/Y')->label('Emitido'),
                     Infolists\Components\TextEntry::make('verification_url')
                         ->label('Enlace de verificación')
                         ->state(fn (Certificate $record): string => app(CertificateService::class)->verificationUrl($record))
                         ->copyable()
                         ->copyMessage('Enlace copiado')
-                        ->visible(fn (Certificate $record): bool => $record->signature_status === SignatureStatus::LISTO)
-                        ->columnSpanFull(),
-                    Infolists\Components\TextEntry::make('pendiente_ayuda')
-                        ->label('Información')
-                        ->state('Tu certificado está en proceso de firma por las autoridades. Cuando esté listo podrás descargarlo aquí.')
-                        ->visible(fn (Certificate $record): bool => $record->signature_status !== SignatureStatus::LISTO)
                         ->columnSpanFull(),
                 ])
                 ->columns(2),
@@ -114,37 +98,21 @@ class StudentCertificateResource extends Resource
                     ->label('Código')
                     ->copyable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('signature_status')
-                    ->badge()
-                    ->label('Estado')
-                    ->formatStateUsing(fn (?SignatureStatus $state): string => $state?->getLabel() ?? '—')
-                    ->color(fn (?SignatureStatus $state): string => match ($state) {
-                        SignatureStatus::LISTO => 'success',
-                        SignatureStatus::PENDIENTE => 'warning',
-                        default => 'info',
-                    }),
                 Tables\Columns\TextColumn::make('emitido_en')
                     ->date('d/m/Y')
                     ->label('Emitido')
                     ->sortable(),
-            ])
-            ->filters([
-                Tables\Filters\SelectFilter::make('signature_status')
-                    ->label('Estado')
-                    ->options(SignatureStatus::class),
             ])
             ->actions([
                 Tables\Actions\Action::make('descargar')
                     ->label('Descargar PDF')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('success')
-                    ->visible(fn (Certificate $record): bool => $record->signature_status === SignatureStatus::LISTO)
                     ->url(fn (Certificate $record): string => route('certificado.descargar', $record))
                     ->openUrlInNewTab(),
                 Tables\Actions\Action::make('copiarEnlace')
                     ->label('Copiar enlace')
                     ->icon('heroicon-o-link')
-                    ->visible(fn (Certificate $record): bool => $record->signature_status === SignatureStatus::LISTO)
                     ->action(function (Certificate $record, $livewire): void {
                         $url = app(CertificateService::class)->verificationUrl($record);
                         $livewire->js('window.navigator.clipboard.writeText('.json_encode($url).')');
@@ -160,7 +128,7 @@ class StudentCertificateResource extends Resource
                     ->url(fn (Certificate $record): string => static::getUrl('view', ['record' => $record], panel: 'student')),
             ])
             ->emptyStateHeading('Aún no tienes certificados')
-            ->emptyStateDescription('Cuando el administrador cierre tu curso, el certificado aparecerá aquí. La descarga se habilita al completar las firmas.')
+            ->emptyStateDescription('Cuando apruebes o asistas a un curso, tu certificado aparecerá aquí.')
             ->emptyStateIcon('heroicon-o-academic-cap');
     }
 

@@ -6,16 +6,21 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\CourseLevel;
 use App\Enums\CourseStatus;
+use App\Exports\CourseClosingExport;
+use App\Exports\FinancialReportExport;
 use App\Filament\Admin\Resources\CourseResource\Pages;
 use App\Models\Course;
+use App\Services\CourseService;
 use App\Support\BusinessRules;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CourseResource extends Resource
 {
@@ -153,8 +158,77 @@ class CourseResource extends Resource
                     )),
             ])
             ->actions([
+                Tables\Actions\Action::make('publicar')
+                    ->label('Publicar')
+                    ->icon('heroicon-o-globe-alt')
+                    ->color('success')
+                    ->visible(fn (Course $record): bool => $record->status === CourseStatus::EN_PREPARACION)
+                    ->requiresConfirmation()
+                    ->modalHeading('Publicar curso')
+                    ->modalDescription('¿Está seguro de publicar este curso? Quedará visible en el catálogo público para preinscripciones.')
+                    ->action(function (Course $record, CourseService $service): void {
+                        $service->publish($record);
+                        Notification::make()
+                            ->title('Curso publicado con éxito')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('despublicar')
+                    ->label('Despublicar')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('gray')
+                    ->visible(fn (Course $record): bool => $record->status === CourseStatus::PUBLICADO)
+                    ->requiresConfirmation()
+                    ->modalHeading('Retirar publicación')
+                    ->modalDescription('El curso volverá al estado "En preparación" y ya no aceptará nuevas preinscripciones públicas.')
+                    ->action(function (Course $record, CourseService $service): void {
+                        $service->unpublish($record);
+                        Notification::make()
+                            ->title('Curso retirado de publicación')
+                            ->warning()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('cancelar')
+                    ->label('Cancelar')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->visible(fn (Course $record, CourseService $service): bool => $service->canCancel($record))
+                    ->form([
+                        Forms\Components\Textarea::make('motivo_cancelacion')
+                            ->label('Motivo de cancelación')
+                            ->required()
+                            ->maxLength(1000)
+                            ->rows(3),
+                    ])
+                    ->requiresConfirmation()
+                    ->modalHeading('Cancelar Curso')
+                    ->modalDescription('Esta acción marcará el curso como cancelado. Debe registrar el motivo técnico o administrativo.')
+                    ->action(function (Course $record, array $data, CourseService $service): void {
+                        $service->cancel($record, (string) $data['motivo_cancelacion']);
+                        Notification::make()
+                            ->title('Curso cancelado correctamente')
+                            ->danger()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('reporteJefatura')
+                    ->label('Acta de Cierre (Excel)')
+                    ->icon('heroicon-o-document-chart-bar')
+                    ->color('info')
+                    ->action(fn (Course $record) => Excel::download(
+                        new CourseClosingExport($record),
+                        'cierre-curso-'.str($record->nombre)->slug().'.xlsx'
+                    )),
+                Tables\Actions\Action::make('reporteFinanciero')
+                    ->label('Balance Caja (Excel)')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('success')
+                    ->action(fn (Course $record) => Excel::download(
+                        new FinancialReportExport($record),
+                        'financiero-curso-'.str($record->nombre)->slug().'.xlsx'
+                    )),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->hidden(fn (Course $record): bool => in_array($record->status, [CourseStatus::FINALIZADO, CourseStatus::EN_CURSO], true)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -175,6 +249,9 @@ class CourseResource extends Resource
                 Infolists\Components\TextEntry::make('periodo'),
                 Infolists\Components\TextEntry::make('status')
                     ->badge(),
+                Infolists\Components\TextEntry::make('motivo_cancelacion')
+                    ->label('Motivo de cancelación')
+                    ->visible(fn (Course $record): bool => filled($record->motivo_cancelacion)),
                 Infolists\Components\TextEntry::make('instructor.name'),
                 Infolists\Components\TextEntry::make('precio_umss')
                     ->numeric()
@@ -192,6 +269,7 @@ class CourseResource extends Resource
     {
         return [
             CourseResource\RelationManagers\GroupsRelationManager::class,
+            CourseResource\RelationManagers\CertificatesRelationManager::class,
         ];
     }
 

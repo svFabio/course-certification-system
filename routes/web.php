@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CertificateDownloadController;
+use App\Http\Controllers\CertificateZipDownloadController;
 use App\Http\Controllers\GoogleSheetsCallbackController;
 use App\Http\Controllers\GoogleSheetsDisconnectController;
 use App\Http\Middleware\EnsureUserIsAdmin;
@@ -15,9 +18,19 @@ Route::post('/login', [AuthController::class, 'login'])
     ->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// Password reset
+Route::get('/forgot-password', [ForgotPasswordController::class, 'showForm'])->name('password.request');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendLink'])->middleware('throttle:5,1')->name('password.email');
+Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showForm'])->name('password.reset');
+Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->middleware('throttle:5,1')->name('password.update');
+
 Route::middleware('auth')->group(function () {
     Route::get('/certificados/{certificate}/descargar', CertificateDownloadController::class)
         ->name('certificado.descargar');
+    Route::get('/cursos/{course}/certificados/zip', [CertificateZipDownloadController::class, 'downloadCourse'])
+        ->name('admin.cursos.certificados.zip');
+    Route::get('/grupos/{group}/certificados/zip', [CertificateZipDownloadController::class, 'downloadGroup'])
+        ->name('admin.grupos.certificados.zip');
 });
 
 Route::middleware(['auth', EnsureUserIsAdmin::class])->group(function () {

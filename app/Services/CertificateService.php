@@ -6,9 +6,9 @@ namespace App\Services;
 
 use App\Enums\CertificateType;
 use App\Enums\PreinscriptionStatus;
-use App\Enums\SignatureStatus;
 use App\Models\Certificate;
 use App\Models\Course;
+use App\Models\Group;
 use App\Models\Preinscription;
 use App\Models\SystemSetting;
 use App\Models\User;
@@ -24,7 +24,9 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
+use ZipArchive;
 
 class CertificateService
 {
@@ -60,14 +62,18 @@ class CertificateService
         $finalGrade = $this->evaluationService->finalGrade($preinscription);
         $type = $this->calculateCertificateType($finalGrade);
 
-        return Certificate::create([
+        $certificate = Certificate::create([
             'preinscription_id' => $preinscription->id,
             'course_id' => $preinscription->group->course_id,
             'tipo' => $type,
             'codigo_unico' => $this->generateUniqueCode(),
-            'signature_status' => SignatureStatus::PENDIENTE,
             'emitido_en' => now(),
         ]);
+
+        $certificate = $this->regeneratePdf($certificate);
+        $this->notifyCertificateReady($certificate);
+
+        return $certificate;
     }
 
     /**
@@ -167,7 +173,7 @@ class CertificateService
 
     public function isReady(Certificate $certificate): bool
     {
-        return $certificate->signature_status === SignatureStatus::LISTO;
+        return filled($certificate->pdf_path);
     }
 
     public function verificationUrl(Certificate $certificate): string
@@ -193,81 +199,6 @@ class CertificateService
         $path = '/'.ltrim($path, '/');
 
         return $base.$path;
-    }
-
-    /**
-     * HU-29: advance one step in the authority signature workflow.
-     *
-     * @throws ValidationException
-     */
-    public function advanceSignature(Certificate $certificate): Certificate
-    {
-        $next = $certificate->signature_status->next();
-
-        if ($next === null) {
-            throw ValidationException::withMessages([
-                'signature_status' => 'El certificado ya completó el flujo de firmas.',
-            ]);
-        }
-
-        return $this->updateSignatureStatus($certificate, $next);
-    }
-
-    /**
-     * @throws ValidationException
-     */
-    public function updateSignatureStatus(Certificate $certificate, SignatureStatus $status): Certificate
-    {
-        $previous = $certificate->signature_status;
-
-        $payload = ['signature_status' => $status];
-
-        if ($status === SignatureStatus::LISTO && $previous !== SignatureStatus::LISTO) {
-            $payload['listo_en'] = now();
-        }
-
-        if ($status !== SignatureStatus::LISTO) {
-            $payload['listo_en'] = null;
-        }
-
-        $certificate->update($payload);
-        $certificate = $certificate->fresh(['preinscription', 'instructor', 'course']) ?? $certificate;
-
-        if ($status === SignatureStatus::LISTO && $previous !== SignatureStatus::LISTO) {
-            if (! $certificate->es_escaneado) {
-                $certificate = $this->regeneratePdf($certificate);
-            }
-            $this->notifyCertificateReady($certificate);
-        }
-
-        return $certificate;
-    }
-
-    public function attachScannedPdf(Certificate $certificate, string $path): Certificate
-    {
-        $certificate->update([
-            'pdf_path' => $path,
-            'es_escaneado' => true,
-        ]);
-
-        if ($certificate->signature_status !== SignatureStatus::LISTO) {
-            return $this->updateSignatureStatus($certificate, SignatureStatus::LISTO);
-        }
-
-        return $certificate->fresh() ?? $certificate;
-    }
-
-    public function restoreDigitalPdf(Certificate $certificate): Certificate
-    {
-        $certificate->update([
-            'es_escaneado' => false,
-        ]);
-
-        if ($this->isReady($certificate)) {
-            return $this->regeneratePdf($certificate);
-        }
-
-        return $certificate->fresh() ?? $certificate;
     }
 
     public function notifyCertificateReady(Certificate $certificate): void
@@ -300,18 +231,10 @@ class CertificateService
     }
 
     /**
-     * HU-30: manually resend readiness notification.
-     *
-     * @throws ValidationException
+     * Resend certificate availability notification.
      */
     public function resendReadyNotification(Certificate $certificate): void
     {
-        if ($certificate->signature_status !== SignatureStatus::LISTO) {
-            throw ValidationException::withMessages([
-                'certificate' => 'Solo se puede reenviar la notificación cuando el certificado está listo.',
-            ]);
-        }
-
         $this->notifyCertificateReady($certificate);
     }
 
@@ -350,12 +273,6 @@ class CertificateService
 
     public function generatePdf(Certificate $certificate)
     {
-        if (! $this->isReady($certificate)) {
-            throw ValidationException::withMessages([
-                'certificate' => 'El certificado aún no está listo para descargar.',
-            ]);
-        }
-
         $certificate->loadMissing(['preinscription', 'instructor', 'course.instructor', 'course.groups.sessions']);
 
         $verifyUrl = $this->verificationUrl($certificate);
@@ -367,18 +284,12 @@ class CertificateService
 
         $directorNombre = (string) SystemSetting::get('director_academico_nombre', '');
         $directorCargo = (string) SystemSetting::get('director_academico_cargo', 'Director Académico');
-        $directorFirmaPath = SystemSetting::get('director_academico_firma_path');
-        $firmaDirectorDataUri = $this->buildImageUriFromPath($directorFirmaPath);
 
         $jefeNombre = (string) SystemSetting::get('jefe_departamento_nombre', '');
         $jefeCargo = (string) SystemSetting::get('jefe_departamento_cargo', 'Jefe de Departamento');
-        $jefeFirmaPath = SystemSetting::get('jefe_departamento_firma_path');
-        $firmaJefeDataUri = $this->buildImageUriFromPath($jefeFirmaPath);
 
         $instructorUser = $certificate->course?->instructor;
         $instructorNombre = $instructorUser?->name ?? 'Docente';
-        $instructorFirmaPath = $instructorUser?->firma_digital_path;
-        $firmaInstructorDataUri = $this->buildImageUriFromPath($instructorFirmaPath);
 
         return Pdf::loadView('pdf.certificado', [
             'certificado' => [
@@ -401,9 +312,6 @@ class CertificateService
                 'director_cargo' => $directorCargo,
                 'jefe_nombre' => $jefeNombre,
                 'jefe_cargo' => $jefeCargo,
-                'firma_director_data_uri' => $firmaDirectorDataUri,
-                'firma_jefe_data_uri' => $firmaJefeDataUri,
-                'firma_instructor_data_uri' => $firmaInstructorDataUri,
                 'url_verificacion' => $verifyUrl,
                 'qr_data_uri' => $qrDataUri,
                 'logo_data_uri' => $logoDataUri,
@@ -413,31 +321,7 @@ class CertificateService
 
     public function download(Certificate $certificate): Response
     {
-        if (! $this->isReady($certificate)) {
-            throw ValidationException::withMessages([
-                'certificate' => 'El certificado aún no está listo para descargar.',
-            ]);
-        }
-
         $filename = 'certificado-'.Str::slug($certificate->codigo_unico).'.pdf';
-
-        if ($certificate->es_escaneado && filled($certificate->pdf_path)) {
-            $disk = $this->resolveStorageDisk($certificate);
-
-            if ($disk === null) {
-                abort(404, 'El archivo del certificado escaneado no se encuentra disponible.');
-            }
-
-            try {
-                return Storage::disk($disk)->download(
-                    $certificate->pdf_path,
-                    $filename,
-                    ['Content-Type' => 'application/pdf']
-                );
-            } catch (\Throwable) {
-                abort(404, 'El archivo del certificado escaneado no se encuentra disponible.');
-            }
-        }
 
         $disk = $this->resolveStorageDisk($certificate);
 
@@ -463,12 +347,6 @@ class CertificateService
 
     public function regeneratePdf(Certificate $certificate): Certificate
     {
-        if (! $this->isReady($certificate)) {
-            throw ValidationException::withMessages([
-                'certificate' => 'El certificado aún no está listo para generar PDF.',
-            ]);
-        }
-
         $pdf = $this->generatePdf($certificate);
         $path = 'certificates/'.$certificate->codigo_unico.'.pdf';
         $content = $pdf->output();
@@ -484,13 +362,15 @@ class CertificateService
 
         if (! $saved) {
             try {
-                Storage::disk('local')->put($path, $content);
+                $saved = (bool) Storage::disk('local')->put($path, $content);
             } catch (\Throwable) {
-                // Local fallback attempted
+                // Local fallback failed
             }
         }
 
-        $certificate->update(['pdf_path' => $path]);
+        if ($saved) {
+            $certificate->update(['pdf_path' => $path]);
+        }
 
         return $certificate->fresh() ?? $certificate;
     }
@@ -523,16 +403,20 @@ class CertificateService
 
     private function createInstructorCertificate(Course $course, string $gruposDetalle): Certificate
     {
-        return Certificate::create([
+        $certificate = Certificate::create([
             'preinscription_id' => null,
             'instructor_id' => $course->instructor_id,
             'course_id' => $course->id,
             'tipo' => CertificateType::INSTRUCTOR,
             'grupos_detalle' => $gruposDetalle,
             'codigo_unico' => $this->generateUniqueCode(),
-            'signature_status' => SignatureStatus::PENDIENTE,
             'emitido_en' => now(),
         ]);
+
+        $certificate = $this->regeneratePdf($certificate);
+        $this->notifyCertificateReady($certificate);
+
+        return $certificate;
     }
 
     private function generateUniqueCode(): string
@@ -620,34 +504,91 @@ class CertificateService
         }
     }
 
-    private function buildImageUriFromPath(?string $path): ?string
+    public function downloadCourseCertificatesZip(Course $course): BinaryFileResponse
     {
-        if (! filled($path)) {
-            return null;
+        $certificates = $course->certificates()->with(['preinscription', 'instructor'])->get();
+
+        if ($certificates->isEmpty()) {
+            throw new \RuntimeException('El curso no tiene certificados emitidos para descargar.');
         }
 
-        try {
-            if (Storage::disk('cloudinary')->exists($path)) {
-                $bytes = Storage::disk('cloudinary')->get($path);
-                if ($bytes !== false && $bytes !== '') {
-                    return 'data:image/png;base64,'.base64_encode($bytes);
+        $zipName = 'certificados-curso-'.Str::slug($course->nombre).'.zip';
+
+        return $this->createCertificatesZip($certificates, $zipName);
+    }
+
+    public function downloadGroupCertificatesZip(Group $group): BinaryFileResponse
+    {
+        $group->loadMissing('course');
+        $certificates = $group->certificates()->with(['preinscription', 'instructor'])->get();
+
+        if ($certificates->isEmpty()) {
+            throw new \RuntimeException('El grupo no tiene certificados emitidos para descargar.');
+        }
+
+        $courseSlug = Str::slug($group->course->nombre ?? 'curso');
+        $groupSlug = Str::slug($group->nombre);
+        $zipName = "certificados-{$courseSlug}-{$groupSlug}.zip";
+
+        return $this->createCertificatesZip($certificates, $zipName);
+    }
+
+    public function createCertificatesZip(Collection $certificates, string $zipName): BinaryFileResponse
+    {
+        $tempDir = storage_path('app/temp');
+        if (! file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $zipPath = $tempDir.'/'.uniqid('certs_', true).'.zip';
+
+        $zip = new ZipArchive;
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            throw new \RuntimeException('No se pudo inicializar el archivo ZIP.');
+        }
+
+        foreach ($certificates as $cert) {
+            $content = $this->getCertificatePdfContent($cert);
+            $cleanName = Str::slug($cert->beneficiaryName());
+            $filename = "{$cleanName}-{$cert->codigo_unico}.pdf";
+            $zip->addFromString($filename, $content);
+        }
+
+        $zip->close();
+
+        return response()->download($zipPath, $zipName, [
+            'Content-Type' => 'application/zip',
+        ])->deleteFileAfterSend(true);
+    }
+
+    public function getCertificatePdfContent(Certificate $certificate): string
+    {
+        $disk = $this->resolveStorageDisk($certificate);
+
+        if ($disk !== null && filled($certificate->pdf_path)) {
+            try {
+                $content = Storage::disk($disk)->get($certificate->pdf_path);
+                if (filled($content)) {
+                    return $content;
                 }
+            } catch (\Throwable) {
+                // Fallback to regeneration
             }
-        } catch (\Throwable) {
-            // Cloudinary read failed
         }
 
-        try {
-            if (Storage::disk('local')->exists($path)) {
-                $bytes = Storage::disk('local')->get($path);
-                if ($bytes !== false && $bytes !== '') {
-                    return 'data:image/png;base64,'.base64_encode($bytes);
+        $certificate = $this->regeneratePdf($certificate);
+        $disk = $this->resolveStorageDisk($certificate);
+        if ($disk !== null && filled($certificate->pdf_path)) {
+            try {
+                $content = Storage::disk($disk)->get($certificate->pdf_path);
+                if (filled($content)) {
+                    return $content;
                 }
+            } catch (\Throwable) {
+                // Fallback to on-the-fly rendering
             }
-        } catch (\Throwable) {
-            // Local read failed
         }
 
-        return null;
+        return $this->generatePdf($certificate)->output();
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Enums\CourseStatus;
 use App\Enums\UserRole;
 use App\Models\Course;
 use App\Models\User;
@@ -32,6 +33,10 @@ class CoursePolicy
 
     public function delete(User $user, Course $course): bool
     {
+        if (in_array($course->status, [CourseStatus::FINALIZADO, CourseStatus::EN_CURSO], true)) {
+            return false;
+        }
+
         return $user->hasRole(UserRole::ADMIN->value) || $user->id === $course->instructor_id;
     }
 
@@ -42,6 +47,10 @@ class CoursePolicy
 
     public function forceDelete(User $user, Course $course): bool
     {
+        if (in_array($course->status, [CourseStatus::FINALIZADO, CourseStatus::EN_CURSO], true)) {
+            return false;
+        }
+
         return $user->hasRole(UserRole::ADMIN->value) || $user->id === $course->instructor_id;
     }
 }

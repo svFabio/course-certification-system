@@ -23,7 +23,7 @@ it('labels the holidays navigation entry and plural in Spanish', function () {
 });
 
 it('exposes explicit Spanish plural labels where the english pluralizer fails', function () {
-    expect(PreinscriptionResource::getPluralModelLabel())->toBe('Preinscripciones')
+    expect(PreinscriptionResource::getPluralModelLabel())->toBe('Inscripciones')
         ->and(AttendanceResource::getPluralModelLabel())->toBe('Asistencias')
         ->and(InstructorAttendanceResource::getPluralModelLabel())->toBe('Asistencias')
         ->and(InstructorCourseResource::getPluralModelLabel())->toBe('Cursos');

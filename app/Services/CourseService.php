@@ -89,4 +89,44 @@ class CourseService
             CourseStatus::CANCELADO,
         ], true);
     }
+
+    public function cancel(Course $course, string $motivo): Course
+    {
+        if ($course->status === CourseStatus::FINALIZADO) {
+            throw ValidationException::withMessages([
+                'course' => 'No se puede cancelar un curso que ya ha sido finalizado.',
+            ]);
+        }
+
+        if ($course->status === CourseStatus::CANCELADO) {
+            throw ValidationException::withMessages([
+                'course' => 'El curso ya se encuentra cancelado.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($course, $motivo): Course {
+            $course = Course::whereKey($course->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($course->status === CourseStatus::FINALIZADO) {
+                throw ValidationException::withMessages([
+                    'course' => 'No se puede cancelar un curso que ya ha sido finalizado.',
+                ]);
+            }
+
+            $course->update([
+                'status' => CourseStatus::CANCELADO,
+                'motivo_cancelacion' => $motivo,
+            ]);
+
+            return $course->fresh();
+        });
+    }
+
+    public function canCancel(Course $course): bool
+    {
+        return ! in_array($course->status, [
+            CourseStatus::FINALIZADO,
+            CourseStatus::CANCELADO,
+        ], true);
+    }
 }

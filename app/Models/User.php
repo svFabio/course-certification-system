@@ -24,7 +24,6 @@ class User extends Authenticatable implements FilamentUser
         'email',
         'password',
         'activo',
-        'firma_digital_path',
     ];
 
     protected $hidden = [
@@ -63,6 +62,10 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
+        if (! $this->activo) {
+            return false;
+        }
+
         if ($panel->getId() === 'admin') {
             return $this->hasRole(UserRole::ADMIN->value);
         }

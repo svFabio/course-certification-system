@@ -105,8 +105,8 @@
                         @error('apellidoMaterno') <p class="text-umss-red text-xs mt-1 font-medium">{{ $message }}</p> @enderror
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-umss-gray-700 mb-1.5 uppercase tracking-wide">Celular de Contacto (8 dígitos)</label>
-                        <input type="tel" inputmode="numeric" wire:model.blur="celular" placeholder="Ej. 71234567" maxlength="8" class="input-umss">
+                        <label class="block text-xs font-medium text-umss-gray-700 mb-1.5 uppercase tracking-wide">Celular de Contacto (8 dígitos) *</label>
+                        <input type="tel" inputmode="numeric" wire:model.blur="celular" placeholder="Ej. 71234567" maxlength="8" class="input-umss" required>
                         @error('celular') <p class="text-umss-red text-xs mt-1 font-medium">{{ $message }}</p> @enderror
                     </div>
                     <div>
@@ -129,7 +129,7 @@
 
                 @if(in_array($tipoParticipante, [\App\Enums\TipoParticipante::UMSS->value, \App\Enums\TipoParticipante::AUXILIAR->value], true))
                     <div>
-                        <label class="block text-xs font-medium text-umss-gray-700 mb-1.5 uppercase tracking-wide">Código SIS (Opcional si cuenta con registro UMSS)</label>
+                        <label class="block text-xs font-medium text-umss-gray-700 mb-1.5 uppercase tracking-wide">Código SIS</label>
                         <input type="text" inputmode="numeric" wire:model.blur="codSis" placeholder="Ej. 202002515" maxlength="10" class="input-umss">
                         @error('codSis') <p class="text-umss-red text-xs mt-1 font-medium">{{ $message }}</p> @enderror
                     </div>
@@ -209,7 +209,7 @@
                     <hr class="border-umss-gray-100">
                     <div class="flex justify-between items-center">
                         <span class="text-xs text-umss-gray-700 uppercase">Costo a pagar</span>
-                        <span class="text-xl font-bold text-umss-navy">Bs. {{ number_format($this->precioCalculado, 2) }}</span>
+                        <span class="text-xl font-bold text-umss-navy">Bs. {{ number_format((float) ($this->precioCalculado ?? 0), 2) }}</span>
                     </div>
                 </div>
 

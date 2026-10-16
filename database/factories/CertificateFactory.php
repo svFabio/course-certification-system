@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Enums\CertificateType;
-use App\Enums\SignatureStatus;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\Preinscription;
@@ -30,9 +29,7 @@ class CertificateFactory extends Factory
             'grupos_detalle' => null,
             'codigo_unico' => 'CERT-'.now()->year.'-'.strtoupper(Str::random(8)),
             'pdf_path' => 'certificates/'.fake()->uuid().'.pdf',
-            'signature_status' => SignatureStatus::PENDIENTE,
             'emitido_en' => now(),
-            'listo_en' => null,
         ];
     }
 
@@ -76,8 +73,7 @@ class CertificateFactory extends Factory
     public function signed(): static
     {
         return $this->state(fn (array $attributes) => [
-            'signature_status' => SignatureStatus::LISTO,
-            'listo_en' => now(),
+            'pdf_path' => 'certificates/'.fake()->uuid().'.pdf',
         ]);
     }
 }

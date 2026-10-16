@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Group extends Model
 {
@@ -65,6 +66,11 @@ class Group extends Model
     public function preinscriptions(): HasMany
     {
         return $this->hasMany(Preinscription::class);
+    }
+
+    public function certificates(): HasManyThrough
+    {
+        return $this->hasManyThrough(Certificate::class, Preinscription::class);
     }
 
     public function scopeWithConfirmedCount(Builder $query): Builder

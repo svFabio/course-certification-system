@@ -326,6 +326,7 @@ class GroupResource extends Resource
     {
         return [
             GroupResource\RelationManagers\PreinscriptionsRelationManager::class,
+            GroupResource\RelationManagers\SessionsRelationManager::class,
         ];
     }
 

@@ -13,7 +13,6 @@ use App\Models\Session;
 use App\Models\User;
 use App\Support\BusinessRules;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Config;
 use InvalidArgumentException;
 
 class AttendanceService
@@ -157,27 +156,18 @@ class AttendanceService
         }
     }
 
-    public function registerFromQR(Session $session, int $preinscriptionId, float $lat, float $lng): Attendance
+    public function registerFromQR(Session $session, int $preinscriptionId, ?float $lat = null, ?float $lng = null): Attendance
     {
-        $labLat = Config::float('attendance.lab_lat');
-        $labLng = Config::float('attendance.lab_lng');
-        $maxRadius = Config::float('attendance.radius_meters');
-
-        $distance = BusinessRules::haversineDistance($lat, $lng, $labLat, $labLng);
-        $status = $distance <= $maxRadius
-            ? AttendanceStatus::PRESENTE
-            : AttendanceStatus::AUSENTE;
-
         $attendance = Attendance::updateOrCreate(
             [
                 'session_id' => $session->id,
                 'preinscription_id' => $preinscriptionId,
             ],
             [
-                'status' => $status,
+                'status' => AttendanceStatus::PRESENTE,
                 'lat' => $lat,
                 'lng' => $lng,
-                'distancia_metros' => round($distance, 2),
+                'distancia_metros' => null,
             ]
         );
 

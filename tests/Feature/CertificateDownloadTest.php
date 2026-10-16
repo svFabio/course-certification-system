@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Enums\CertificateType;
-use App\Enums\SignatureStatus;
 use App\Enums\UserRole;
 use App\Models\Certificate;
 use App\Models\Course;
@@ -19,7 +18,7 @@ beforeEach(function () {
     $this->seed(RolesAndPermissionsSeeder::class);
 });
 
-it('lets a student download a ready certificate pdf and stores it in cloudinary', function () {
+it('lets a student download an emitted certificate pdf and stores it in cloudinary', function () {
     $student = User::factory()->create([
         'password' => Hash::make('password'),
     ]);
@@ -39,7 +38,6 @@ it('lets a student download a ready certificate pdf and stores it in cloudinary'
         'preinscription_id' => $preinscription->id,
         'course_id' => $course->id,
         'tipo' => CertificateType::APROBACION,
-        'signature_status' => SignatureStatus::LISTO,
         'codigo_unico' => 'CERT-2026-TESTHU31',
         'emitido_en' => now(),
     ]);
@@ -56,35 +54,12 @@ it('lets a student download a ready certificate pdf and stores it in cloudinary'
 it('builds a public verification url for sharing', function () {
     $certificate = Certificate::factory()->create([
         'codigo_unico' => 'CERT-2026-SHARE01',
-        'signature_status' => SignatureStatus::LISTO,
     ]);
 
     $url = app(CertificateService::class)->verificationUrl($certificate);
 
     expect($url)->toContain('verificar-certificado')
         ->and($url)->toContain('CERT-2026-SHARE01');
-});
-
-it('rejects download when certificate is not ready', function () {
-    $student = User::factory()->create();
-    $student->assignRole(UserRole::STUDENT->value);
-
-    $course = Course::factory()->create();
-    $group = Group::factory()->create(['course_id' => $course->id]);
-    $preinscription = Preinscription::factory()->inscrito()->create([
-        'group_id' => $group->id,
-        'email' => $student->email,
-    ]);
-
-    $certificate = Certificate::factory()->create([
-        'preinscription_id' => $preinscription->id,
-        'course_id' => $course->id,
-        'signature_status' => SignatureStatus::PENDIENTE,
-    ]);
-
-    $this->actingAs($student)
-        ->get(route('certificado.descargar', $certificate))
-        ->assertSessionHasErrors();
 });
 
 it('downloads pre-stored certificate directly from storage', function () {
@@ -105,7 +80,6 @@ it('downloads pre-stored certificate directly from storage', function () {
         'preinscription_id' => $preinscription->id,
         'course_id' => $course->id,
         'tipo' => CertificateType::APROBACION,
-        'signature_status' => SignatureStatus::LISTO,
         'codigo_unico' => 'CERT-PRESTORED',
         'pdf_path' => $path,
         'emitido_en' => now(),
@@ -133,7 +107,6 @@ it('falls back to on-the-fly generation when storage stream encounters an error'
         'preinscription_id' => $preinscription->id,
         'course_id' => $course->id,
         'tipo' => CertificateType::APROBACION,
-        'signature_status' => SignatureStatus::LISTO,
         'codigo_unico' => 'CERT-2026-STREAMERR',
         'pdf_path' => 'certificates/CERT-2026-STREAMERR.pdf',
         'emitido_en' => now(),

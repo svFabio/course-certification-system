@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\CertificateType;
-use App\Enums\SignatureStatus;
-use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,20 +21,14 @@ class Certificate extends Model
         'grupos_detalle',
         'codigo_unico',
         'pdf_path',
-        'es_escaneado',
-        'signature_status',
         'emitido_en',
-        'listo_en',
     ];
 
     protected function casts(): array
     {
         return [
             'tipo' => CertificateType::class,
-            'signature_status' => SignatureStatus::class,
-            'es_escaneado' => 'boolean',
             'emitido_en' => 'datetime',
-            'listo_en' => 'datetime',
         ];
     }
 
@@ -60,6 +52,11 @@ class Certificate extends Model
         return $this->tipo === CertificateType::INSTRUCTOR;
     }
 
+    public function isReady(): bool
+    {
+        return filled($this->pdf_path);
+    }
+
     public function beneficiaryName(): string
     {
         if ($this->isInstructorCertificate()) {
@@ -67,34 +64,5 @@ class Certificate extends Model
         }
 
         return $this->preinscription?->full_name ?? 'Participante';
-    }
-
-    public function administrativeDelayLabel(): string
-    {
-        $start = $this->emitido_en;
-        $end = $this->listo_en ?? now();
-
-        if ($start === null) {
-            return '—';
-        }
-
-        if ($this->signature_status !== SignatureStatus::LISTO) {
-            return $this->humanDiff($start, now()).' (en proceso)';
-        }
-
-        return $this->humanDiff($start, $end);
-    }
-
-    private function humanDiff(CarbonInterface $from, CarbonInterface $to): string
-    {
-        $days = (int) $from->diffInDays($to);
-
-        if ($days === 0) {
-            $hours = max(1, (int) $from->diffInHours($to));
-
-            return $hours === 1 ? '1 hora' : "{$hours} horas";
-        }
-
-        return $days === 1 ? '1 día' : "{$days} días";
     }
 }

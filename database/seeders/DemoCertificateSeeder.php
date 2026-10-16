@@ -6,7 +6,6 @@ namespace Database\Seeders;
 
 use App\Enums\CertificateType;
 use App\Enums\PreinscriptionStatus;
-use App\Enums\SignatureStatus;
 use App\Enums\TipoParticipante;
 use App\Models\Certificate;
 use App\Models\Course;
@@ -56,7 +55,6 @@ class DemoCertificateSeeder extends Seeder
                 'preinscription_id' => $preinscription->id,
                 'course_id' => $course->id,
                 'tipo' => CertificateType::APROBACION,
-                'signature_status' => SignatureStatus::LISTO,
                 'emitido_en' => now(),
             ]
         );

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Instructor\Resources;
 
-use App\Enums\SignatureStatus;
 use App\Enums\UserRole;
 use App\Filament\Instructor\Resources\InstructorCertificateResource\Pages;
 use App\Models\Certificate;
@@ -70,21 +69,11 @@ class InstructorCertificateResource extends Resource
                     Infolists\Components\TextEntry::make('grupos_detalle')->label('Grupo(s)'),
                     Infolists\Components\TextEntry::make('tipo')->badge()->label('Tipo'),
                     Infolists\Components\TextEntry::make('codigo_unico')->label('Código')->copyable(),
-                    Infolists\Components\TextEntry::make('signature_status')
-                        ->badge()
-                        ->label('Estado')
-                        ->formatStateUsing(fn (?SignatureStatus $state): string => $state?->getLabel() ?? '—'),
                     Infolists\Components\TextEntry::make('emitido_en')->dateTime('d/m/Y')->label('Emitido'),
                     Infolists\Components\TextEntry::make('verification_url')
                         ->label('Enlace de verificación')
                         ->state(fn (Certificate $record): string => app(CertificateService::class)->verificationUrl($record))
                         ->copyable()
-                        ->visible(fn (Certificate $record): bool => $record->signature_status === SignatureStatus::LISTO)
-                        ->columnSpanFull(),
-                    Infolists\Components\TextEntry::make('pendiente_ayuda')
-                        ->label('Información')
-                        ->state('Tu certificado está en proceso de firma por las autoridades. Cuando esté listo podrás descargarlo aquí.')
-                        ->visible(fn (Certificate $record): bool => $record->signature_status !== SignatureStatus::LISTO)
                         ->columnSpanFull(),
                 ])
                 ->columns(2),
@@ -111,10 +100,6 @@ class InstructorCertificateResource extends Resource
                     ->label('Código')
                     ->copyable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('signature_status')
-                    ->badge()
-                    ->label('Estado')
-                    ->formatStateUsing(fn (?SignatureStatus $state): string => $state?->getLabel() ?? '—'),
                 Tables\Columns\TextColumn::make('emitido_en')
                     ->date('d/m/Y')
                     ->label('Emitido')
@@ -125,13 +110,11 @@ class InstructorCertificateResource extends Resource
                     ->label('Descargar PDF')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('success')
-                    ->visible(fn (Certificate $record): bool => $record->signature_status === SignatureStatus::LISTO)
                     ->url(fn (Certificate $record): string => route('certificado.descargar', $record))
                     ->openUrlInNewTab(),
                 Tables\Actions\Action::make('copiarEnlace')
                     ->label('Copiar enlace')
                     ->icon('heroicon-o-link')
-                    ->visible(fn (Certificate $record): bool => $record->signature_status === SignatureStatus::LISTO)
                     ->action(function (Certificate $record, $livewire): void {
                         $url = app(CertificateService::class)->verificationUrl($record);
                         $livewire->js('window.navigator.clipboard.writeText('.json_encode($url).')');

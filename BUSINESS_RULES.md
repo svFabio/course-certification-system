@@ -48,12 +48,10 @@
 - **Tipos de certificado**:
   - **Aprobación**: Nota promedio ≥ 70
   - **Asistencia**: Nota promedio < 70
+  - **Instructor**: Certificado emitido al docente del curso
 - **Código único**: Generado automáticamente para cada certificado.
-- **Flujo de firma**:
-  1. `pendiente`: Certificado generado, esperando firma
-  2. `firmado`: Certificado firmado digitalmente
-  3. `rechazado`: Firma rechazada
-- **Verificación**: Disponible vía código QR o código único.
+- **Emisión directa**: Al generarse el certificado tras la finalización del curso y registro de notas, el documento queda emitido y listo para descarga inmediata.
+- **Verificación**: Disponible públicamente vía código QR impreso en el documento o mediante búsqueda por código único.
 
 ## 7. Preinscripción
 
@@ -91,13 +89,13 @@
 | `preinscripcion_cerrada` | Cerrado para nuevas inscripciones |
 | `en_curso` | Curso en ejecución |
 | `finalizado` | Curso completado |
-| `cancelado` | Curso cancelado |
+| `cancelado` | Curso cancelado con registro explícito de motivo administrativo/técnico |
 
-## 11. Firmado Digital de Certificados
+## 11. Emisión y Verificación de Certificados
 
-- **Flujo**: Generación → Revisión → Firma → Verificación
-- Los certificados firmados incluyen código QR verificable en línea.
-- La verificación se realiza consultando el código único en la base de datos.
+- **Flujo**: Finalización del curso y notas → Emisión directa del certificado → Descarga inmediata → Verificación pública.
+- Los certificados emitidos incluyen código QR y código único verificable en línea.
+- La verificación se realiza consultando el código único en la base de datos pública.
 
 ## 12. Acceso a Paneles
 
@@ -105,11 +103,17 @@
 |-------|-----|---------------|
 | Admin | `/admin` | `admin` |
 | Instructor | `/instructor` | `instructor` |
+| Estudiante | `/estudiante` | `student` |
 | Público | `/` | Sin autenticación |
 
-## 13. Geolocalización
+## 13. Registro de Asistencia
 
-- **Precisión requerida**: `enableHighAccuracy: true`
-- **Timeout**: 10 segundos
-- **Formula**: Haversine para calcular distancia entre dos puntos
-- **Implementación**: `App\Support\BusinessRules::haversineDistance()`
+- **Mecanismo**: Escaneo de código QR provisto en la sesión.
+- **Validación**: Asociación estricta de la sesión al grupo e inscripción confirmada del estudiante.
+- **Cálculo de distancia**: Utilidad matemática `App\Support\BusinessRules::haversineDistance()` para telemetría opcional.
+
+## 14. Reportes y Conciliación Académica y de Caja
+
+- **Acta de Cierre para Jefatura (HU-34)**: Generación en formato Excel (`CourseClosingExport`) con resumen estadístico de participantes, aprobados, reprobados, porcentaje de aprobación y detalle individual de calificaciones finales y certificados.
+- **Reporte Financiero y Conciliación de Caja (HU-35)**: Generación en formato Excel (`FinancialReportExport`) con discriminación de ingresos por método de pago (efectivo, QR, transferencia), devoluciones/reembolsos y total neto recaudado por curso y consolidado.
+- **Catálogo de Cursos Filtrable (HU-36)**: Exportación completa en Excel (`CoursesGeneralExport`) para auditoría y seguimiento académico.

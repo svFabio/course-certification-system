@@ -127,7 +127,7 @@ class PreinscriptionComponent extends Component
             return null;
         }
 
-        return (float) $this->group->course->precio_auxiliar;
+        return (float) ($this->group->course?->precio_auxiliar ?? 0.0);
     }
 
     protected function rules(): array
@@ -135,11 +135,17 @@ class PreinscriptionComponent extends Component
         return [
             'groupId' => ['required', 'integer', 'exists:groups,id'],
             'ci' => ['required', 'string', 'regex:/^[0-9]{4,10}(-[0-9A-Z]{1,2})?$/i'],
-            'codSis' => ['nullable', 'string', 'regex:/^[0-9]{7,10}$/'],
+            'codSis' => [
+                Rule::when(
+                    fn () => in_array($this->tipoParticipante, [TipoParticipante::UMSS->value, TipoParticipante::AUXILIAR->value], true),
+                    ['required', 'string', 'regex:/^[0-9]{7,10}$/'],
+                    ['nullable', 'string', 'regex:/^[0-9]{7,10}$/'],
+                ),
+            ],
             'nombres' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/'],
             'apellidoPaterno' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/'],
             'apellidoMaterno' => ['nullable', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/'],
-            'celular' => ['nullable', 'string', 'regex:/^[67][0-9]{7}$/'],
+            'celular' => ['required', 'string', 'regex:/^[67][0-9]{7}$/'],
             'email' => ['required', 'email:rfc,dns', 'max:150'],
             'tipoParticipante' => ['required', Rule::enum(TipoParticipante::class)],
             'auxiliarCertificado' => [
@@ -159,6 +165,8 @@ class PreinscriptionComponent extends Component
             'nombres.regex' => 'Los nombres solo deben contener letras, espacios y tildes.',
             'apellidoPaterno.regex' => 'El apellido paterno solo debe contener letras, espacios y tildes.',
             'apellidoMaterno.regex' => 'El apellido materno solo debe contener letras, espacios y tildes.',
+            'codSis.required' => 'El Código SIS es requerido para estudiantes y auxiliares UMSS.',
+            'celular.required' => 'El número de celular es requerido.',
             'celular.regex' => 'El celular debe ser un número boliviano válido de 8 dígitos (iniciando con 6 o 7).',
             'email.email' => 'Ingrese una dirección de correo electrónico válida.',
             'tipoParticipante' => 'Seleccione un tipo de participante válido.',
@@ -236,12 +244,13 @@ class PreinscriptionComponent extends Component
                 'nombres' => $validated['nombres'],
                 'apellido_paterno' => $validated['apellidoPaterno'],
                 'apellido_materno' => $validated['apellidoMaterno'] ?? null,
-                'celular' => $validated['celular'] ?? null,
+                'celular' => $validated['celular'],
                 'email' => $validated['email'],
                 'tipo_participante' => $validated['tipoParticipante'],
                 'auxiliar_certificado_path' => $certificatePath,
             ]);
         } catch (ValidationException $e) {
+            RateLimiter::hit($ipKey, 3600);
             foreach ($e->errors() as $key => $messages) {
                 $mappedKey = $key === 'group_id' ? 'groupId' : $key;
                 foreach ($messages as $message) {

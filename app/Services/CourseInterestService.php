@@ -103,22 +103,28 @@ class CourseInterestService
     }
 
     /**
-     * Discards active interests belonging to finished or cancelled courses.
-     * Explicit admin action only: no cron, no observers.
+     * Discards active interests for a specific course that has been finalised
+     * or cancelled. When $course is omitted the operation is global (admin
+     * bulk-clean use-case). Called by CourseObserver on status transition.
      */
-    public function archiveForFinishedCourses(): int
+    public function archiveForFinishedCourses(?Course $course = null): int
     {
-        return DB::transaction(function (): int {
-            return CourseInterest::query()
-                ->active()
-                ->whereHas('course', fn (Builder $query): Builder => $query->whereIn('status', [
+        return DB::transaction(function () use ($course): int {
+            $query = CourseInterest::query()->active();
+
+            if ($course !== null) {
+                $query->where('course_id', $course->id);
+            } else {
+                $query->whereHas('course', fn (Builder $query): Builder => $query->whereIn('status', [
                     CourseStatus::FINALIZADO->value,
                     CourseStatus::CANCELADO->value,
-                ]))
-                ->update([
-                    'estado' => InterestStatus::DESCARTADO->value,
-                    'updated_at' => now(),
-                ]);
+                ]));
+            }
+
+            return $query->update([
+                'estado' => InterestStatus::DESCARTADO->value,
+                'updated_at' => now(),
+            ]);
         });
     }
 

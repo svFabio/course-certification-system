@@ -27,6 +27,16 @@ class AttendanceResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Asistencias';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form

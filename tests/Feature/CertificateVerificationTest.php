@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Enums\CertificateType;
-use App\Enums\SignatureStatus;
 use App\Livewire\CertificateVerificationComponent;
 use App\Models\Certificate;
 use App\Models\Course;
@@ -12,22 +11,20 @@ use App\Models\Preinscription;
 use App\Models\User;
 use Livewire\Livewire;
 
-it('shows valid certificate details for a ready student certificate via public url', function () {
+it('shows valid certificate details for an emitted student certificate via public url', function () {
     $course = Course::factory()->create(['carga_horaria' => '20', 'nombre' => 'Curso Verificacion']);
     $group = Group::factory()->create(['course_id' => $course->id]);
     $pre = Preinscription::factory()->inscrito()->create([
         'group_id' => $group->id,
-        'nombres' => 'Lucia',
-        'apellido_paterno' => 'Mendez',
+        'nombres' => fake()->firstName(),
+        'apellido_paterno' => fake()->lastName(),
     ]);
 
     $certificate = Certificate::factory()->create([
         'preinscription_id' => $pre->id,
         'course_id' => $course->id,
         'tipo' => CertificateType::APROBACION,
-        'signature_status' => SignatureStatus::LISTO,
         'codigo_unico' => 'CERT-2026-VALID01',
-        'listo_en' => now(),
     ]);
 
     Livewire::test(CertificateVerificationComponent::class, ['codigo' => $certificate->codigo_unico])
@@ -38,25 +35,6 @@ it('shows valid certificate details for a ready student certificate via public u
         ->assertSee('Certificado válido')
         ->assertSee('Curso Verificacion')
         ->assertDontSee($pre->ci ?? 'SENSITIVE_SHOULD_NOT_APPEAR');
-});
-
-it('shows pending signature state without marking as fully valid', function () {
-    $course = Course::factory()->create();
-    $group = Group::factory()->create(['course_id' => $course->id]);
-    $pre = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
-
-    Certificate::factory()->create([
-        'preinscription_id' => $pre->id,
-        'course_id' => $course->id,
-        'signature_status' => SignatureStatus::PENDIENTE,
-        'codigo_unico' => 'CERT-2026-PEND99',
-    ]);
-
-    Livewire::test(CertificateVerificationComponent::class)
-        ->set('codigo', 'CERT-2026-PEND99')
-        ->call('verify')
-        ->assertSet('certificate.valido', false)
-        ->assertSee('Registrado — pendiente de firmas');
 });
 
 it('shows not found message for unknown codes', function () {
@@ -78,9 +56,7 @@ it('verifies instructor certificates by public code', function () {
         'instructor_id' => $instructor->id,
         'course_id' => $course->id,
         'grupos_detalle' => 'Grupo A, Grupo B',
-        'signature_status' => SignatureStatus::LISTO,
         'codigo_unico' => 'CERT-2026-INST01',
-        'listo_en' => now(),
     ]);
 
     Livewire::test(CertificateVerificationComponent::class, ['codigo' => 'CERT-2026-INST01'])

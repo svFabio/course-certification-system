@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
-use App\Enums\SignatureStatus;
 use App\Models\Certificate;
 use App\Services\CertificateService;
 use Livewire\Attributes\Url;
@@ -46,7 +45,6 @@ class CertificateVerificationComponent extends Component
         }
 
         $dates = app(CertificateService::class)->courseDateRange($record->course);
-        $isReady = $record->signature_status === SignatureStatus::LISTO;
 
         $this->certificate = [
             'nombre' => $record->beneficiaryName(),
@@ -59,11 +57,10 @@ class CertificateVerificationComponent extends Component
                 : null,
             'fechas_curso' => $dates['rango'],
             'emitido_en' => $record->emitido_en?->format('d/m/Y'),
-            'signature_status' => $record->signature_status?->getLabel(),
-            'valido' => $isReady,
-            'estado_validez' => $isReady ? 'Certificado válido' : 'Registrado — pendiente de firmas',
+            'valido' => true,
+            'estado_validez' => 'Certificado válido',
             'codigo_unico' => $record->codigo_unico,
-            'download_url' => $isReady ? route('certificado.publico.descargar', ['codigo' => $record->codigo_unico]) : null,
+            'download_url' => route('certificado.publico.descargar', ['codigo' => $record->codigo_unico]),
         ];
     }
 

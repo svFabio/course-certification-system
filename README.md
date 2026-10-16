@@ -1,6 +1,6 @@
 # Plataforma de Formacion Continua con Certificacion Digital Verificable
 
-Sistema web para la gestion de cursos de formacion continua, preinscripciones, asistencia geolocalizada y emision de certificados digitales verificables. Desarrollado para la Universidad Mayor de San Simon.
+Sistema web para la gestion de cursos de formacion continua, preinscripciones, control de asistencia mediante codigo QR y emision de certificados digitales verificables. Desarrollado para la Universidad Mayor de San Simon.
 
 ## Requisitos
 
@@ -32,7 +32,7 @@ El primer arranque tarda mas porque Docker compila el frontend y ejecuta las mig
 | `http://localhost:8000/admin` | Panel de administracion |
 | `http://localhost:8000/instructor` | Panel de instructor |
 | `http://localhost:8000/verificar-certificado` | Verificacion de certificados |
-| `http://localhost:8000/asistencia` | Registro de asistencia (QR + GPS) |
+| `http://localhost:8000/asistencia` | Registro de asistencia (QR) |
 
 ## Credenciales de Prueba
 
@@ -63,7 +63,7 @@ Para conectarse con DBeaver u otro cliente PostgreSQL:
 | Panel admin | Filament v3 |
 | Roles y permisos | spatie/laravel-permission |
 | Frontend publico | Livewire + Blade |
-| Asistencia QR+GPS | Vue 3 (isla Vite) |
+| Asistencia QR | Vue 3 (isla Vite) |
 | PDF | barryvdh/laravel-dompdf + simple-qrcode |
 | Reportes Excel | maatwebsite/laravel-excel |
 | Colas | Laravel Queue (driver database) |
@@ -77,7 +77,7 @@ Para conectarse con DBeaver u otro cliente PostgreSQL:
 Panel Admin (/admin)            Filament v3 + Spatie Roles
 Panel Instructor (/instructor)  Filament v3 + Spatie Roles
 Pagina Publica                  Blade + Livewire
-Asistencia QR+GPS               Vue 3 (isla Vite)
+Asistencia QR                   Vue 3 (isla Vite)
 Servicios                       app/Services/ + app/Support/BusinessRules.php
 Base de datos                   PostgreSQL 16
 ```

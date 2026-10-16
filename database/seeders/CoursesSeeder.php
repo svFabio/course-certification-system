@@ -12,7 +12,6 @@ use App\Enums\GroupStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
-use App\Enums\SignatureStatus;
 use App\Enums\TipoParticipante;
 use App\Enums\UserRole;
 use App\Models\Attendance;
@@ -347,7 +346,6 @@ class CoursesSeeder extends Seeder
                                     'tipo' => CertificateType::APROBACION,
                                     'codigo_unico' => 'CERT-2026-'.strtoupper(Str::random(6)),
                                     'pdf_path' => null,
-                                    'signature_status' => SignatureStatus::PENDIENTE,
                                     'emitido_en' => now()->subDays(2),
                                 ]
                             );

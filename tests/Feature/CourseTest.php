@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\CertificateType;
 use App\Enums\CourseLevel;
+use App\Enums\TipoParticipante;
 use App\Models\Course;
 use App\Models\EvaluationCriteria;
 use App\Models\Group;
@@ -154,7 +155,7 @@ it('rejects preinscription when group capacity is full', function () {
         'nombres' => fake()->firstName(),
         'apellido_paterno' => fake()->lastName(),
         'email' => fake()->userName().'@gmail.com',
-        'tipo_participante' => 'umss',
+        'tipo_participante' => TipoParticipante::UMSS->value,
     ]);
 
     $service->register([
@@ -163,7 +164,7 @@ it('rejects preinscription when group capacity is full', function () {
         'nombres' => fake()->firstName(),
         'apellido_paterno' => fake()->lastName(),
         'email' => fake()->userName().'@gmail.com',
-        'tipo_participante' => 'externo',
+        'tipo_participante' => TipoParticipante::EXTERNO->value,
     ]);
 
     expect(fn () => $service->register([
@@ -172,7 +173,7 @@ it('rejects preinscription when group capacity is full', function () {
         'nombres' => fake()->firstName(),
         'apellido_paterno' => fake()->lastName(),
         'email' => fake()->userName().'@gmail.com',
-        'tipo_participante' => 'auxiliar',
+        'tipo_participante' => TipoParticipante::AUXILIAR->value,
     ]))->toThrow(ValidationException::class);
 });
 
@@ -225,7 +226,7 @@ it('generates certificate with correct type and matching course_id via Certifica
     expect($certificate->course_id)->toBe($course->id);
     expect($certificate->tipo)->toBe(CertificateType::APROBACION);
     expect($certificate->codigo_unico)->toStartWith('CERT-');
-    expect($certificate->signature_status->getLabel())->toBe('Pendiente de firma');
+    expect($certificate->pdf_path)->not->toBeNull();
 });
 
 it('supports cod_sis, fotocopia_ci in preinscriptions and aula in groups', function () {

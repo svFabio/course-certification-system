@@ -50,15 +50,6 @@ class UserResource extends Resource
                     ->relationship('roles', 'name')
                     ->multiple()
                     ->required(),
-                Forms\Components\FileUpload::make('firma_digital_path')
-                    ->label('Firma Digital (PNG transparente)')
-                    ->disk('cloudinary')
-                    ->directory('firmas')
-                    ->image()
-                    ->acceptedFileTypes(['image/png'])
-                    ->maxSize(2048)
-                    ->helperText('Suba una imagen PNG con fondo transparente (máx. 2MB). Esta firma se estampará en los certificados que dicte el docente.')
-                    ->columnSpanFull(),
             ]);
     }
 
