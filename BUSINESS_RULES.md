@@ -89,7 +89,7 @@
 | `preinscripcion_cerrada` | Cerrado para nuevas inscripciones |
 | `en_curso` | Curso en ejecución |
 | `finalizado` | Curso completado |
-| `cancelado` | Curso cancelado |
+| `cancelado` | Curso cancelado con registro explícito de motivo administrativo/técnico |
 
 ## 11. Emisión y Verificación de Certificados
 
@@ -103,6 +103,7 @@
 |-------|-----|---------------|
 | Admin | `/admin` | `admin` |
 | Instructor | `/instructor` | `instructor` |
+| Estudiante | `/estudiante` | `student` |
 | Público | `/` | Sin autenticación |
 
 ## 13. Registro de Asistencia
@@ -110,3 +111,9 @@
 - **Mecanismo**: Escaneo de código QR provisto en la sesión.
 - **Validación**: Asociación estricta de la sesión al grupo e inscripción confirmada del estudiante.
 - **Cálculo de distancia**: Utilidad matemática `App\Support\BusinessRules::haversineDistance()` para telemetría opcional.
+
+## 14. Reportes y Conciliación Académica y de Caja
+
+- **Acta de Cierre para Jefatura (HU-34)**: Generación en formato Excel (`CourseClosingExport`) con resumen estadístico de participantes, aprobados, reprobados, porcentaje de aprobación y detalle individual de calificaciones finales y certificados.
+- **Reporte Financiero y Conciliación de Caja (HU-35)**: Generación en formato Excel (`FinancialReportExport`) con discriminación de ingresos por método de pago (efectivo, QR, transferencia), devoluciones/reembolsos y total neto recaudado por curso y consolidado.
+- **Catálogo de Cursos Filtrable (HU-36)**: Exportación completa en Excel (`CoursesGeneralExport`) para auditoría y seguimiento académico.

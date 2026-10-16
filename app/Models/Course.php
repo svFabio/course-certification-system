@@ -25,6 +25,7 @@ class Course extends Model
         'nivel',
         'periodo',
         'status',
+        'motivo_cancelacion',
         'precio_umss',
         'precio_externo',
         'precio_auxiliar',

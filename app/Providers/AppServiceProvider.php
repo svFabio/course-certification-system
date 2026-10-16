@@ -18,7 +18,9 @@ use App\Observers\HolidayObserver;
 use App\Observers\PaymentObserver;
 use App\Observers\PreinscriptionObserver;
 use App\Observers\SessionObserver;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,5 +38,7 @@ class AppServiceProvider extends ServiceProvider
         Holiday::observe(HolidayObserver::class);
         Preinscription::observe(PreinscriptionObserver::class);
         Session::observe(SessionObserver::class);
+
+        Livewire::setUpdateRoute(fn ($handle) => Route::post('/livewire/update', $handle)->middleware(['web', 'throttle:60,1']));
     }
 }

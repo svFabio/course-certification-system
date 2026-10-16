@@ -12,7 +12,7 @@ final class RedirectByRole
 {
     public function hasAccess(User $user): bool
     {
-        return $this->panelPath($user) !== null;
+        return $user->activo && $this->panelPath($user) !== null;
     }
 
     public function redirect(User $user): RedirectResponse

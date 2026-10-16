@@ -362,13 +362,15 @@ class CertificateService
 
         if (! $saved) {
             try {
-                Storage::disk('local')->put($path, $content);
+                $saved = (bool) Storage::disk('local')->put($path, $content);
             } catch (\Throwable) {
-                // Local fallback attempted
+                // Local fallback failed
             }
         }
 
-        $certificate->update(['pdf_path' => $path]);
+        if ($saved) {
+            $certificate->update(['pdf_path' => $path]);
+        }
 
         return $certificate->fresh() ?? $certificate;
     }

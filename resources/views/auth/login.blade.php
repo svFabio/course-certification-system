@@ -36,8 +36,14 @@
                 <p class="text-xs text-umss-gray-700 mt-1">Ingrese sus credenciales</p>
             </div>
 
+            @if (session('status'))
+                <div class="bg-umss-green-light border border-umss-green text-umss-green-dark px-4 py-3 rounded-lg text-xs mb-5">
+                    <p class="font-medium">{{ session('status') }}</p>
+                </div>
+            @endif
+
             @if ($errors->any())
-                <div class="bg-red-50 border border-umss-red text-umss-red-dark px-4 py-3 rounded-lg text-xs mb-5 space-y-1">
+                <div class="bg-umss-red/10 border border-umss-red text-umss-red-dark px-4 py-3 rounded-lg text-xs mb-5 space-y-1">
                     @foreach ($errors->all() as $error)
                         <p class="flex items-center gap-1.5 font-medium">
                             <svg class="w-4 h-4 flex-shrink-0 text-umss-red" fill="currentColor" viewBox="0 0 20 20">
@@ -92,6 +98,9 @@
                         >
                         <span class="ml-2 text-xs text-umss-gray-700">Recordar sesión</span>
                     </label>
+                    <a href="{{ route('password.request') }}" class="text-xs text-umss-navy hover:underline font-medium">
+                        ¿Olvidó su contraseña?
+                    </a>
                 </div>
 
                 <div class="pt-2">
