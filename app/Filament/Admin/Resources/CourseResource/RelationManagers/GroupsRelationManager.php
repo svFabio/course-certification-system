@@ -114,13 +114,6 @@ class GroupsRelationManager extends RelationManager
                     ->icon('heroicon-o-eye')
                     ->color('primary')
                     ->url(fn (Group $record): string => GroupResource::getUrl('view', ['record' => $record])),
-                Tables\Actions\Action::make('imprimirCertificados')
-                    ->label('Certificados')
-                    ->icon('heroicon-o-printer')
-                    ->color('success')
-                    ->url(fn (Group $record): string => route('admin.grupos.certificados.zip', $record))
-                    ->openUrlInNewTab()
-                    ->visible(fn (Group $record): bool => $record->certificates()->exists()),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

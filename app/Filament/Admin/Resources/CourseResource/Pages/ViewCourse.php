@@ -104,13 +104,6 @@ class ViewCourse extends ViewRecord
                         ->success()
                         ->send();
                 }),
-            Actions\Action::make('imprimirCertificados')
-                ->label('Imprimir Certificados del Curso')
-                ->icon('heroicon-o-printer')
-                ->color('success')
-                ->url(fn (): string => route('admin.cursos.certificados.zip', $this->record))
-                ->openUrlInNewTab()
-                ->visible(fn (): bool => $this->record->certificates()->exists()),
             Actions\EditAction::make(),
         ];
     }
