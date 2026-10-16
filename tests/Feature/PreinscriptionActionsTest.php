@@ -60,6 +60,7 @@ it('cancelarDevolucion action restores preinscription to inscrito and payment to
     expect($preinscription->status)->toBe(PreinscriptionStatus::DEVOLUCION_PENDIENTE);
 
     Livewire::test(ListPreinscriptions::class)
+        ->set('activeTab', 'todos')
         ->filterTable('status', PreinscriptionStatus::DEVOLUCION_PENDIENTE->value)
         ->assertTableActionVisible('cancelarDevolucion', $preinscription)
         ->callTableAction('cancelarDevolucion', $preinscription)
@@ -83,6 +84,7 @@ it('cancelarDevolucion action is not visible for a preinscription that is merely
     $preinscription = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
 
     Livewire::test(ListPreinscriptions::class)
+        ->set('activeTab', 'inscritos')
         ->assertTableActionHidden('cancelarDevolucion', $preinscription);
 });
 
@@ -237,7 +239,7 @@ it('rejects reactivating a preinscription whose group is closed', function () {
 // default table filter — PreinscriptionResource
 // ---------------------------------------------------------------------------
 
-it('lists pendiente_pago preinscriptions by default without applying a status filter', function () {
+it('filters preinscriptions by status tabs in ListPreinscriptions', function () {
     $this->actingAs($this->admin);
 
     $course = Course::factory()->withHours('20')->create();
@@ -254,5 +256,11 @@ it('lists pendiente_pago preinscriptions by default without applying a status fi
     $enrolled = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
 
     Livewire::test(ListPreinscriptions::class)
+        ->assertCanSeeTableRecords([$pending])
+        ->assertCanNotSeeTableRecords([$enrolled])
+        ->set('activeTab', 'inscritos')
+        ->assertCanSeeTableRecords([$enrolled])
+        ->assertCanNotSeeTableRecords([$pending])
+        ->set('activeTab', 'todos')
         ->assertCanSeeTableRecords([$pending, $enrolled]);
 });

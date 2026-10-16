@@ -33,9 +33,11 @@ class PreinscriptionResource extends Resource
 
     protected static ?int $navigationSort = 6;
 
-    protected static ?string $modelLabel = 'Preinscripción';
+    protected static ?string $navigationLabel = 'Inscripciones';
 
-    protected static ?string $pluralModelLabel = 'Preinscripciones';
+    protected static ?string $modelLabel = 'Inscripción';
+
+    protected static ?string $pluralModelLabel = 'Inscripciones';
 
     public static function form(Form $form): Form
     {
