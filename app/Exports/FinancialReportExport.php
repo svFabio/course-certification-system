@@ -56,7 +56,6 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
             'Inscritos Pagados',
             'Total Recaudado (Bs.)',
             'Efectivo (Bs.)',
-            'Transferencia (Bs.)',
             'QR (Bs.)',
             'Reembolsos (Bs.)',
             'Total Neto (Bs.)',
@@ -64,7 +63,6 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
 
         $totalRecaudadoGeneral = 0.0;
         $totalEfectivoGeneral = 0.0;
-        $totalTransferenciaGeneral = 0.0;
         $totalQrGeneral = 0.0;
         $totalReembolsadoGeneral = 0.0;
         $totalNetoGeneral = 0.0;
@@ -80,10 +78,9 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
             $refundedPayments = $payments->where('estado', PaymentStatus::REEMBOLSADO->value);
 
             $efectivo = (float) $verifiedPayments->where('metodo', PaymentMethod::EFECTIVO->value)->sum('monto');
-            $transferencia = (float) $verifiedPayments->where('metodo', PaymentMethod::TRANSFERENCIA->value)->sum('monto');
             $qr = (float) $verifiedPayments->where('metodo', PaymentMethod::QR->value)->sum('monto');
 
-            $recaudado = $efectivo + $transferencia + $qr;
+            $recaudado = $efectivo + $qr;
             $reembolsos = (float) $refundedPayments->sum('monto');
             $neto = $recaudado - $reembolsos;
             $inscritosCount = $verifiedPayments->count();
@@ -91,7 +88,6 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
             $totalInscritosGeneral += $inscritosCount;
             $totalRecaudadoGeneral += $recaudado;
             $totalEfectivoGeneral += $efectivo;
-            $totalTransferenciaGeneral += $transferencia;
             $totalQrGeneral += $qr;
             $totalReembolsadoGeneral += $reembolsos;
             $totalNetoGeneral += $neto;
@@ -102,7 +98,6 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
                 $inscritosCount,
                 number_format($recaudado, 2, '.', ''),
                 number_format($efectivo, 2, '.', ''),
-                number_format($transferencia, 2, '.', ''),
                 number_format($qr, 2, '.', ''),
                 number_format($reembolsos, 2, '.', ''),
                 number_format($neto, 2, '.', ''),
@@ -116,7 +111,6 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
             $totalInscritosGeneral,
             number_format($totalRecaudadoGeneral, 2, '.', ''),
             number_format($totalEfectivoGeneral, 2, '.', ''),
-            number_format($totalTransferenciaGeneral, 2, '.', ''),
             number_format($totalQrGeneral, 2, '.', ''),
             number_format($totalReembolsadoGeneral, 2, '.', ''),
             number_format($totalNetoGeneral, 2, '.', ''),
