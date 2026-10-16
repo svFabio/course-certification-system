@@ -14,6 +14,8 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
 class PaymentResource extends Resource
@@ -22,13 +24,30 @@ class PaymentResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static ?string $navigationGroup = 'Gestión Académica';
+    protected static ?string $navigationGroup = 'Caja & Tesorería';
 
-    protected static ?int $navigationSort = 7;
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $navigationLabel = 'Auditoría de Pagos';
 
     protected static ?string $modelLabel = 'Pago';
 
     protected static ?string $pluralModelLabel = 'Pagos';
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
 
     public static function form(Form $form): Form
     {
@@ -79,20 +98,28 @@ class PaymentResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de pago')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('preinscription.full_name')
                     ->label('Participante')
                     ->searchable(['nombres', 'apellido_paterno', 'apellido_materno', 'ci']),
-                Tables\Columns\TextColumn::make('preinscription.cod_sis')
-                    ->label('Cód. SIS')
-                    ->placeholder('—')
+                Tables\Columns\TextColumn::make('preinscription.ci')
+                    ->label('CI')
                     ->searchable(),
-                Tables\Columns\IconColumn::make('preinscription.fotocopia_ci')
-                    ->label('Fotocopia CI')
-                    ->boolean(),
+                Tables\Columns\TextColumn::make('preinscription.group.course.nombre')
+                    ->label('Curso')
+                    ->searchable()
+                    ->sortable()
+                    ->limit(25),
+                Tables\Columns\TextColumn::make('preinscription.group.nombre')
+                    ->label('Grupo'),
                 Tables\Columns\TextColumn::make('monto')
                     ->label('Monto')
-                    ->numeric()
-                    ->prefix('Bs.'),
+                    ->numeric(decimalPlaces: 2)
+                    ->prefix('Bs. ')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('metodo')
                     ->label('Método')
                     ->badge(),
@@ -100,38 +127,38 @@ class PaymentResource extends Resource
                     ->label('Estado')
                     ->badge(),
                 Tables\Columns\TextColumn::make('numero_comprobante')
-                    ->label('N° Comprobante'),
-                Tables\Columns\TextColumn::make('verifier.name')
-                    ->label('Verificado por'),
-                Tables\Columns\TextColumn::make('verificado_en')
-                    ->label('Fecha de verificación')
-                    ->dateTime()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('motivo_devolucion')
-                    ->label('Motivo devolución')
+                    ->label('N° Comprobante')
                     ->placeholder('—'),
-                Tables\Columns\TextColumn::make('reembolsado_en')
-                    ->label('Fecha de reembolso')
-                    ->dateTime()
+                Tables\Columns\TextColumn::make('verifier.name')
+                    ->label('Verificado por')
+                    ->placeholder('—'),
+                Tables\Columns\TextColumn::make('verificado_en')
+                    ->label('Fecha verificación')
+                    ->dateTime('d/m/Y H:i')
                     ->placeholder('—')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Fecha de pago')
-                    ->dateTime()
-                    ->sortable(),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('estado')
+                    ->label('Estado')
                     ->options(PaymentStatus::class),
+                Tables\Filters\SelectFilter::make('metodo')
+                    ->label('Método')
+                    ->options(PaymentMethod::class),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                Tables\Actions\ViewAction::make()
+                    ->label('Ver'),
+            ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with([
+                'preinscription.group.course',
+                'verifier',
             ]);
     }
 
@@ -140,7 +167,6 @@ class PaymentResource extends Resource
         return [
             'index' => Pages\ListPayments::route('/'),
             'view' => Pages\ViewPayment::route('/{record}'),
-            'edit' => Pages\EditPayment::route('/{record}/edit'),
         ];
     }
 }

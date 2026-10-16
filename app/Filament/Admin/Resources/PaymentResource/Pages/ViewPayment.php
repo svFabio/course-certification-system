@@ -6,7 +6,6 @@ namespace App\Filament\Admin\Resources\PaymentResource\Pages;
 
 use App\Filament\Admin\Resources\PaymentResource;
 use App\Filament\Concerns\HasBackButton;
-use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewPayment extends ViewRecord
@@ -19,7 +18,6 @@ class ViewPayment extends ViewRecord
     {
         return [
             $this->getBackAction(),
-            Actions\EditAction::make(),
         ];
     }
 }

@@ -32,6 +32,16 @@ class SessionResource extends Resource
 
     protected static ?string $navigationLabel = 'Historial de Sesiones';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -124,18 +134,8 @@ class SessionResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\EditAction::make(),
-                    Tables\Actions\ViewAction::make(),
-                    Tables\Actions\DeleteAction::make(),
-                ])
-                    ->icon('heroicon-o-ellipsis-vertical')
-                    ->label('Más'),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                Tables\Actions\ViewAction::make()
+                    ->label('Ver'),
             ]);
     }
 
@@ -143,9 +143,7 @@ class SessionResource extends Resource
     {
         return [
             'index' => Pages\ListSessions::route('/'),
-            'create' => Pages\CreateSession::route('/create'),
             'view' => Pages\ViewSession::route('/{record}'),
-            'edit' => Pages\EditSession::route('/{record}/edit'),
         ];
     }
 }
