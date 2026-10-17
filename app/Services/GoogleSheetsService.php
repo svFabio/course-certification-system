@@ -19,6 +19,8 @@ class GoogleSheetsService
 
     private string $spreadsheetId;
 
+    private ?Spreadsheet $spreadsheetCache = null;
+
     public function __construct()
     {
         $this->spreadsheetId = SystemSetting::get('google_sheets_spreadsheet_id', '');
@@ -43,6 +45,8 @@ class GoogleSheetsService
         ]);
 
         $this->service()->spreadsheets->batchUpdate($this->spreadsheetId, $requestBody);
+
+        $this->forgetSpreadsheetCache();
     }
 
     public function writeCells(string $range, array $values): void
@@ -61,9 +65,7 @@ class GoogleSheetsService
 
     public function checkTabExists(string $tabName): bool
     {
-        $spreadsheet = $this->service()->spreadsheets->get($this->spreadsheetId);
-
-        foreach ($spreadsheet->getSheets() as $sheet) {
+        foreach ($this->fetchSpreadsheet()->getSheets() as $sheet) {
             if ($sheet->getProperties()->getTitle() === $tabName) {
                 return true;
             }
@@ -74,9 +76,7 @@ class GoogleSheetsService
 
     public function getSheetIdByName(string $tabName): int
     {
-        $spreadsheet = $this->service()->spreadsheets->get($this->spreadsheetId);
-
-        foreach ($spreadsheet->getSheets() as $sheet) {
+        foreach ($this->fetchSpreadsheet()->getSheets() as $sheet) {
             if ($sheet->getProperties()->getTitle() === $tabName) {
                 return $sheet->getProperties()->getSheetId();
             }
@@ -128,6 +128,8 @@ class GoogleSheetsService
         $requestBody->setRequests($requests);
 
         $this->service()->spreadsheets->batchUpdate($this->spreadsheetId, $requestBody);
+
+        $this->forgetSpreadsheetCache();
     }
 
     public function populateTemplateTabs(): void
@@ -152,6 +154,8 @@ class GoogleSheetsService
         ]);
 
         $this->service()->spreadsheets->batchUpdate($this->spreadsheetId, $requestBody);
+
+        $this->forgetSpreadsheetCache();
     }
 
     public function deleteTab(string $tabName): void
@@ -168,16 +172,34 @@ class GoogleSheetsService
         ]);
 
         $this->service()->spreadsheets->batchUpdate($this->spreadsheetId, $requestBody);
+
+        $this->forgetSpreadsheetCache();
     }
 
     public function setSpreadsheetId(string $spreadsheetId): void
     {
         $this->spreadsheetId = $spreadsheetId;
+
+        $this->forgetSpreadsheetCache();
     }
 
     private function service(): Sheets
     {
         return $this->service ??= $this->buildService();
+    }
+
+    /**
+     * Fetch the tab list once per instance instead of downloading the whole
+     * spreadsheet for every tab lookup (Sheets quota is read-limited).
+     */
+    private function fetchSpreadsheet(): Spreadsheet
+    {
+        return $this->spreadsheetCache ??= $this->service()->spreadsheets->get($this->spreadsheetId);
+    }
+
+    private function forgetSpreadsheetCache(): void
+    {
+        $this->spreadsheetCache = null;
     }
 
     public static function getAuthMethod(): string
