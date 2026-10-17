@@ -146,7 +146,7 @@ class PreinscriptionComponent extends Component
             'apellidoPaterno' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/'],
             'apellidoMaterno' => ['nullable', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/'],
             'celular' => ['required', 'string', 'regex:/^[67][0-9]{7}$/'],
-            'email' => ['required', 'email:rfc,dns', 'max:150'],
+            'email' => ['required', 'email:rfc', 'max:150'],
             'tipoParticipante' => ['required', Rule::enum(TipoParticipante::class)],
             'auxiliarCertificado' => [
                 'nullable',
