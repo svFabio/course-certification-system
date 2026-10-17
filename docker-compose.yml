@@ -22,8 +22,11 @@ services:
       - .:/app
       - node_modules:/app/node_modules
     command: >
-      sh -c "if [ ! -f public/build/manifest.json ]; then
-        npm ci && npm run build;
+      sh -c "if [ ! -d node_modules ] || [ ! -f node_modules/.bin/vite ]; then
+        npm ci;
+      fi;
+      if [ ! -f public/build/manifest.json ]; then
+        npm run build;
       else
         echo '[assets] public/build already present — skipping';
       fi"
