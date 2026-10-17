@@ -13,6 +13,12 @@ final class BusinessRules
     | Pricing (Bs.)
     |--------------------------------------------------------------------------
     */
+    /**
+     * Default pre-calculation only (Bs.): prefills course price columns on
+     * creation or when carga_horaria changes. NOT a source of truth for reads —
+     * charge and display flows must read the course columns precio_umss,
+     * precio_externo and precio_auxiliar (AGENTS.md invariant 1).
+     */
     public const PRICING = [
         '20' => ['umss' => 80, 'externo' => 100, 'auxiliar' => 40],
         '30' => ['umss' => 120, 'externo' => 150, 'auxiliar' => 60],
