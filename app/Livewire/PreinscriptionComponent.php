@@ -177,9 +177,13 @@ class PreinscriptionComponent extends Component
 
     public function goToConfirmation(): void
     {
+        if ($this->ci !== null) {
+            $this->ci = mb_strtoupper(trim($this->ci));
+        }
+
         $this->validate();
 
-        $existing = Preinscription::where('ci', $this->ci)
+        $existing = Preinscription::whereRaw('UPPER(TRIM(ci)) = ?', [$this->ci])
             ->whereHas('group', fn ($q) => $q->where('course_id', $this->group->course_id))
             ->whereIn('status', [
                 PreinscriptionStatus::PENDIENTE_PAGO,
@@ -208,7 +212,12 @@ class PreinscriptionComponent extends Component
 
     public function submit(PreinscriptionService $service): void
     {
+        if ($this->ci !== null) {
+            $this->ci = mb_strtoupper(trim($this->ci));
+        }
+
         $validated = $this->validate();
+        $validated['ci'] = mb_strtoupper(trim((string) $validated['ci']));
 
         $ciKey = 'preinscripcion:ci:'.mb_strtolower((string) $validated['ci']);
         $ipKey = 'preinscripcion:ip:'.request()->ip();

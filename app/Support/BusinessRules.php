@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Enums\CertificateType;
+use App\Enums\TipoParticipante;
 
 final class BusinessRules
 {
@@ -94,18 +95,19 @@ final class BusinessRules
     |--------------------------------------------------------------------------
     */
 
-    public static function calculatePrice(int $hours, string $participantType): float
+    public static function calculatePrice(int $hours, string|TipoParticipante $participantType): float
     {
+        $type = $participantType instanceof TipoParticipante ? $participantType->value : $participantType;
         $hoursKey = (string) $hours;
 
         if (! isset(self::PRICING[$hoursKey])) {
             throw new \InvalidArgumentException("Invalid hours: {$hours}. Must be 20 or 30.");
         }
 
-        $price = self::PRICING[$hoursKey][$participantType] ?? null;
+        $price = self::PRICING[$hoursKey][$type] ?? null;
 
         if ($price === null) {
-            throw new \InvalidArgumentException("Invalid participant type: {$participantType}");
+            throw new \InvalidArgumentException("Invalid participant type: {$type}");
         }
 
         return (float) $price;

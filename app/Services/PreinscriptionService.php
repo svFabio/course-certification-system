@@ -20,6 +20,8 @@ class PreinscriptionService
     public function register(array $data, bool $enforceEnabledGroup = true): Preinscription
     {
         return DB::transaction(function () use ($data, $enforceEnabledGroup) {
+            $data['ci'] = mb_strtoupper(trim((string) ($data['ci'] ?? '')));
+
             $group = Group::where('id', $data['group_id'])->lockForUpdate()->firstOrFail();
 
             if ($enforceEnabledGroup && ! in_array($group->status, [GroupStatus::HABILITADO, GroupStatus::NO_HABILITADO], true)) {
@@ -36,7 +38,7 @@ class PreinscriptionService
                 ]);
             }
 
-            $activeExists = Preinscription::where('ci', $data['ci'])
+            $activeExists = Preinscription::whereRaw('UPPER(TRIM(ci)) = ?', [$data['ci']])
                 ->whereHas('group', fn ($q) => $q->where('course_id', $group->course_id))
                 ->whereIn('status', [PreinscriptionStatus::PENDIENTE_PAGO, PreinscriptionStatus::INSCRITO])
                 ->exists();
@@ -47,7 +49,7 @@ class PreinscriptionService
                 ]);
             }
 
-            $priorSameGroup = Preinscription::where('ci', $data['ci'])
+            $priorSameGroup = Preinscription::whereRaw('UPPER(TRIM(ci)) = ?', [$data['ci']])
                 ->where('group_id', $group->id)
                 ->first();
 
@@ -148,7 +150,9 @@ class PreinscriptionService
                 ]);
             }
 
-            $duplicate = Preinscription::where('ci', $preinscription->ci)
+            $normalizedCi = mb_strtoupper(trim((string) $preinscription->ci));
+
+            $duplicate = Preinscription::whereRaw('UPPER(TRIM(ci)) = ?', [$normalizedCi])
                 ->where('group_id', $destination->id)
                 ->where('id', '!=', $preinscription->id)
                 ->exists();
