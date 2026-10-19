@@ -146,7 +146,7 @@ class PreinscriptionComponent extends Component
             'apellidoPaterno' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/'],
             'apellidoMaterno' => ['nullable', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/'],
             'celular' => ['required', 'string', 'regex:/^[67][0-9]{7}$/'],
-            'email' => ['required', 'email:rfc,dns', 'max:150'],
+            'email' => ['required', 'email:rfc', 'max:150'],
             'tipoParticipante' => ['required', Rule::enum(TipoParticipante::class)],
             'auxiliarCertificado' => [
                 'nullable',
@@ -177,9 +177,13 @@ class PreinscriptionComponent extends Component
 
     public function goToConfirmation(): void
     {
+        if ($this->ci !== null) {
+            $this->ci = mb_strtoupper(trim($this->ci));
+        }
+
         $this->validate();
 
-        $existing = Preinscription::where('ci', $this->ci)
+        $existing = Preinscription::whereRaw('UPPER(TRIM(ci)) = ?', [$this->ci])
             ->whereHas('group', fn ($q) => $q->where('course_id', $this->group->course_id))
             ->whereIn('status', [
                 PreinscriptionStatus::PENDIENTE_PAGO,
@@ -208,7 +212,12 @@ class PreinscriptionComponent extends Component
 
     public function submit(PreinscriptionService $service): void
     {
+        if ($this->ci !== null) {
+            $this->ci = mb_strtoupper(trim($this->ci));
+        }
+
         $validated = $this->validate();
+        $validated['ci'] = mb_strtoupper(trim((string) $validated['ci']));
 
         $ciKey = 'preinscripcion:ci:'.mb_strtolower((string) $validated['ci']);
         $ipKey = 'preinscripcion:ip:'.request()->ip();

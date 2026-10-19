@@ -8,7 +8,8 @@
 | 30 horas      | Bs. 120 | Bs. 150 | Bs. 60  |
 
 - **Descuento auxiliar**: 50% sobre el precio UMSS.
-- **Implementación**: `App\Support\BusinessRules::calculatePrice()`
+- **Fuente de verdad**: las columnas `precio_umss`, `precio_externo` y `precio_auxiliar` del curso (editables por el administrador). Todo cálculo, cobro y exhibición debe leer esas columnas — nunca recalcular.
+- **Precalculado por defecto**: `App\Support\BusinessRules::calculatePrice()` solo precarga los valores al crear un curso o al cambiar la carga horaria. No es la fuente de lectura para cobro ni exhibición.
 
 ## 2. Grupo
 

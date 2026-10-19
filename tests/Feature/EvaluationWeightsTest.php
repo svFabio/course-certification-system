@@ -297,3 +297,37 @@ it('rejects applyEvaluationConfig when a staged grade is out of range', function
     expect(Grade::where('preinscription_id', $preinscription->id)
         ->where('evaluation_criteria_id', $criterion->id)->exists())->toBeFalse();
 });
+
+it('guarantees identical final grade and weighted attendance between breakdown and finalGrade', function () {
+    // 6 sessions, 1 attended, attendance weight 50%
+    // attendanceScore: round((1/6)*50, 2) = 8.33
+    // Old breakdown bug rounded pct first: round(16.67/100*50, 2) = 8.34
+    $course = Course::factory()->create(['attendance_weight' => 50]);
+    $criterion = EvaluationCriteria::factory()->create(['course_id' => $course->id, 'ponderacion' => 50.00]);
+    $group = Group::factory()->create(['course_id' => $course->id]);
+    $preinscription = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
+
+    $sessions = Session::factory()->count(6)->create(['group_id' => $group->id]);
+    Attendance::factory()->presente()->create([
+        'session_id' => $sessions[0]->id,
+        'preinscription_id' => $preinscription->id,
+    ]);
+
+    Grade::factory()->create([
+        'evaluation_criteria_id' => $criterion->id,
+        'preinscription_id' => $preinscription->id,
+        'nota' => 80.0,
+    ]);
+
+    $service = app(EvaluationService::class);
+    $attendanceScore = $service->attendanceScore($preinscription);
+    $finalGrade = $service->finalGrade($preinscription);
+    $breakdown = $service->breakdown($preinscription);
+
+    expect($attendanceScore)->toBe(8.33);
+    expect($breakdown['attendance']['weighted'])->toBe($attendanceScore);
+    expect($breakdown['final_grade'])->toBe($finalGrade);
+    expect($breakdown['total'])->toBe($finalGrade);
+    // 8.33 + (80 * 0.50) = 48.33
+    expect($finalGrade)->toBe(48.33);
+});

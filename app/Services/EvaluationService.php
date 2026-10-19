@@ -218,7 +218,7 @@ class EvaluationService
         $attendancePercent = $sessionCount > 0
             ? round(($attended / $sessionCount) * 100, 2)
             : 0.0;
-        $attendanceWeighted = round(($attendancePercent / 100) * $attendanceWeight, 2);
+        $attendanceWeighted = $this->attendanceScore($preinscription);
 
         $grades = $preinscription->grades()->with('evaluationCriteria')->get();
         $criteria = $grades->map(fn (Grade $grade) => [
@@ -228,8 +228,7 @@ class EvaluationService
             'weighted' => round(($grade->nota * (float) $grade->evaluationCriteria->ponderacion) / 100, 2),
         ])->values()->toArray();
 
-        $criteriaTotal = round(array_sum(array_column($criteria, 'weighted')), 2);
-        $total = round($attendanceWeighted + $criteriaTotal, 2);
+        $finalGrade = $this->finalGrade($preinscription);
 
         return [
             'preinscription_id' => $preinscription->id,
@@ -240,9 +239,9 @@ class EvaluationService
                 'weighted' => $attendanceWeighted,
             ],
             'criteria' => $criteria,
-            'total' => $total,
-            'final_grade' => $total,
-            'passed' => $total >= BusinessRules::MINIMUM_PASSING_GRADE,
+            'total' => $finalGrade,
+            'final_grade' => $finalGrade,
+            'passed' => $finalGrade >= BusinessRules::MINIMUM_PASSING_GRADE,
         ];
     }
 

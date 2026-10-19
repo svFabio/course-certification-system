@@ -4,7 +4,7 @@ Sistema web para la gestion de cursos de formacion continua, preinscripciones, c
 
 ## Requisitos
 
-- PHP 8.3+
+- PHP 8.2+ (`composer.json` requiere `^8.2`; la imagen Docker usa PHP 8.3)
 - PostgreSQL 16
 - Node.js 20+
 - Docker y Docker Compose (recomendado)

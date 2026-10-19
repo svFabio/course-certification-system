@@ -6,6 +6,7 @@ use App\Enums\GroupStatus;
 use App\Enums\MergeParticipantDecision;
 use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
+use App\Enums\UserRole;
 use App\Filament\Admin\Resources\GroupResource\Pages\CreateGroup;
 use App\Filament\Admin\Resources\GroupResource\Pages\ListGroups;
 use App\Mail\GroupMergedNotification;
@@ -19,16 +20,17 @@ use App\Services\PaymentService;
 use App\Services\PreinscriptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    Role::firstOrCreate(['name' => 'admin']);
+    Role::firstOrCreate(['name' => UserRole::ADMIN->value]);
 
     $this->admin = User::factory()->create();
-    $this->admin->assignRole('admin');
+    $this->admin->assignRole(UserRole::ADMIN->value);
 });
 
 it('moves active preinscriptions to the destination, closes the origin and queues one merged email per moved student', function () {
@@ -443,4 +445,74 @@ it('does not auto-disable a group that is in en_curso status when count drops be
 
     // Only 1 active participant, below threshold — but group is EN_CURSO, must stay.
     expect($group->fresh()->status)->toBe(GroupStatus::EN_CURSO);
+});
+
+it('rejects fusion with validation error when a participant to move already has a record in destination group', function () {
+    $course = Course::factory()->withHours('20')->create();
+    $origin = Group::factory()->noHabilitado()->create(['course_id' => $course->id]);
+    $destination = Group::factory()->habilitado()->create(['course_id' => $course->id]);
+
+    $baseCi = (string) fake()->numerify('#######');
+    $pOrigin = Preinscription::factory()->create([
+        'group_id' => $origin->id,
+        'ci' => $baseCi.'-1A',
+        'nombres' => fake()->firstName(),
+        'apellido_paterno' => fake()->lastName(),
+        'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+    ]);
+
+    // Destination already has a preinscription for the same CI (even if in retired status)
+    Preinscription::factory()->retirado()->create([
+        'group_id' => $destination->id,
+        'ci' => $baseCi.'-1a',
+    ]);
+
+    expect(fn () => app(GroupMergeService::class)->assistedMerge(
+        $origin,
+        $destination,
+        [$pOrigin->id => MergeParticipantDecision::TRASLADAR->value],
+    ))->toThrow(
+        ValidationException::class,
+    );
+});
+
+it('allows fusion when a participant duplicate in destination is resolved via refund or withdrawal', function () {
+    Mail::fake();
+    $course = Course::factory()->withHours('20')->create();
+    $origin = Group::factory()->noHabilitado()->create(['course_id' => $course->id]);
+    $destination = Group::factory()->habilitado()->create(['course_id' => $course->id]);
+
+    $baseCi = (string) fake()->numerify('#######');
+    $otherCi = (string) fake()->numerify('#######');
+
+    $pOriginDuplicate = Preinscription::factory()->create([
+        'group_id' => $origin->id,
+        'ci' => $baseCi.'-1A',
+        'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+    ]);
+
+    $pOriginNormal = Preinscription::factory()->create([
+        'group_id' => $origin->id,
+        'ci' => $otherCi,
+        'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+    ]);
+
+    Preinscription::factory()->retirado()->create([
+        'group_id' => $destination->id,
+        'ci' => $baseCi.'-1a',
+    ]);
+
+    $result = app(GroupMergeService::class)->assistedMerge(
+        $origin,
+        $destination,
+        [
+            $pOriginDuplicate->id => MergeParticipantDecision::RETIRAR->value,
+            $pOriginNormal->id => MergeParticipantDecision::TRASLADAR->value,
+        ],
+    );
+
+    expect($result['movedCount'])->toBe(1);
+    expect($result['withdrawnCount'])->toBe(1);
+    expect($pOriginNormal->fresh()->group_id)->toBe($destination->id);
+    expect($pOriginDuplicate->fresh()->status)->toBe(PreinscriptionStatus::RETIRADO);
 });

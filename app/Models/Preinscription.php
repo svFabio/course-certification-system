@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\PreinscriptionStatus;
 use App\Enums\TipoParticipante;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -80,6 +81,14 @@ class Preinscription extends Model
     public function certificateApprover(): BelongsTo
     {
         return $this->belongsTo(User::class, 'auxiliar_certificado_aprobado_por');
+    }
+
+    protected function ci(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => $value !== null ? mb_strtoupper(trim($value)) : null,
+            set: fn (?string $value) => $value !== null ? mb_strtoupper(trim($value)) : null,
+        );
     }
 
     public function getFullNameAttribute(): string

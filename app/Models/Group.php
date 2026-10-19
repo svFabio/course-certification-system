@@ -92,12 +92,27 @@ class Group extends Model
 
     public function getCuposOcupadosAttribute(): int
     {
-        return (int) ($this->confirmed_count ?? $this->preinscriptions()
-            ->whereIn('status', [
-                PreinscriptionStatus::PENDIENTE_PAGO,
-                PreinscriptionStatus::INSCRITO,
-            ])
-            ->count());
+        $countedStatuses = [
+            PreinscriptionStatus::PENDIENTE_PAGO,
+            PreinscriptionStatus::INSCRITO,
+        ];
+
+        $confirmedCount = $this->attributes['confirmed_count'] ?? null;
+
+        if ($confirmedCount !== null) {
+            return (int) $confirmedCount;
+        }
+
+        // Reuse the eager-loaded relation when present so loops never fire a COUNT per row.
+        if ($this->relationLoaded('preinscriptions')) {
+            return $this->preinscriptions
+                ->filter(fn (Preinscription $preinscription): bool => in_array($preinscription->status, $countedStatuses, true))
+                ->count();
+        }
+
+        return (int) $this->preinscriptions()
+            ->whereIn('status', $countedStatuses)
+            ->count();
     }
 
     public function getCuposDisponiblesAttribute(): int

@@ -11,7 +11,6 @@ use App\Events\GroupSheetsNeedRefresh;
 use App\Models\Attendance;
 use App\Models\Course;
 use App\Models\EvaluationCriteria;
-use App\Models\Grade;
 use App\Models\Group;
 use App\Models\Preinscription;
 use App\Services\EvaluationService;
@@ -323,7 +322,9 @@ class GradeMatrix extends Page
         $weight = $this->stagedWeight();
 
         foreach ($this->rows as $index => $row) {
-            $attendanceScore = round(($row['attendance_pct'] / 100) * $weight, 2);
+            $attendanceScore = $this->sessionCount > 0
+                ? round((($row['attendance_attended'] ?? 0) / $this->sessionCount) * $weight, 2)
+                : 0.0;
             $criteriaTotal = 0.0;
 
             foreach ($this->criteria as $criterion) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Enums\CertificateType;
+use App\Enums\TipoParticipante;
 
 final class BusinessRules
 {
@@ -13,6 +14,12 @@ final class BusinessRules
     | Pricing (Bs.)
     |--------------------------------------------------------------------------
     */
+    /**
+     * Default pre-calculation only (Bs.): prefills course price columns on
+     * creation or when carga_horaria changes. NOT a source of truth for reads —
+     * charge and display flows must read the course columns precio_umss,
+     * precio_externo and precio_auxiliar (AGENTS.md invariant 1).
+     */
     public const PRICING = [
         '20' => ['umss' => 80, 'externo' => 100, 'auxiliar' => 40],
         '30' => ['umss' => 120, 'externo' => 150, 'auxiliar' => 60],
@@ -88,18 +95,19 @@ final class BusinessRules
     |--------------------------------------------------------------------------
     */
 
-    public static function calculatePrice(int $hours, string $participantType): float
+    public static function calculatePrice(int $hours, string|TipoParticipante $participantType): float
     {
+        $type = $participantType instanceof TipoParticipante ? $participantType->value : $participantType;
         $hoursKey = (string) $hours;
 
         if (! isset(self::PRICING[$hoursKey])) {
             throw new \InvalidArgumentException("Invalid hours: {$hours}. Must be 20 or 30.");
         }
 
-        $price = self::PRICING[$hoursKey][$participantType] ?? null;
+        $price = self::PRICING[$hoursKey][$type] ?? null;
 
         if ($price === null) {
-            throw new \InvalidArgumentException("Invalid participant type: {$participantType}");
+            throw new \InvalidArgumentException("Invalid participant type: {$type}");
         }
 
         return (float) $price;
