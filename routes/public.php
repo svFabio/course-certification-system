@@ -19,8 +19,16 @@ Route::get('/verificar-certificado', CertificateVerificationComponent::class)
     ->middleware('throttle:30,1')
     ->name('certificado.verificar');
 
+// Compatibilidad: /verificar-certificado/{codigo} (sin /descargar) no debe dar 404.
+Route::get('/verificar-certificado/{codigo}', function (string $codigo) {
+    return redirect()->route('certificado.verificar', ['codigo' => $codigo]);
+})->middleware('throttle:30,1')
+    ->where('codigo', '[A-Za-z0-9\-_]+')
+    ->name('certificado.verificar.codigo');
+
 Route::get('/verificar-certificado/{codigo}/descargar', PublicCertificateDownloadController::class)
     ->middleware('throttle:30,1')
+    ->where('codigo', '[A-Za-z0-9\-_]+')
     ->name('certificado.publico.descargar');
 
 Route::get('/boleta/{preinscription}', BoletaController::class)

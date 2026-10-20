@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Enums\CertificateLifecycleStatus;
 use App\Enums\CertificateType;
 use App\Models\Certificate;
 use App\Models\Course;
@@ -29,8 +30,30 @@ class CertificateFactory extends Factory
             'grupos_detalle' => null,
             'codigo_unico' => 'CERT-'.now()->year.'-'.strtoupper(Str::random(8)),
             'pdf_path' => 'certificates/'.fake()->uuid().'.pdf',
+            'pdf_escaneado_path' => null,
+            'escaneado_en' => null,
+            'entregado_en' => null,
+            'estado' => CertificateLifecycleStatus::GENERADO,
             'emitido_en' => now(),
         ];
+    }
+
+    public function entregado(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'estado' => CertificateLifecycleStatus::ENTREGADO,
+            'entregado_en' => now(),
+        ]);
+    }
+
+    public function digitalizado(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'estado' => CertificateLifecycleStatus::DIGITALIZADO,
+            'pdf_escaneado_path' => 'certificates/scanned/'.fake()->uuid().'.pdf',
+            'escaneado_en' => now(),
+            'entregado_en' => $attributes['entregado_en'] ?? now()->subDay(),
+        ]);
     }
 
     public function aprobacion(): static

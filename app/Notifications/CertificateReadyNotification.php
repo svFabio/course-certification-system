@@ -36,8 +36,8 @@ class CertificateReadyNotification extends Notification implements ShouldQueue
             : 'Tu certificado está disponible — UMSS Formación Continua';
 
         $line = $isInstructor
-            ? 'Tu certificado digital como instructor ya está listo para descargar.'
-            : 'Tu certificado digital ya está listo para descargar.';
+            ? 'Tu certificado de instructor ya está listo para descargar.'
+            : 'Tu certificado (versión para imprimir) ya está listo para descargar.';
 
         // Estudiantes no se auto-registran: descarga pública por código (sin login).
         // Usa APP_PUBLIC_URL (Render) cuando está configurado.
@@ -47,7 +47,7 @@ class CertificateReadyNotification extends Notification implements ShouldQueue
             ? $service->publicAbsoluteUrl('/instructor/certificates')
             : $downloadUrl;
 
-        $actionLabel = $isInstructor ? 'Ir a Mis certificados' : 'Descargar certificado PDF';
+        $actionLabel = $isInstructor ? 'Ir a Mis certificados' : 'Descargar PDF para imprimir';
 
         $message = (new MailMessage)
             ->subject($subject)
@@ -59,13 +59,14 @@ class CertificateReadyNotification extends Notification implements ShouldQueue
 
         if (! $isInstructor) {
             $message
-                ->line('Enlace directo de descarga: '.$downloadUrl)
+                ->line('Descarga el PDF con este enlace (debe terminar en /descargar):')
+                ->line($downloadUrl)
                 ->line('Verificación pública: '.$verifyUrl);
         } else {
             $message->line('También puedes verificarlo públicamente: '.$verifyUrl);
         }
 
         return $message
-            ->line('Para el certificado físico, acércate a la oficina de Formación Continua con tu documento de identidad.');
+            ->line('El certificado físico firmado se retira en la oficina de Formación Continua con tu documento de identidad.');
     }
 }
