@@ -9,7 +9,7 @@ Sistema web para la gestion de cursos de formacion continua, preinscripciones, c
 - Node.js 20+
 - Docker y Docker Compose (recomendado)
 
-Para desarrollo en Windows sin Docker, consulta [SETUP_WINDOWS.md](SETUP_WINDOWS.md).
+Para desarrollo en Windows sin Docker, consulta [SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md).
 
 ## Instalacion con Docker
 
@@ -119,7 +119,7 @@ Los modulos marcados como "Stub" tienen la estructura base creada pero la logica
 
 ## Reglas de Negocio
 
-Ver [BUSINESS_RULES.md](BUSINESS_RULES.md) para documentacion completa.
+Ver [BUSINESS_RULES.md](docs/BUSINESS_RULES.md) para documentacion completa.
 
 Las constantes estan centralizadas en `app/Support/BusinessRules.php`. Nunca hardcodear valores de negocio en controladores o modelos.
 

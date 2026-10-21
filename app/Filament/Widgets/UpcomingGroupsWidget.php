@@ -21,6 +21,56 @@ class UpcomingGroupsWidget extends BaseWidget
 
     protected static ?string $heading = 'Monitoreo de Grupos Próximos — Semáforo de Cupos';
 
+    /**
+     * Committed seats drive capacity decisions everywhere else in the domain
+     * (AGENTS.md §2): the auto-enablement observer, PreinscriptionService and
+     * Group::getCuposOcupadosAttribute all count PENDIENTE_PAGO + INSCRITO.
+     * The semaphore must use the same rule, otherwise it can ask the admin to
+     * enable a group the system already enabled.
+     */
+    public function committedSeats(Group $group): int
+    {
+        return (int) $group->confirmed_count + (int) $group->pending_count;
+    }
+
+    public function semaphoreState(Group $group): string
+    {
+        $committed = $this->committedSeats($group);
+        $min = $group->cupo_minimo ?? BusinessRules::MIN_GROUP_CAPACITY;
+        $max = $group->cupo_maximo;
+
+        if ($committed >= $max) {
+            return 'Cupo Lleno';
+        }
+
+        if ($committed >= $min) {
+            $disponibles = $max - $committed;
+
+            return "Habilitado ({$disponibles} disponibles)";
+        }
+
+        $faltantes = $min - $committed;
+
+        return "Faltan {$faltantes} para habilitar";
+    }
+
+    public function semaphoreColor(Group $group): string
+    {
+        $committed = $this->committedSeats($group);
+        $min = $group->cupo_minimo ?? BusinessRules::MIN_GROUP_CAPACITY;
+        $max = $group->cupo_maximo;
+
+        if ($committed >= $max) {
+            return 'danger';
+        }
+
+        if ($committed >= $min) {
+            return 'success';
+        }
+
+        return 'warning';
+    }
+
     public function table(Table $table): Table
     {
         return $table
@@ -64,45 +114,13 @@ class UpcomingGroupsWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('semaforo')
                     ->label('Semáforo de Cupo')
                     ->badge()
-                    ->state(function (Group $record): string {
-                        $confirmed = (int) $record->confirmed_count;
-                        $min = $record->cupo_minimo ?? BusinessRules::MIN_GROUP_CAPACITY;
-                        $max = $record->cupo_maximo;
-
-                        if ($confirmed >= $max) {
-                            return 'Cupo Lleno';
-                        }
-
-                        if ($confirmed >= $min) {
-                            $disponibles = $max - $confirmed;
-
-                            return "Habilitado ({$disponibles} disponibles)";
-                        }
-
-                        $faltantes = $min - $confirmed;
-
-                        return "Faltan {$faltantes} para habilitar";
-                    })
-                    ->color(function (Group $record): string {
-                        $confirmed = (int) $record->confirmed_count;
-                        $min = $record->cupo_minimo ?? BusinessRules::MIN_GROUP_CAPACITY;
-                        $max = $record->cupo_maximo;
-
-                        if ($confirmed >= $max) {
-                            return 'danger';
-                        }
-
-                        if ($confirmed >= $min) {
-                            return 'success';
-                        }
-
-                        return 'warning';
-                    })
+                    ->state(fn (Group $record): string => $this->semaphoreState($record))
+                    ->color(fn (Group $record): string => $this->semaphoreColor($record))
                     ->icon(function (Group $record): string {
-                        $confirmed = (int) $record->confirmed_count;
+                        $committed = $this->committedSeats($record);
                         $min = $record->cupo_minimo ?? BusinessRules::MIN_GROUP_CAPACITY;
 
-                        return $confirmed >= $min ? 'heroicon-m-check-circle' : 'heroicon-m-exclamation-triangle';
+                        return $committed >= $min ? 'heroicon-m-check-circle' : 'heroicon-m-exclamation-triangle';
                     }),
             ])
             ->paginated([5, 10])

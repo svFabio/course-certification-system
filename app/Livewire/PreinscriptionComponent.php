@@ -13,6 +13,7 @@ use App\Models\Preinscription;
 use App\Services\PreinscriptionService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Rule as LivewireRule;
@@ -290,10 +291,17 @@ class PreinscriptionComponent extends Component
     public function render()
     {
         $this->group?->loadMissing('course');
+        $course = $this->group?->course;
 
         return view('livewire.preinscription-component', [
             'group' => $this->group,
             'availableGroups' => $this->availableGroups,
+        ])->layout('components.layouts.app', [
+            'title' => $course ? "{$course->nombre} — Preinscripción UMSS" : 'Preinscripción',
+            'ogTitle' => $course ? "Curso: {$course->nombre} — Formación Continua UMSS" : 'Preinscripción UMSS',
+            'ogDescription' => $course ? Str::limit(strip_tags((string) $course->contenido), 160) : 'Preinscripción a cursos de Formación Continua UMSS',
+            'ogImage' => $course?->portada_url,
+            'ogUrl' => url()->current(),
         ]);
     }
 }
