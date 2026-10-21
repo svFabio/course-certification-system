@@ -35,7 +35,7 @@ $sheet1->getStyle('A1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor
 $sheet1->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
 $sheet1->mergeCells('A2:F2');
-$sheet1->setCellValue('A2', 'PLAN Y DISTRIBUCIÓN DE SPRINTS (INGENIERÍA INVERSA DE COMMITS)');
+$sheet1->setCellValue('A2', 'PLAN Y DISTRIBUCIÓN DE SPRINTS (CRONOGRAMA OFICIAL 14/09 AL 23/10)');
 $sheet1->getStyle('A2')->getFont()->setBold(true)->setSize(11)->setColor(new Color($white));
 $sheet1->getStyle('A2')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($navyDark);
 $sheet1->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -56,27 +56,27 @@ foreach ($headers1 as $i => $h) {
 $sprintsData = [
     [
         'Sprint 1',
-        '08/09/2026 - 22/09/2026 (2 semanas)',
-        'Arquitectura base, catálogo público de cursos con diseño institucional, preinscripción en línea de participantes (2 pasos), apertura y control de grupos con horarios calculados, y verificación de pagos en caja.',
-        '6 HUs (HU-01 a HU-06)',
-        '34 SP',
+        '14/09/2026 - 27/09/2026 (2 semanas)',
+        'Arquitectura base, catálogo público de cursos con diseño institucional, preinscripción en línea de participantes (2 pasos), apertura y control de grupos con horarios automáticos, verificación de pagos en caja, descuento para auxiliares (50%) y emisión de boleta PDF.',
+        '8 HUs (HU-01 a HU-08)',
+        '44 SP',
         'Completado (100%)',
     ],
     [
         'Sprint 2',
-        '23/09/2026 - 07/10/2026 (2 semanas)',
-        'Gestión académica: sincronización bidireccional con Google Sheets, asistencia docente en grilla y por código QR, feriados institucionales, descuento del 50% para auxiliares, emisión de boleta PDF y fusión asistida de grupos con devoluciones de caja.',
-        '7 HUs (HU-07 a HU-13)',
-        '40 SP',
+        '28/09/2026 - 11/10/2026 (2 semanas)',
+        'Gestión académica avanzada: sincronización con Google Sheets, asistencia docente en grilla y por código QR, feriados institucionales, fusión asistida de grupos con devoluciones de caja, bandeja de solicitudes estudiantiles y lista de espera para cursos llenos.',
+        '7 HUs (HU-09 a HU-15)',
+        '41 SP',
         'Completado (100%)',
     ],
     [
         'Sprint 3',
-        '08/10/2026 - 20/10/2026 (2 semanas)',
-        'Bandeja de solicitudes estudiantiles, lista de espera/interesados para cursos llenos, matriz de notas y ponderaciones docentes, cierre de curso con emisión y verificación de certificados con QR, actas oficiales en Excel para Jefatura, campañas de difusión en redes sociales (Telegram Bot, WhatsApp, Facebook) y dashboard de monitoreo con semáforo.',
-        '8 HUs (HU-14 a HU-21)',
-        '46 SP',
-        'Completado (100%)',
+        '12/10/2026 - 23/10/2026 (2 semanas)',
+        'Evaluación y certificación: matriz de calificaciones docente (100%), cierre de curso con emisión directa de certificados verificables con QR en Cloudinary, actas de cierre y reportes de caja en Excel para Jefatura, difusión en redes sociales (Telegram Bot, WhatsApp, Facebook, OpenGraph) y dashboard de monitoreo con semáforo.',
+        '6 HUs (HU-16 a HU-21)',
+        '35 SP',
+        'En curso / Cierre (95%)',
     ],
 ];
 
@@ -95,7 +95,9 @@ foreach ($sprintsData as $idx => $s) {
     $sheet1->getStyle("D{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     $sheet1->getStyle("E{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     $sheet1->getStyle("F{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-    $sheet1->getStyle("F{$row}")->getFont()->setBold(true)->setColor(new Color('16A34A'));
+
+    $colorEstado = ($idx == 2) ? '0284C7' : '16A34A';
+    $sheet1->getStyle("F{$row}")->getFont()->setBold(true)->setColor(new Color($colorEstado));
 
     if ($idx % 2 == 1) {
         $sheet1->getStyle("A{$row}:F{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($grayLight);
@@ -111,7 +113,7 @@ $sheet1->mergeCells("A{$row}:C{$row}");
 $sheet1->setCellValue("A{$row}", 'TOTAL PROYECTO FORMACIÓN CONTINUA');
 $sheet1->setCellValue("D{$row}", '21 HUs');
 $sheet1->setCellValue("E{$row}", '120 SP');
-$sheet1->setCellValue("F{$row}", '100% Entregado');
+$sheet1->setCellValue("F{$row}", 'En fase final (23/10)');
 $sheet1->getStyle("A{$row}:F{$row}")->getFont()->setBold(true);
 $sheet1->getStyle("A{$row}:F{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('E2E8F0');
 $sheet1->getStyle("D{$row}:F{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -160,7 +162,7 @@ foreach ($headers2 as $i => $h) {
 }
 
 $hus = [
-    // SPRINT 1
+    // SPRINT 1 (14/09 - 27/09)
     [
         'HU-01', 'Sprint 1', 'Catálogo Público de Cursos Ofertados',
         'Estudiante / Público',
@@ -215,37 +217,8 @@ $hus = [
         'GroupStatus.php, PreinscriptionObserver.php, UpcomingGroupsWidget.php',
         '9b4129d, 78941e3, 8750e16, 3b8a12e', 3,
     ],
-
-    // SPRINT 2
     [
-        'HU-07', 'Sprint 2', 'Integración y Exportación a Google Sheets',
-        'Administrador / Docente',
-        'Sincronizar y exportar las listas de preinscritos, notas y asistencia a hojas de cálculo Google',
-        'Permitir que los instructores utilicen sus planillas de trabajo sin inconsistencias de datos',
-        '1. Creación de pestañas automáticas con formato. 2. Fórmulas de asistencia y ponderación. 3. Sincronización encolada en background.',
-        'GoogleSheetsService.php, SheetExportService.php, TemplateSheetBuilder.php',
-        '11d2e9d, c93b132, db61f2c, e3cc65b, 84a7b7b', 8,
-    ],
-    [
-        'HU-08', 'Sprint 2', 'Registro y Control de Asistencia Docente y QR',
-        'Instructor',
-        'Generar código QR por sesión y registrar la asistencia desde una matriz visual rápida',
-        'Controlar el presentismo diario de estudiantes en aula en menos de 2 minutos',
-        '1. Página MarkAttendance en panel de docente. 2. QR dinámico por sesión. 3. Estados: presente, ausente, justificado.',
-        'MarkAttendance.php, AttendanceService.php, SessionResource.php',
-        'b1b29d6, e525be5, 95665d2, 31e1a50', 5,
-    ],
-    [
-        'HU-09', 'Sprint 2', 'Calendario de Feriados y Reprogramación de Sesiones',
-        'Administrador',
-        'Registrar feriados nacionales/universitarios y reprogramar sesiones con motivo explícito',
-        'Garantizar que el curso cumpla estrictamente los 10 días hábiles requeridos',
-        '1. Detección automática de feriados al crear sesiones. 2. Formulario de reprogramación con justificación. 3. Ajuste de fecha fin.',
-        'HolidayResource.php, HolidayService.php, CourseSession model',
-        'e7a88c1, 2026_09_21_000001_create_holidays_table', 3,
-    ],
-    [
-        'HU-10', 'Sprint 2', 'Validación de Descuento para Auxiliares (50%)',
+        'HU-07', 'Sprint 1', 'Validación de Descuento para Auxiliares (50%)',
         'Auxiliar de Docencia / Admin',
         'Adjuntar certificado de auxiliar concluido y pagar el 50% del precio UMSS',
         'Beneficiar al personal auxiliar según normativa del Departamento',
@@ -254,13 +227,42 @@ $hus = [
         '3353e74, 2026_09_23_000001_add_auxiliar_certificate', 5,
     ],
     [
-        'HU-11', 'Sprint 2', 'Emisión de Boleta de Inscripción Oficial en PDF',
+        'HU-08', 'Sprint 1', 'Emisión de Boleta de Inscripción Oficial en PDF',
         'Estudiante / Cajero',
         'Generar y descargar la boleta de pago e inscripción en PDF con código QR y sello oficial',
         'Tener un comprobante formal de respaldo académico y financiero',
         '1. Generación de PDF con DomPDF. 2. Código QR embebido para validación. 3. Desglose detallado de monto pagado y datos del curso.',
         'BoletaService.php, resources/views/pdf/boleta.blade.php',
         '3353e74, 43a83f1', 5,
+    ],
+
+    // SPRINT 2 (28/09 - 11/10)
+    [
+        'HU-09', 'Sprint 2', 'Integración y Exportación a Google Sheets',
+        'Administrador / Docente',
+        'Sincronizar y exportar las listas de preinscritos, notas y asistencia a hojas de cálculo Google',
+        'Permitir que los instructores utilicen sus planillas de trabajo sin inconsistencias de datos',
+        '1. Creación de pestañas automáticas con formato. 2. Fórmulas de asistencia y ponderación. 3. Sincronización encolada en background.',
+        'GoogleSheetsService.php, SheetExportService.php, TemplateSheetBuilder.php',
+        '11d2e9d, c93b132, db61f2c, e3cc65b, 84a7b7b', 8,
+    ],
+    [
+        'HU-10', 'Sprint 2', 'Registro y Control de Asistencia Docente y QR',
+        'Instructor',
+        'Generar código QR por sesión y registrar la asistencia desde una matriz visual rápida',
+        'Controlar el presentismo diario de estudiantes en aula en menos de 2 minutos',
+        '1. Página MarkAttendance en panel de docente. 2. QR dinámico por sesión. 3. Estados: presente, ausente, justificado.',
+        'MarkAttendance.php, AttendanceService.php, SessionResource.php',
+        'b1b29d6, e525be5, 95665d2, 31e1a50', 5,
+    ],
+    [
+        'HU-11', 'Sprint 2', 'Calendario de Feriados y Reprogramación de Sesiones',
+        'Administrador',
+        'Registrar feriados nacionales/universitarios y reprogramar sesiones con motivo explícito',
+        'Garantizar que el curso cumpla estrictamente los 10 días hábiles requeridos',
+        '1. Detección automática de feriados al crear sesiones. 2. Formulario de reprogramación con justificación. 3. Ajuste de fecha fin.',
+        'HolidayResource.php, HolidayService.php, CourseSession model',
+        'e7a88c1, 2026_09_21_000001_create_holidays_table', 3,
     ],
     [
         'HU-12', 'Sprint 2', 'Fusión Asistida de Grupos y Traspaso de Estudiantes',
@@ -280,19 +282,17 @@ $hus = [
         'PaymentService.php, PreinscriptionResource.php',
         '3353e74, 464f43f, 8750e16', 6,
     ],
-
-    // SPRINT 3
     [
-        'HU-14', 'Sprint 3', 'Bandeja de Solicitudes Estudiantiles (Traspasos y Devoluciones)',
+        'HU-14', 'Sprint 2', 'Bandeja de Solicitudes Estudiantiles (Traspasos y Devoluciones)',
         'Estudiante / Administrador',
         'Solicitar cambio de grupo o devolución desde el portal del alumno y aprobarlo desde panel admin',
         'Eliminar trámites manuales en papel y descentralizar la gestión de excepciones',
         '1. Formulario de solicitud en panel estudiante. 2. Bandeja de entrada con aprobación en 1 clic. 3. Ejecución automática de la acción.',
         'StudentRequestResource.php, StudentRequestService.php',
-        'c76482c, df2bffa, ca67976', 8,
+        'c76482c, df2bffa, ca67976', 6,
     ],
     [
-        'HU-15', 'Sprint 3', 'Lista de Interés y Alerta de Demanda para Cursos Llenos',
+        'HU-15', 'Sprint 2', 'Lista de Interés y Alerta de Demanda para Cursos Llenos',
         'Estudiante / Administrador',
         'Registrar correo en lista de espera cuando un curso esté lleno y recibir aviso al liberar cupos',
         'Capturar demanda insatisfecha para evaluar la apertura de nuevos grupos paralelos',
@@ -300,6 +300,8 @@ $hus = [
         'CourseInterestService.php, CourseDemandService.php, CatalogComponent.php',
         '3df6245, 8902d6a, 2317584, d86a0f0, 51ff850', 5,
     ],
+
+    // SPRINT 3 (12/10 - 23/10)
     [
         'HU-16', 'Sprint 3', 'Matriz de Calificaciones y Criterios de Evaluación Docente',
         'Instructor',
@@ -328,13 +330,13 @@ $hus = [
         'b9907ec, 6bd2ac4', 3,
     ],
     [
-        'HU-19', 'Sprint 3', 'Exportación de Actas de Cierre y Reportes Oficiales en Excel',
+        'HU-19', 'Sprint 3', 'Exportación de Actas de Cierre y Balances Financieros en Excel',
         'Administrador / Jefatura',
         'Generar el Acta de Cierre Académica, el Reporte Financiero de Caja y el Catálogo General en Excel',
         'Rendir cuentas a Jefatura de Departamento y Dirección de Carrera con balances oficiales',
         '1. CourseClosingExport con desglose de aprobados/reprobados. 2. FinancialReportExport con conciliación de ingresos/devoluciones. 3. Formato oficial.',
         'CourseClosingExport.php, FinancialReportExport.php, CoursesGeneralExport.php',
-        '81204c1, e527018', 6,
+        '81204c1, e527018', 8,
     ],
     [
         'HU-20', 'Sprint 3', 'Campaña de Difusión en Redes Sociales (Telegram, WhatsApp, FB)',
@@ -424,12 +426,11 @@ foreach ($headers3 as $i => $h) {
     $sheet3->getStyle("{$col}{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
 }
 
-// Extracción de commits representativos vinculados
+// Extracción de commits representativos vinculados al cronograma 14/09 a 23/10
 $commitMapping = [
-    ['8da6685', '2026-09-04', 'Sprint 1', 'HU-01, HU-03', 'Scaffolding', 'Initial commit & project baseline'],
-    ['e2c4885', '2026-09-10', 'Sprint 1', 'HU-01, HU-03, HU-04', 'Database', 'feat: add database schema with migrations, seeders, and factories'],
-    ['87d5df8', '2026-09-12', 'Sprint 1', 'HU-01, HU-03, HU-04', 'Filament Admin', 'feat: add Filament admin panel with full CourseResource'],
-    ['b9907ec', '2026-09-13', 'Sprint 1', 'HU-01, HU-02, HU-18', 'Public & Instructor', 'feat: add public components, instructor panel, docs, and tests'],
+    // Sprint 1 (14/09 - 27/09)
+    ['160c256', '2026-09-14', 'Sprint 1', 'HU-01, HU-03', 'Security Baseline', 'Remove test credentials from README & finalize env baseline'],
+    ['8daf901', '2026-09-15', 'Sprint 1', 'HU-01, HU-03, HU-04', 'Scaffolding Fix', 'fix: audit fixes — enums, fields, routes, config, and consistency'],
     ['9b4129d', '2026-09-16', 'Sprint 1', 'HU-01, HU-02, HU-04, HU-05, HU-06', 'Core Business', 'feat: implement HU-01, HU-02, HU-08, HU-09, HU-15 (Catalog, Preinscription, Groups, Payments)'],
     ['6da4de3', '2026-09-18', 'Sprint 1', 'HU-05', 'Payment Rules', 'fix: resolve architecture violations, add PaymentStatus enum, clean UI tokens'],
     ['6c2c312', '2026-09-20', 'Sprint 1', 'HU-01, HU-03', 'Cloudinary Storage', 'feat: integrate Cloudinary filesystem driver for images and certificate PDFs'],
@@ -438,30 +439,35 @@ $commitMapping = [
     ['ec8d5b8', '2026-09-21', 'Sprint 1', 'HU-02', 'Preinscription Step 2', 'feat(preinscription): add submission confirmation screen and strict regex validation'],
     ['d825d56', '2026-09-21', 'Sprint 1', 'HU-04', 'Auto Duration', 'feat(groups): auto-calculate hora_fin, fix session durations, periodo select'],
     ['2c0b3c9', '2026-09-22', 'Sprint 1', 'HU-02', 'Atomic Duplicate Lock', 'feat(preinscription): block duplicate enrollments with clear messages and rate limit'],
+    ['3353e74', '2026-09-24', 'Sprint 1', 'HU-07, HU-08', 'Finance & Boleta PDF', 'feat(finance): add auxiliar discount gate, refunds, group transfer, and boleta pdf'],
+    ['3780d09', '2026-09-25', 'Sprint 1', 'HU-03, HU-07', 'Course Pricing Source', 'feat(pricing): use editable course prices as source of truth'],
+    ['9df99d5', '2026-09-25', 'Sprint 1', 'HU-05', 'Cashier CI Gate', 'feat(payments): unify payment registration and require photocopy of CI'],
 
-    // Sprint 2 Commits
-    ['11d2e9d', '2026-09-21', 'Sprint 2', 'HU-07', 'Google Sheets Integration', 'feat(integrations): add google sheets integration service, settings and export builders'],
-    ['b1b29d6', '2026-09-21', 'Sprint 2', 'HU-08', 'Attendance Page', 'feat(instructor): register MarkAttendance page in instructor panel'],
-    ['e525be5', '2026-09-22', 'Sprint 2', 'HU-08', 'Attendance Grid', 'feat(instructor): add mark attendance grid page and consolidate navigation'],
-    ['e3cc65b', '2026-09-23', 'Sprint 2', 'HU-07', 'Background Sheets Sync', 'feat(sheets): implement queued and scheduled google sheets synchronization'],
-    ['e7a88c1', '2026-09-24', 'Sprint 2', 'HU-09, HU-12', 'Holidays & Group Fusion', 'feat(academic): align session durations, late holiday detection, and group fusion'],
-    ['3353e74', '2026-09-24', 'Sprint 2', 'HU-10, HU-11, HU-12, HU-13', 'Finance & Boleta PDF', 'feat(finance): add auxiliar discount gate, refunds, group transfer, and boleta pdf'],
-    ['3780d09', '2026-09-25', 'Sprint 2', 'HU-03, HU-10', 'Course Pricing Source', 'feat(pricing): use editable course prices as source of truth'],
-    ['9df99d5', '2026-09-25', 'Sprint 2', 'HU-05', 'Cashier CI Gate', 'feat(payments): unify payment registration and require photocopy of CI'],
-    ['31e1a50', '2026-09-25', 'Sprint 2', 'HU-08', 'QR Attendance Marking', 'feat(attendance): add attendance CRUD, instructor marking, and QR registration'],
+    // Sprint 2 (28/09 - 11/10)
     ['464f43f', '2026-09-29', 'Sprint 2', 'HU-05, HU-06, HU-13', 'Cashier Auto-Enablement', 'feat(preinscriptions): centralize cashier flow, add refund actions and bidirectional auto-enablement'],
     ['1c04bb8', '2026-10-01', 'Sprint 2', 'HU-12', 'Assisted Merge', 'feat(groups): implement assisted group merge and enable preinscriptions on unenabled groups'],
+    ['6bd2ac4', '2026-10-02', 'Sprint 2', 'HU-17, HU-18', 'Public Download', 'feat(certificates): enable public certificate download via unique code on verification view'],
+    ['63149f4', '2026-10-03', 'Sprint 2', 'HU-05, HU-13', 'Payment Rejection', 'fix(preinscriptions): add reject payment action, reactivate from RETIRADO, and notify on rejection'],
+    ['c76482c', '2026-10-06', 'Sprint 2', 'HU-14', 'Student Requests Domain', 'feat(requests): add student request domain for group change and refund flows'],
+    ['df2bffa', '2026-10-06', 'Sprint 2', 'HU-14', 'Admin Requests Inbox', 'feat(requests): add student request inbox and admin approval panel'],
+    ['ca67976', '2026-10-07', 'Sprint 2', 'HU-14', 'Action Consolidation', 'refactor(preinscriptions): remove duplicated group change and refund actions from admin resource'],
+    ['3df6245', '2026-10-08', 'Sprint 2', 'HU-15', 'Course Interest Queue', 'feat(interests): add course interest registry for courses at capacity'],
+    ['8902d6a', '2026-10-09', 'Sprint 2', 'HU-15', 'Slot Available Email', 'feat(interests): queue slot-available notification to interested students'],
+    ['2317584', '2026-10-09', 'Sprint 2', 'HU-15', 'Catalog CTA', 'feat(interests): add interested-student call to action to public catalog'],
+    ['d86a0f0', '2026-10-10', 'Sprint 2', 'HU-15', 'Admin Interest View', 'feat(interests): add admin interest overview and notify action'],
+    ['51ff850', '2026-10-11', 'Sprint 2', 'HU-15', 'Conversion Exclude', 'fix(interests): exclude converted students before notifying slot availability'],
 
-    // Sprint 3 Commits
-    ['c76482c', '2026-10-06', 'Sprint 3', 'HU-14', 'Student Requests Domain', 'feat(requests): add student request domain for group change and refund flows'],
-    ['df2bffa', '2026-10-06', 'Sprint 3', 'HU-14', 'Admin Requests Inbox', 'feat(requests): add student request inbox and admin approval panel'],
-    ['3df6245', '2026-10-08', 'Sprint 3', 'HU-15', 'Course Interest Queue', 'feat(interests): add course interest registry for courses at capacity'],
-    ['8902d6a', '2026-10-09', 'Sprint 3', 'HU-15', 'Slot Available Email', 'feat(interests): queue slot-available notification to interested students'],
-    ['2317584', '2026-10-09', 'Sprint 3', 'HU-15', 'Catalog CTA', 'feat(interests): add interested-student call to action to public catalog'],
-    ['d86a0f0', '2026-10-10', 'Sprint 3', 'HU-15', 'Admin Interest View', 'feat(interests): add admin interest overview and notify action'],
+    // Sprint 3 (12/10 - 23/10)
+    ['82f350a', '2026-10-12', 'Sprint 3', 'HU-17', 'Notification Polish', 'Notificaciones: improve feedback on certificate issuance'],
+    ['47712e8', '2026-10-12', 'Sprint 3', 'HU-17', 'Direct Certificate Approval', 'feat(certificates): add direct approve action to skip signature steps'],
+    ['1805628', '2026-10-15', 'Sprint 3', 'HU-10, HU-17', 'Signature Workflow Removal', 'refactor: remove digital signature stamping and gps attendance restrictions'],
     ['3cbfe66', '2026-10-15', 'Sprint 3', 'HU-17', 'Direct Certificate Issue', 'refactor: eliminate signature status workflow and enable direct certificate issuance'],
     ['13e5f09', '2026-10-15', 'Sprint 3', 'HU-17', 'Hierarchical Certificates', 'feat(certificates): group global certificates by course and add relation manager to courses'],
+    ['73da6ab', '2026-10-15', 'Sprint 3', 'HU-17', 'Drill-Down Management', 'feat(certificates): implement hierarchical certificate management from course to student'],
+    ['fff3bc3', '2026-10-15', 'Sprint 3', 'HU-02, HU-05', 'Inscripciones Module', 'feat(preinscriptions): rename module to inscripciones and add status tabs with default pending filter'],
+    ['3fdb844', '2026-10-16', 'Sprint 3', 'HU-05, HU-10', 'Audit Payments Log', 'feat(ux): hide orphan crud menus and convert payments to audit log with sessions relation manager'],
     ['81204c1', '2026-10-16', 'Sprint 3', 'HU-16, HU-17, HU-19', 'Closing & Excel Reports', 'feat: implement course closing reports, password recovery flow, and course cancellation management'],
+    ['8750e16', '2026-10-17', 'Sprint 3', 'HU-06, HU-13', 'Domain Invariants Test', 'test(domain): cover group auto-enablement and refund flows'],
     ['434437e', '2026-10-19', 'Sprint 3', 'HU-20', 'SEO & OpenGraph Cards', 'feat(seo): add open graph and twitter card meta tags for course preinscriptions'],
     ['6e0cac6', '2026-10-19', 'Sprint 3', 'HU-20', 'Telegram Broadcast Service', 'feat(telegram): add channel broadcast service for published courses'],
     ['95ce455', '2026-10-20', 'Sprint 3', 'HU-20', 'Social Campaign Modal', 'feat(filament): add social media campaign action and group table actions'],

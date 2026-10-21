@@ -6,6 +6,8 @@ use App\Models\Course;
 use App\Models\Group;
 
 it('renders open graph meta tags on the preinscription page', function () {
+    $this->withoutVite();
+
     $course = Course::factory()->create([
         'nombre' => 'Curso de Especialización Laravel',
         'contenido' => 'Aprende arquitectura limpia y TDD.',
