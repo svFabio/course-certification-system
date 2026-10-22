@@ -103,26 +103,6 @@ it('hides the reject payment action when the preinscription has no pending or ve
     ])->assertTableActionHidden('rechazarPago', $preinscription);
 });
 
-it('hides the reject payment action when the student already has an emitted certificate', function () {
-    $this->actingAs($this->admin);
-
-    $group = makeRejectionTestGroup();
-    $preinscription = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
-    Payment::factory()->create([
-        'preinscription_id' => $preinscription->id,
-        'estado' => PaymentStatus::VERIFICADO,
-    ]);
-    \App\Models\Certificate::factory()->create([
-        'preinscription_id' => $preinscription->id,
-        'course_id' => $group->course_id,
-    ]);
-
-    Livewire::test(PreinscriptionsRelationManager::class, [
-        'ownerRecord' => $group->fresh(),
-        'pageClass' => ViewGroup::class,
-    ])->assertTableActionHidden('rechazarPago', $preinscription->fresh());
-});
-
 it('notifies when rejecting the only verified payment of an enrolled preinscription', function () {
     Mail::fake();
 

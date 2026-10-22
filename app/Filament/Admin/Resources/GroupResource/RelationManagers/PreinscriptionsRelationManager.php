@@ -205,14 +205,12 @@ class PreinscriptionsRelationManager extends RelationManager
                     ->label('Rechazar pago')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn (Preinscription $record): bool => $record->certificate === null
-                        && in_array($record->status, [
-                            PreinscriptionStatus::PENDIENTE_PAGO,
-                            PreinscriptionStatus::INSCRITO,
-                        ], true)
-                        && $record->payments()
-                            ->whereIn('estado', [PaymentStatus::VERIFICADO->value, PaymentStatus::PENDIENTE->value])
-                            ->exists())
+                    ->visible(fn (Preinscription $record): bool => in_array($record->status, [
+                        PreinscriptionStatus::PENDIENTE_PAGO,
+                        PreinscriptionStatus::INSCRITO,
+                    ], true) && $record->payments()
+                        ->whereIn('estado', [PaymentStatus::VERIFICADO->value, PaymentStatus::PENDIENTE->value])
+                        ->exists())
                     ->modalHeading('Rechazar el pago del participante')
                     ->modalDescription('El pago quedará marcado como rechazado, se liberará el cupo y se notificará al estudiante con el motivo indicado.')
                     ->form([

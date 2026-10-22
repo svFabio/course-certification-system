@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\CertificateLifecycleStatus;
 use App\Enums\CertificateType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,10 +21,6 @@ class Certificate extends Model
         'grupos_detalle',
         'codigo_unico',
         'pdf_path',
-        'pdf_escaneado_path',
-        'escaneado_en',
-        'entregado_en',
-        'estado',
         'emitido_en',
     ];
 
@@ -33,10 +28,7 @@ class Certificate extends Model
     {
         return [
             'tipo' => CertificateType::class,
-            'estado' => CertificateLifecycleStatus::class,
             'emitido_en' => 'datetime',
-            'escaneado_en' => 'datetime',
-            'entregado_en' => 'datetime',
         ];
     }
 
@@ -63,11 +55,6 @@ class Certificate extends Model
     public function isReady(): bool
     {
         return filled($this->pdf_path);
-    }
-
-    public function hasScannedCopy(): bool
-    {
-        return filled($this->pdf_escaneado_path);
     }
 
     public function beneficiaryName(): string

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\CertificateLifecycleStatus;
 use App\Enums\CertificateType;
 use App\Enums\PreinscriptionStatus;
 use App\Models\Certificate;
@@ -19,7 +18,6 @@ use App\Support\DesignTokens;
 use BaconQrCode\Common\ErrorCorrectionLevel;
 use BaconQrCode\Encoder\Encoder;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -69,7 +67,6 @@ class CertificateService
             'course_id' => $preinscription->group->course_id,
             'tipo' => $type,
             'codigo_unico' => $this->generateUniqueCode(),
-            'estado' => CertificateLifecycleStatus::GENERADO,
             'emitido_en' => now(),
         ]);
 
@@ -413,7 +410,6 @@ class CertificateService
             'tipo' => CertificateType::INSTRUCTOR,
             'grupos_detalle' => $gruposDetalle,
             'codigo_unico' => $this->generateUniqueCode(),
-            'estado' => CertificateLifecycleStatus::GENERADO,
             'emitido_en' => now(),
         ]);
 
@@ -539,8 +535,12 @@ class CertificateService
 
     public function createCertificatesZip(Collection $certificates, string $zipName): BinaryFileResponse
     {
-        $tempDir = $this->resolveWritableTempDirectory();
-        $zipPath = $tempDir.DIRECTORY_SEPARATOR.uniqid('certs_', true).'.zip';
+        $tempDir = storage_path('app/temp');
+        if (! file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $zipPath = $tempDir.'/'.uniqid('certs_', true).'.zip';
 
         $zip = new ZipArchive;
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
@@ -554,49 +554,11 @@ class CertificateService
             $zip->addFromString($filename, $content);
         }
 
-        if ($zip->close() !== true) {
-            @unlink($zipPath);
-            throw new \RuntimeException('No se pudo finalizar el archivo ZIP (permisos del directorio temporal).');
-        }
+        $zip->close();
 
         return response()->download($zipPath, $zipName, [
             'Content-Type' => 'application/zip',
         ])->deleteFileAfterSend(true);
-    }
-
-    private function resolveWritableTempDirectory(): string
-    {
-        $candidates = [
-            storage_path('app/temp'),
-            storage_path('app'),
-            sys_get_temp_dir(),
-        ];
-
-        foreach ($candidates as $dir) {
-            if (! is_dir($dir)) {
-                @mkdir($dir, 0775, true);
-            }
-
-            if (! is_dir($dir)) {
-                continue;
-            }
-
-            @chmod($dir, 0775);
-
-            if (! is_writable($dir)) {
-                continue;
-            }
-
-            $probe = $dir.DIRECTORY_SEPARATOR.'.write_probe_'.uniqid('', true);
-            if (@file_put_contents($probe, 'ok') === false) {
-                continue;
-            }
-            @unlink($probe);
-
-            return $dir;
-        }
-
-        throw new \RuntimeException('No hay un directorio temporal escribible para generar el ZIP.');
     }
 
     public function getCertificatePdfContent(Certificate $certificate): string
@@ -628,185 +590,5 @@ class CertificateService
         }
 
         return $this->generatePdf($certificate)->output();
-    }
-
-    /**
-     * Admin uploads (or replaces) the physically signed & scanned certificate.
-     * Accepts a Cloudinary/local storage path (Filament FileUpload) or an UploadedFile.
-     *
-     * @throws ValidationException
-     */
-    public function attachScannedCopy(Certificate $certificate, UploadedFile|string $file): Certificate
-    {
-        if ($certificate->isInstructorCertificate()) {
-            throw ValidationException::withMessages([
-                'archivo' => 'Solo se digitalizan certificados de estudiantes.',
-            ]);
-        }
-
-        $path = $this->storeScannedFile($certificate, $file);
-        $previousPath = $certificate->pdf_escaneado_path;
-
-        $certificate->update([
-            'pdf_escaneado_path' => $path,
-            'escaneado_en' => now(),
-            'estado' => CertificateLifecycleStatus::DIGITALIZADO,
-        ]);
-
-        if (filled($previousPath) && $previousPath !== $path) {
-            $this->deleteStoredFile($previousPath);
-        }
-
-        return $certificate->fresh() ?? $certificate;
-    }
-
-    /**
-     * @throws ValidationException
-     */
-    public function markAsDelivered(Certificate $certificate): Certificate
-    {
-        if ($certificate->isInstructorCertificate()) {
-            throw ValidationException::withMessages([
-                'certificate' => 'Solo se marca entrega física de certificados de estudiantes.',
-            ]);
-        }
-
-        if ($certificate->estado === CertificateLifecycleStatus::DIGITALIZADO) {
-            throw ValidationException::withMessages([
-                'certificate' => 'El certificado ya está digitalizado; no es necesario marcar entrega.',
-            ]);
-        }
-
-        $certificate->update([
-            'entregado_en' => now(),
-            'estado' => CertificateLifecycleStatus::ENTREGADO,
-        ]);
-
-        return $certificate->fresh() ?? $certificate;
-    }
-
-    /**
-     * @throws ValidationException
-     */
-    public function downloadScanned(Certificate $certificate): Response
-    {
-        if (! $certificate->hasScannedCopy()) {
-            throw ValidationException::withMessages([
-                'certificate' => 'Este certificado aún no tiene una copia digitalizada.',
-            ]);
-        }
-
-        $path = $certificate->pdf_escaneado_path;
-        $disk = $this->resolveDiskForPath($path);
-        $extension = pathinfo((string) $path, PATHINFO_EXTENSION) ?: 'pdf';
-        $filename = 'certificado-digital-'.Str::slug($certificate->codigo_unico).'.'.$extension;
-
-        if ($disk === null) {
-            throw ValidationException::withMessages([
-                'certificate' => 'No se encontró el archivo digitalizado en el almacenamiento.',
-            ]);
-        }
-
-        $mime = match (strtolower($extension)) {
-            'pdf' => 'application/pdf',
-            'jpg', 'jpeg' => 'image/jpeg',
-            'png' => 'image/png',
-            default => 'application/octet-stream',
-        };
-
-        return Storage::disk($disk)->download($path, $filename, ['Content-Type' => $mime]);
-    }
-
-    private function storeScannedFile(Certificate $certificate, UploadedFile|string $file): string
-    {
-        if (is_string($file)) {
-            if (! filled($file)) {
-                throw ValidationException::withMessages([
-                    'archivo' => 'Debe seleccionar un archivo PDF, JPG o PNG.',
-                ]);
-            }
-
-            return $file;
-        }
-
-        $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'pdf');
-        if (! in_array($extension, ['pdf', 'jpg', 'jpeg', 'png'], true)) {
-            throw ValidationException::withMessages([
-                'archivo' => 'El archivo debe ser PDF, JPG o PNG.',
-            ]);
-        }
-
-        if ($file->getSize() > 5 * 1024 * 1024) {
-            throw ValidationException::withMessages([
-                'archivo' => 'El archivo no debe superar 5 MB.',
-            ]);
-        }
-
-        $path = 'certificates/scanned/'.$certificate->codigo_unico.'.'.$extension;
-        $options = in_array($extension, ['jpg', 'jpeg', 'png'], true)
-            ? ['resource_type' => 'image']
-            : ['resource_type' => 'raw'];
-
-        $saved = false;
-        try {
-            $saved = (bool) Storage::disk('cloudinary')->putFileAs(
-                'certificates/scanned',
-                $file,
-                $certificate->codigo_unico.'.'.$extension,
-                $options
-            );
-            if ($saved) {
-                return $path;
-            }
-        } catch (\Throwable) {
-            $saved = false;
-        }
-
-        $localPath = $file->storeAs('certificates/scanned', $certificate->codigo_unico.'.'.$extension, 'local');
-        if (! filled($localPath)) {
-            throw ValidationException::withMessages([
-                'archivo' => 'No se pudo guardar el archivo escaneado.',
-            ]);
-        }
-
-        return $localPath;
-    }
-
-    private function deleteStoredFile(string $path): void
-    {
-        foreach (['cloudinary', 'local'] as $disk) {
-            try {
-                if (Storage::disk($disk)->exists($path)) {
-                    Storage::disk($disk)->delete($path);
-                }
-            } catch (\Throwable) {
-                // ignore cleanup failures
-            }
-        }
-    }
-
-    private function resolveDiskForPath(?string $path): ?string
-    {
-        if (! filled($path)) {
-            return null;
-        }
-
-        try {
-            if (Storage::disk('cloudinary')->exists($path)) {
-                return 'cloudinary';
-            }
-        } catch (\Throwable) {
-            // Cloudinary unavailable
-        }
-
-        try {
-            if (Storage::disk('local')->exists($path)) {
-                return 'local';
-            }
-        } catch (\Throwable) {
-            // Local unavailable
-        }
-
-        return null;
     }
 }
