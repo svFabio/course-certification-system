@@ -41,7 +41,7 @@ docs(business-rules): update pricing table
 
 Las reglas de negocio se definen siempre en:
 
-1. `BUSINESS_RULES.md` — Documentacion
+1. `docs/BUSINESS_RULES.md` — Documentacion
 2. `app/Support/BusinessRules.php` — Implementacion
 
 Nunca hardcodear reglas de negocio en controladores o modelos.
@@ -57,7 +57,7 @@ Nunca hardcodear reglas de negocio en controladores o modelos.
 1. **Titulo claro**: Describir el cambio en una linea
 2. **Descripcion**: Explicar que y por que (no como)
 3. **Tests**: Incluir tests para nuevas funcionalidades
-4. **Documentacion**: Actualizar `BUSINESS_RULES.md` si aplica
+4. **Documentacion**: Actualizar `docs/BUSINESS_RULES.md` si aplica
 5. **Commits limpios**: Usar convencion de commits
 
 ## Testing

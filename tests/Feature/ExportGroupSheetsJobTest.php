@@ -116,7 +116,10 @@ it('payment verify dispatches a sheets refresh event for its group', function ()
     $group = Group::factory()->create(['course_id' => $course->id]);
     $preinscription = Preinscription::factory()->inscrito()->create(['group_id' => $group->id, 'fotocopia_ci' => true]);
 
-    $payment = Payment::factory()->pending()->create(['preinscription_id' => $preinscription->id]);
+    $payment = Payment::factory()->pending()->create([
+        'preinscription_id' => $preinscription->id,
+        'monto' => $preinscription->chargeable_price,
+    ]);
 
     $this->actingAs($user);
 

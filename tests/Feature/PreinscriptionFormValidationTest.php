@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Enums\CourseStatus;
 use App\Enums\GroupStatus;
 use App\Enums\PreinscriptionStatus;
+use App\Enums\TipoParticipante;
 use App\Livewire\PreinscriptionComponent;
 use App\Models\Course;
 use App\Models\Group;
@@ -265,7 +266,7 @@ it('allows service registration when the group is in no_habilitado status', func
         'nombres' => fake()->firstName(),
         'apellido_paterno' => fake()->lastName(),
         'email' => fake()->safeEmail(),
-        'tipo_participante' => 'umss',
+        'tipo_participante' => TipoParticipante::UMSS,
     ]);
 
     expect($preinscription)->toBeInstanceOf(Preinscription::class);
@@ -288,7 +289,7 @@ it('rejects service registration when the group is closed', function () {
         'nombres' => fake()->firstName(),
         'apellido_paterno' => fake()->lastName(),
         'email' => fake()->safeEmail(),
-        'tipo_participante' => 'umss',
+        'tipo_participante' => TipoParticipante::UMSS,
     ]))->toThrow(ValidationException::class, 'no está habilitado');
 
     expect(Preinscription::where('ci', $ci)->exists())->toBeFalse();
@@ -316,7 +317,7 @@ it('blocks re-registration when a rejected preinscription already exists for the
         'nombres' => fake()->firstName(),
         'apellido_paterno' => fake()->lastName(),
         'email' => fake()->safeEmail(),
-        'tipo_participante' => 'umss',
+        'tipo_participante' => TipoParticipante::UMSS,
     ]))->toThrow(ValidationException::class, 'rechazada');
 
     expect(Preinscription::where('ci', $ci)->count())->toBe(1);
@@ -476,7 +477,7 @@ it('rejects service registration when the group course has preinscription closed
         'nombres' => fake()->firstName(),
         'apellido_paterno' => fake()->lastName(),
         'email' => fake()->safeEmail(),
-        'tipo_participante' => 'umss',
+        'tipo_participante' => TipoParticipante::UMSS,
     ]))->toThrow(ValidationException::class, 'no acepta preinscripciones');
 
     expect(Preinscription::where('ci', $ci)->exists())->toBeFalse();
@@ -502,9 +503,117 @@ it('allows service registration when the group course is published', function ()
         'nombres' => fake()->firstName(),
         'apellido_paterno' => fake()->lastName(),
         'email' => fake()->safeEmail(),
-        'tipo_participante' => 'umss',
+        'tipo_participante' => TipoParticipante::UMSS,
     ]);
 
     expect($preinscription)->toBeInstanceOf(Preinscription::class);
     expect($preinscription->status)->toBe(PreinscriptionStatus::PENDIENTE_PAGO);
+});
+
+it('blocks duplicate preinscription in form when CI complement casing differs', function () {
+    $course = Course::factory()->create([
+        'carga_horaria' => '20',
+        'status' => CourseStatus::PUBLICADO,
+    ]);
+    $group = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::HABILITADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    $baseCiNumber = (string) fake()->numerify('#######');
+    $upperCi = $baseCiNumber.'-1A';
+    $lowerCi = $baseCiNumber.'-1a';
+
+    Preinscription::factory()->create([
+        'ci' => $upperCi,
+        'group_id' => $group->id,
+        'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+    ]);
+
+    Livewire::test(PreinscriptionComponent::class, ['group' => $group])
+        ->set('ci', $lowerCi)
+        ->set('nombres', fake()->firstName())
+        ->set('apellidoPaterno', fake()->lastName())
+        ->set('apellidoMaterno', fake()->lastName())
+        ->set('celular', '7'.fake()->numerify('#######'))
+        ->set('email', fake()->userName().'@gmail.com')
+        ->set('tipoParticipante', 'umss')
+        ->set('codSis', (string) fake()->numerify('#########'))
+        ->call('goToConfirmation')
+        ->assertHasErrors(['ci'])
+        ->assertSee('Ya enviaste tu preinscripción para este curso');
+});
+
+it('blocks duplicate registration in service when CI complement casing differs and normalizes CI to uppercase', function () {
+    $course = Course::factory()->create([
+        'carga_horaria' => '20',
+        'status' => CourseStatus::PUBLICADO,
+    ]);
+    $group = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::HABILITADO,
+        'cupo_minimo' => 15,
+        'cupo_maximo' => 30,
+    ]);
+
+    $baseCiNumber = (string) fake()->numerify('#######');
+    $upperCi = $baseCiNumber.'-1A';
+    $lowerCi = ' '.$baseCiNumber.'-1a ';
+
+    $registered = app(PreinscriptionService::class)->register([
+        'group_id' => $group->id,
+        'ci' => $lowerCi,
+        'nombres' => fake()->firstName(),
+        'apellido_paterno' => fake()->lastName(),
+        'email' => fake()->safeEmail(),
+        'tipo_participante' => TipoParticipante::UMSS,
+    ]);
+
+    expect($registered->ci)->toBe($upperCi);
+    expect($registered->getRawOriginal('ci'))->toBe($upperCi);
+
+    expect(fn () => app(PreinscriptionService::class)->register([
+        'group_id' => $group->id,
+        'ci' => $upperCi,
+        'nombres' => fake()->firstName(),
+        'apellido_paterno' => fake()->lastName(),
+        'email' => fake()->safeEmail(),
+        'tipo_participante' => TipoParticipante::UMSS,
+    ]))->toThrow(ValidationException::class, 'Ya enviaste tu preinscripción para este curso');
+});
+
+it('blocks moving preinscription when destination group already has the same CI in different casing', function () {
+    $course = Course::factory()->create([
+        'carga_horaria' => '20',
+        'status' => CourseStatus::PUBLICADO,
+    ]);
+    $groupOrigin = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::HABILITADO,
+    ]);
+    $groupDest = Group::factory()->create([
+        'course_id' => $course->id,
+        'status' => GroupStatus::HABILITADO,
+    ]);
+
+    $baseCiNumber = (string) fake()->numerify('#######');
+    $upperCi = $baseCiNumber.'-1A';
+    $lowerCi = $baseCiNumber.'-1a';
+
+    $preinscriptionDest = Preinscription::factory()->create([
+        'ci' => $upperCi,
+        'group_id' => $groupDest->id,
+        'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+    ]);
+
+    $preinscriptionOrigin = Preinscription::factory()->create([
+        'ci' => $lowerCi,
+        'group_id' => $groupOrigin->id,
+        'status' => PreinscriptionStatus::PENDIENTE_PAGO,
+    ]);
+
+    expect(fn () => app(PreinscriptionService::class)->moveToGroup($preinscriptionOrigin, $groupDest))
+        ->toThrow(ValidationException::class, 'El participante ya está preinscrito en el grupo de destino.');
 });

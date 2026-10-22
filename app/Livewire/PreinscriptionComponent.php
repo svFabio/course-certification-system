@@ -13,6 +13,7 @@ use App\Models\Preinscription;
 use App\Services\PreinscriptionService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Rule as LivewireRule;
@@ -146,7 +147,7 @@ class PreinscriptionComponent extends Component
             'apellidoPaterno' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/'],
             'apellidoMaterno' => ['nullable', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'\-]+$/'],
             'celular' => ['required', 'string', 'regex:/^[67][0-9]{7}$/'],
-            'email' => ['required', 'email:rfc,dns', 'max:150'],
+            'email' => ['required', 'email:rfc', 'max:150'],
             'tipoParticipante' => ['required', Rule::enum(TipoParticipante::class)],
             'auxiliarCertificado' => [
                 'nullable',
@@ -177,9 +178,13 @@ class PreinscriptionComponent extends Component
 
     public function goToConfirmation(): void
     {
+        if ($this->ci !== null) {
+            $this->ci = mb_strtoupper(trim($this->ci));
+        }
+
         $this->validate();
 
-        $existing = Preinscription::where('ci', $this->ci)
+        $existing = Preinscription::whereRaw('UPPER(TRIM(ci)) = ?', [$this->ci])
             ->whereHas('group', fn ($q) => $q->where('course_id', $this->group->course_id))
             ->whereIn('status', [
                 PreinscriptionStatus::PENDIENTE_PAGO,
@@ -208,7 +213,12 @@ class PreinscriptionComponent extends Component
 
     public function submit(PreinscriptionService $service): void
     {
+        if ($this->ci !== null) {
+            $this->ci = mb_strtoupper(trim($this->ci));
+        }
+
         $validated = $this->validate();
+        $validated['ci'] = mb_strtoupper(trim((string) $validated['ci']));
 
         $ciKey = 'preinscripcion:ci:'.mb_strtolower((string) $validated['ci']);
         $ipKey = 'preinscripcion:ip:'.request()->ip();
@@ -281,10 +291,17 @@ class PreinscriptionComponent extends Component
     public function render()
     {
         $this->group?->loadMissing('course');
+        $course = $this->group?->course;
 
         return view('livewire.preinscription-component', [
             'group' => $this->group,
             'availableGroups' => $this->availableGroups,
+        ])->layout('components.layouts.app', [
+            'title' => $course ? "{$course->nombre} — Preinscripción UMSS" : 'Preinscripción',
+            'ogTitle' => $course ? "Curso: {$course->nombre} — Formación Continua UMSS" : 'Preinscripción UMSS',
+            'ogDescription' => $course ? Str::limit(strip_tags((string) $course->contenido), 160) : 'Preinscripción a cursos de Formación Continua UMSS',
+            'ogImage' => $course?->portada_url,
+            'ogUrl' => url()->current(),
         ]);
     }
 }

@@ -49,7 +49,7 @@ class CoursesSeeder extends Seeder
             [
                 'nombre' => 'Mantenimiento y Reparación de Computadoras',
                 'contenido' => 'Diagnóstico de hardware, ensamble de componentes, optimización de sistemas operativos y mantenimiento preventivo y correctivo de PCs y laptops.',
-                'portada_path' => null,
+                'portada_path' => 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=1200&h=675&q=80',
                 'carga_horaria' => '20',
                 'nivel' => CourseLevel::BASICO,
                 'periodo' => '1-2026',
@@ -81,7 +81,7 @@ class CoursesSeeder extends Seeder
             [
                 'nombre' => 'Programación con Scratch para Niños y Jóvenes',
                 'contenido' => 'Fundamentos de lógica algorítmica, animación interactiva, estructuras condicionales y desarrollo de videojuegos didácticos con bloques visuales.',
-                'portada_path' => null,
+                'portada_path' => 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1200&h=675&q=80',
                 'carga_horaria' => '20',
                 'nivel' => CourseLevel::BASICO,
                 'periodo' => '1-2026',
@@ -103,7 +103,7 @@ class CoursesSeeder extends Seeder
             [
                 'nombre' => 'Desarrollo de Aplicaciones Web con Laravel y Livewire',
                 'contenido' => 'Arquitectura MVC, Eloquent ORM avanzado, Livewire 3 reactivo, diseño con Tailwind CSS y generación de APIs REST seguras.',
-                'portada_path' => null,
+                'portada_path' => 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&h=675&q=80',
                 'carga_horaria' => '30',
                 'nivel' => CourseLevel::INTERMEDIO,
                 'periodo' => '1-2026',
@@ -125,7 +125,7 @@ class CoursesSeeder extends Seeder
             [
                 'nombre' => 'Diseño Gráfico Publicitario e Identidad Corporativa',
                 'contenido' => 'Creación de piezas gráficas para redes sociales, retoque digital, teoría del color, tipografía y branding empresarial.',
-                'portada_path' => null,
+                'portada_path' => 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=1200&h=675&q=80',
                 'carga_horaria' => '20',
                 'nivel' => CourseLevel::BASICO,
                 'periodo' => '1-2026',
@@ -147,7 +147,7 @@ class CoursesSeeder extends Seeder
             [
                 'nombre' => 'Administración de Redes y Seguridad Informática',
                 'contenido' => 'Configuración de switches y routers Cisco, protocolos TCP/IP, subnetting IPv4/IPv6, firewalls y hardening de servidores Linux.',
-                'portada_path' => null,
+                'portada_path' => 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1200&h=675&q=80',
                 'carga_horaria' => '30',
                 'nivel' => CourseLevel::AVANZADO,
                 'periodo' => '2-2026',

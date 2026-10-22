@@ -22,7 +22,9 @@ class PaymentFactory extends Factory
     {
         return [
             'preinscription_id' => Preinscription::factory(),
-            'monto' => 80.00,
+            'monto' => fn (array $attributes) => isset($attributes['preinscription_id'])
+                ? (Preinscription::find($attributes['preinscription_id'])?->chargeable_price ?? 80.00)
+                : 80.00,
             'metodo' => fake()->randomElement([PaymentMethod::EFECTIVO, PaymentMethod::QR]),
             'estado' => PaymentStatus::PENDIENTE,
             'numero_comprobante' => 'COMP-'.fake()->unique()->numerify('#####'),

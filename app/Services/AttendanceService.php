@@ -13,6 +13,7 @@ use App\Models\Session;
 use App\Models\User;
 use App\Support\BusinessRules;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class AttendanceService
@@ -62,8 +63,10 @@ class AttendanceService
         }
 
         if (! empty($params['ci'])) {
+            $normalizedCi = mb_strtoupper(trim((string) $params['ci']));
+
             return Preinscription::where('group_id', $groupId)
-                ->where('ci', $params['ci'])
+                ->whereRaw('UPPER(TRIM(ci)) = ?', [$normalizedCi])
                 ->first();
         }
 
@@ -137,23 +140,30 @@ class AttendanceService
             $stage[(int) $sessionId][(int) $preinscriptionId] = $status;
         }
 
-        foreach ($stage as $sessionId => $rows) {
-            foreach ($rows as $preinscriptionId => $status) {
-                if ($status === null || $status === '') {
-                    Attendance::where('session_id', $sessionId)
-                        ->where('preinscription_id', $preinscriptionId)
-                        ->delete();
-                } else {
-                    Attendance::updateOrCreate(
-                        [
-                            'session_id' => $sessionId,
-                            'preinscription_id' => $preinscriptionId,
-                        ],
-                        ['status' => AttendanceStatus::from($status)],
-                    );
+        DB::transaction(function () use ($stage): void {
+            foreach ($stage as $sessionId => $rows) {
+                foreach ($rows as $preinscriptionId => $status) {
+                    if ($status === null || $status === '') {
+                        Attendance::where('session_id', $sessionId)
+                            ->where('preinscription_id', $preinscriptionId)
+                            ->delete();
+                    } else {
+                        Attendance::updateOrCreate(
+                            [
+                                'session_id' => $sessionId,
+                                'preinscription_id' => $preinscriptionId,
+                            ],
+                            [
+                                'status' => AttendanceStatus::from($status),
+                                'lat' => null,
+                                'lng' => null,
+                                'distancia_metros' => null,
+                            ],
+                        );
+                    }
                 }
             }
-        }
+        });
     }
 
     public function registerFromQR(Session $session, int $preinscriptionId, ?float $lat = null, ?float $lng = null): Attendance

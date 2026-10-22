@@ -47,10 +47,17 @@ class PaymentService
 
     public function verify(Payment $payment): void
     {
-        $payment->loadMissing('preinscription');
+        $payment->loadMissing('preinscription.group.course');
+
+        if ($payment->preinscription === null) {
+            throw ValidationException::withMessages([
+                'preinscription' => 'El pago debe estar asociado a una preinscripción válida.',
+            ]);
+        }
 
         $this->assertAuxiliarCertificateApproved($payment->preinscription);
         $this->assertPhotocopyDelivered($payment->preinscription);
+        $this->verifyAmount($payment->preinscription, (float) $payment->monto);
 
         DB::transaction(function () use ($payment): void {
             $payment->update([
@@ -86,11 +93,13 @@ class PaymentService
         });
     }
 
-    public function verifyAmount(int $preinscriptionId, float $amount): void
+    public function verifyAmount(int|Preinscription $preinscription, float $amount): void
     {
-        $preinscription = Preinscription::with('group.course')->findOrFail($preinscriptionId);
+        $model = $preinscription instanceof Preinscription
+            ? $preinscription->loadMissing('group.course')
+            : Preinscription::with('group.course')->findOrFail($preinscription);
 
-        $expected = $preinscription->chargeable_price;
+        $expected = $model->chargeable_price;
 
         if (abs($amount - $expected) > 0.005) {
             throw ValidationException::withMessages([

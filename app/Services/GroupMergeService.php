@@ -87,6 +87,30 @@ class GroupMergeService
                 ]);
             }
 
+            $destinationCis = Preinscription::query()
+                ->where('group_id', $destination->getKey())
+                ->pluck('ci')
+                ->map(fn ($ci) => mb_strtoupper(trim((string) $ci)))
+                ->flip();
+
+            $conflicting = $toMove->filter(function (Preinscription $participant) use ($destinationCis) {
+                $normalizedCi = mb_strtoupper(trim((string) $participant->ci));
+
+                return isset($destinationCis[$normalizedCi]);
+            });
+
+            if ($conflicting->isNotEmpty()) {
+                $messages = [
+                    'grupo_destino_id' => 'El grupo destino ya contiene registros para uno o más participantes seleccionados para traslado. Cambie su decisión a reembolso o retiro.',
+                ];
+
+                foreach ($conflicting as $participant) {
+                    $messages["participant_decisions.{$participant->id}"] = "El participante {$participant->full_name} ya está registrado en el grupo destino (CI: {$participant->ci}).";
+                }
+
+                throw ValidationException::withMessages($messages);
+            }
+
             // Process mutations atomically
             foreach ($activeParticipants as $participant) {
                 if ($toMove->contains($participant)) {

@@ -6,6 +6,26 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name', 'UMSS Cursos') }}</title>
 
+    {{-- Open Graph / Facebook / WhatsApp --}}
+    <meta property="og:type" content="{{ $ogType ?? 'website' }}">
+    <meta property="og:url" content="{{ $ogUrl ?? url()->current() }}">
+    <meta property="og:title" content="{{ $ogTitle ?? ($title ?? config('app.name', 'UMSS Cursos')) }}">
+    <meta property="og:description" content="{{ $ogDescription ?? 'Plataforma oficial de Formación Continua y certificación digital de la Universidad Mayor de San Simón (UMSS).' }}">
+    @if (!empty($ogImage))
+        <meta property="og:image" content="{{ $ogImage }}">
+    @endif
+    <meta property="og:site_name" content="Formación Continua UMSS">
+
+    {{-- Twitter / X --}}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $ogTitle ?? ($title ?? config('app.name', 'UMSS Cursos')) }}">
+    <meta name="twitter:description" content="{{ $ogDescription ?? 'Plataforma oficial de Formación Continua y certificación digital de la Universidad Mayor de San Simón (UMSS).' }}">
+    @if (!empty($ogImage))
+        <meta name="twitter:image" content="{{ $ogImage }}">
+    @endif
+
+    @stack('meta')
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">

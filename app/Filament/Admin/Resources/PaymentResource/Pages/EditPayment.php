@@ -20,7 +20,6 @@ class EditPayment extends EditRecord
         return [
             $this->getBackAction(),
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
         ];
     }
 }
