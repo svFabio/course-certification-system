@@ -125,7 +125,7 @@ class CertificatesRelationManager extends RelationManager
                     ->label('Descargar imprimible')
                     ->icon('heroicon-o-printer')
                     ->color('gray')
-                    ->url(fn (Certificate $record): string => app(CertificateService::class)->publicDownloadUrl($record))
+                    ->url(fn (Certificate $record): string => app(\App\Services\CertificateService::class)->publicDownloadUrl($record))
                     ->openUrlInNewTab(),
                 Tables\Actions\Action::make('marcarEntregado')
                     ->label('Marcar entregado')
