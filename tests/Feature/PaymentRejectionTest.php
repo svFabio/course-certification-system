@@ -9,6 +9,7 @@ use App\Enums\PreinscriptionStatus;
 use App\Filament\Admin\Resources\GroupResource\Pages\ViewGroup;
 use App\Filament\Admin\Resources\GroupResource\RelationManagers\PreinscriptionsRelationManager;
 use App\Mail\PaymentRejectedNotification;
+use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\Group;
 use App\Models\Payment;
@@ -112,7 +113,7 @@ it('hides the reject payment action when the student already has an emitted cert
         'preinscription_id' => $preinscription->id,
         'estado' => PaymentStatus::VERIFICADO,
     ]);
-    \App\Models\Certificate::factory()->create([
+    Certificate::factory()->create([
         'preinscription_id' => $preinscription->id,
         'course_id' => $group->course_id,
     ]);
