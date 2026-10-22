@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\CourseResource\RelationManagers;
 
+use App\Enums\CertificateLifecycleStatus;
 use App\Enums\CertificateType;
 use App\Models\Certificate;
 use App\Services\CertificateService;
@@ -15,6 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 class CertificatesRelationManager extends RelationManager
 {
@@ -43,9 +45,18 @@ class CertificatesRelationManager extends RelationManager
                 Forms\Components\Placeholder::make('codigo')
                     ->label('Código único')
                     ->content(fn (?Certificate $record): string => $record?->codigo_unico ?? '—'),
+                Forms\Components\Placeholder::make('estado_label')
+                    ->label('Estado')
+                    ->content(fn (?Certificate $record): string => $record?->estado?->getLabel() ?? '—'),
                 Forms\Components\Placeholder::make('emitido')
                     ->label('Fecha de emisión')
                     ->content(fn (?Certificate $record): string => $record?->emitido_en?->format('d/m/Y H:i') ?? '—'),
+                Forms\Components\Placeholder::make('entregado')
+                    ->label('Fecha de entrega física')
+                    ->content(fn (?Certificate $record): string => $record?->entregado_en?->format('d/m/Y H:i') ?? '—'),
+                Forms\Components\Placeholder::make('escaneado')
+                    ->label('Fecha de digitalización')
+                    ->content(fn (?Certificate $record): string => $record?->escaneado_en?->format('d/m/Y H:i') ?? '—'),
             ]);
     }
 
@@ -81,6 +92,10 @@ class CertificatesRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('tipo')
                     ->label('Tipo')
                     ->badge(),
+                Tables\Columns\TextColumn::make('estado')
+                    ->label('Estado')
+                    ->badge()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('codigo_unico')
                     ->label('Código único')
                     ->searchable()
@@ -101,14 +116,99 @@ class CertificatesRelationManager extends RelationManager
                 Tables\Filters\SelectFilter::make('tipo')
                     ->label('Tipo')
                     ->options(CertificateType::class),
+                Tables\Filters\SelectFilter::make('estado')
+                    ->label('Estado')
+                    ->options(CertificateLifecycleStatus::class),
             ])
             ->actions([
                 Tables\Actions\Action::make('descargar')
-                    ->label('Descargar PDF')
+                    ->label('Descargar imprimible')
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->url(fn (Certificate $record): string => app(\App\Services\CertificateService::class)->publicDownloadUrl($record))
+                    ->openUrlInNewTab(),
+                Tables\Actions\Action::make('marcarEntregado')
+                    ->label('Marcar entregado')
+                    ->icon('heroicon-o-hand-raised')
+                    ->color('warning')
+                    ->visible(fn (Certificate $record): bool => ! $record->isInstructorCertificate()
+                        && $record->estado === CertificateLifecycleStatus::GENERADO)
+                    ->requiresConfirmation()
+                    ->modalHeading('Marcar entrega física')
+                    ->modalDescription('Confirma que el certificado impreso y firmado fue entregado al estudiante.')
+                    ->action(function (Certificate $record, CertificateService $service): void {
+                        try {
+                            $service->markAsDelivered($record);
+                        } catch (ValidationException $e) {
+                            Notification::make()
+                                ->title('No se pudo marcar la entrega')
+                                ->body(collect($e->errors())->flatten()->implode(' '))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title('Certificado marcado como entregado')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('subirEscaneo')
+                    ->label(fn (Certificate $record): string => $record->hasScannedCopy() ? 'Reemplazar digital' : 'Subir escaneo')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->color('primary')
+                    ->visible(fn (Certificate $record): bool => ! $record->isInstructorCertificate())
+                    ->form([
+                        Forms\Components\FileUpload::make('archivo')
+                            ->label('Certificado firmado y escaneado')
+                            ->disk('cloudinary')
+                            ->directory('certificates/scanned')
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                            ->maxSize(5120)
+                            ->required()
+                            ->helperText('PDF, JPG o PNG. Máximo 5 MB.'),
+                    ])
+                    ->modalHeading(fn (Certificate $record): string => $record->hasScannedCopy()
+                        ? 'Reemplazar certificado digitalizado'
+                        : 'Subir certificado escaneado')
+                    ->modalSubmitActionLabel('Guardar')
+                    ->action(function (Certificate $record, array $data, CertificateService $service): void {
+                        try {
+                            $service->attachScannedCopy($record, $data['archivo']);
+                        } catch (ValidationException $e) {
+                            Notification::make()
+                                ->title('No se pudo guardar el escaneo')
+                                ->body(collect($e->errors())->flatten()->implode(' '))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title('Certificado digitalizado')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('descargarDigital')
+                    ->label('Descargar digital')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('success')
-                    ->url(fn (Certificate $record): string => route('certificado.descargar', $record))
-                    ->openUrlInNewTab(),
+                    ->visible(fn (Certificate $record): bool => $record->hasScannedCopy())
+                    ->action(function (Certificate $record, CertificateService $service): ?Response {
+                        try {
+                            return $service->downloadScanned($record);
+                        } catch (ValidationException $e) {
+                            Notification::make()
+                                ->title('No se pudo descargar')
+                                ->body(collect($e->errors())->flatten()->implode(' '))
+                                ->danger()
+                                ->send();
+
+                            return null;
+                        }
+                    }),
                 Tables\Actions\Action::make('reenviarNotificacion')
                     ->label('Reenviar notificación')
                     ->icon('heroicon-o-envelope')
