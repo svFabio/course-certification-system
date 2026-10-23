@@ -24,18 +24,16 @@
 - **Total de sesiones**: Calculado según carga horaria del curso.
 - **Reprogramación**: Campo `motivo_reprogramacion` disponible.
 - **Estado de sesión**: `dictada` (booleano).
-- **Código QR**: Generado automáticamente para cada sesión, usado para registro de asistencia.
+- **Registro de asistencia**: Gestionado mediante matriz interactiva en línea por sesión.
 
 ## 4. Asistencia
 
-- **Radio máximo permitido**: 100 metros (fijo).
-- **Cálculo de distancia**: Fórmula de Haversine (`App\Support\BusinessRules::haversineDistance()`).
+- **Modalidad**: Matriz interactiva en el panel del instructor (`MarkAttendance`) con guardado atómico en lote.
 - **Estados de asistencia**:
-  - `presente`: Distancia ≤ 100m
-  - `ausente`: No registrado
-  - `justificado`: Justificación manual
-  - `para_revision`: Distancia > 100m (enviado para revisión manual)
-- **Implementación**: `App\Services\AttendanceService`
+  - `presente`: Asistencia confirmada en aula.
+  - `ausente`: Falta o ausencia.
+  - `justificado`: Justificación o licencia aceptada por el docente.
+- **Implementación**: `App\Services\AttendanceService` y `App\Filament\Instructor\Pages\MarkAttendance`
 
 ## 5. Evaluación
 
@@ -109,9 +107,9 @@
 
 ## 13. Registro de Asistencia
 
-- **Mecanismo**: Escaneo de código QR provisto en la sesión.
-- **Validación**: Asociación estricta de la sesión al grupo e inscripción confirmada del estudiante.
-- **Cálculo de distancia**: Utilidad matemática `App\Support\BusinessRules::haversineDistance()` para telemetría opcional.
+- **Mecanismo**: Matriz interactiva en línea (`MarkAttendance`) en el panel del instructor con marcado individual o masivo por sesión.
+- **Validación**: Asociación estricta de la sesión al grupo asignado al docente e inscripción confirmada (`inscrito`) del estudiante.
+- **Persistencia**: Guardado atómico en lote por transacción en base de datos.
 
 ## 14. Reportes y Conciliación Académica y de Caja
 

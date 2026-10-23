@@ -11,7 +11,6 @@ use App\Models\Group;
 use App\Models\Preinscription;
 use App\Models\Session;
 use App\Models\User;
-use App\Support\BusinessRules;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -164,29 +163,6 @@ class AttendanceService
                 }
             }
         });
-    }
-
-    public function registerFromQR(Session $session, int $preinscriptionId, ?float $lat = null, ?float $lng = null): Attendance
-    {
-        $attendance = Attendance::updateOrCreate(
-            [
-                'session_id' => $session->id,
-                'preinscription_id' => $preinscriptionId,
-            ],
-            [
-                'status' => AttendanceStatus::PRESENTE,
-                'lat' => $lat,
-                'lng' => $lng,
-                'distancia_metros' => null,
-            ]
-        );
-
-        return $attendance;
-    }
-
-    public function calculateDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
-    {
-        return BusinessRules::haversineDistance($lat1, $lng1, $lat2, $lng2);
     }
 
     public function getAttendanceStats(Session $session): array

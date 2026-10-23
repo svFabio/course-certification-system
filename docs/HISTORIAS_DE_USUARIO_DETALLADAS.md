@@ -323,33 +323,33 @@ El sistema se conecta con Google Drive / Google Sheets mediante cuenta de servic
 
 
 
-### HU-10: Registro y Control de Asistencia Docente y QR
+### HU-10: Registro y Control de Asistencia Docente
 
 - **Puntos de Historia:** 5
 - **Prioridad:** Alta
 - **Estado:** Finalizada
 - **Versión:** 1.0
 - **Sprint:** Sprint 2
-- **Módulos Asociados:** Módulo de Asistencia (`AttendanceService`), Escáner QR (`AttendanceScanner.vue`), Matriz de Asistencia (`MarkAttendancePage`)
+- **Módulos Asociados:** Módulo de Asistencia (`AttendanceService`), Matriz de Asistencia (`MarkAttendance`)
 
 #### Descripción de la Historia
 > **Como** instructor o docente del curso  
-> **Quiero** registrar la asistencia de los estudiantes mediante escaneo de código QR o matriz interactiva en línea  
+> **Quiero** registrar la asistencia de los estudiantes mediante una matriz interactiva en línea  
 > **Para** controlar la asistencia de forma ágil y transparente, asegurando el cumplimiento del porcentaje mínimo para certificación.
 
-El instructor dispone de dos modalidades para asentar asistencia: escaneo móvil del código QR de la credencial/boleta del alumno (con geolocalización opcional del aula) o marcado masivo en la grilla web interactiva con guardado atómico por lote.
+El instructor dispone de una grilla web interactiva para asentar asistencia: visualiza la nómina de estudiantes inscritos frente a las sesiones del grupo, con marcado rápido de estados (`Presente`, `Falta`, `Licencia`) y guardado atómico por lote en base de datos.
 
 #### Criterios de Aceptación
 
-1. **Dado** que un estudiante presenta su código QR en el aula, **cuando** el instructor lo escanea desde el módulo móvil, **entonces** el sistema identifica la preinscripción por CI, valida que pertenezca al grupo y registra la asistencia de la sesión actual.
+1. **Dado** un instructor autenticado con grupos asignados, **cuando** accede a la matriz interactiva de asistencia y selecciona un grupo, **entonces** el sistema carga la nómina de estudiantes inscritos y las columnas correspondientes a cada sesión programada.
 
-2. **Dado** un registro de asistencia mediante escaneo móvil, **cuando** el dispositivo proporciona coordenadas GPS, **entonces** el sistema almacena opcionalmente la latitud y longitud tras validar que estén dentro de rangos geográficos válidos.
+2. **Dado** el módulo de matriz interactiva, **cuando** el docente marca o modifica los estados de asistencia (`Presente`, `Falta`, `Licencia`) para uno o varios estudiantes y presiona 'Guardar Asistencias', **entonces** el sistema persiste todos los cambios de forma atómica en una única transacción de base de datos.
 
-3. **Dado** un instructor autenticado en el panel docente, **cuando** un estudiante no pertenece a su grupo asignado, **entonces** el sistema bloquea el registro con un mensaje de advertencia indicando que el alumno no corresponde a la nómina.
+3. **Dado** un docente autenticado, **cuando** intenta registrar asistencia en un grupo o sesión que no le pertenece, **entonces** el sistema deniega la acción y restringe el acceso únicamente a los cursos y grupos asignados a su cargo.
 
-4. **Dado** el módulo de marcado manual por matriz, **cuando** el docente ajusta estados (`Presente`, `Falta`, `Licencia`) para múltiples alumnos y guarda, **entonces** el sistema persiste el lote de forma atómica en una única transacción.
+4. **Dado** que se registran asistencias en la matriz interactiva, **cuando** se desmarca o limpia el estado de asistencia de una celda y se guarda, **entonces** el sistema elimina el registro de asistencia correspondiente manteniendo la coherencia de la base de datos.
 
-5. **Dado** un grupo cuya ponderación de asistencia forma parte de la nota final, **when** se asienta una asistencia, **then** el sistema actualiza reactivamente el porcentaje acumulado del estudiante.
+5. **Dado** un grupo cuya ponderación de asistencia forma parte de la nota final, **cuando** se asienta una asistencia en la matriz, **entonces** el sistema actualiza reactivamente el porcentaje acumulado del estudiante para el cálculo automático en la matriz de calificaciones.
 
 ---
 
@@ -643,33 +643,33 @@ El sistema proporciona reportes consolidados en Excel de acuerdo a los formatos 
 
 
 
-### HU-20: Campaña de Difusión en Redes Sociales (Telegram, WhatsApp, FB)
+### HU-20: Difusión de Cursos
 
 - **Puntos de Historia:** 6
 - **Prioridad:** Media
 - **Estado:** Finalizada
 - **Versión:** 1.0
 - **Sprint:** Sprint 3
-- **Módulos Asociados:** Servicio de Telegram (`TelegramChannelService`), Generador de Campañas (`CampanaRedes`), MetaTags OpenGraph
+- **Módulos Asociados:** Servicio de Telegram (`TelegramChannelService`), Generador de Difusión, MetaTags OpenGraph
 
 #### Descripción de la Historia
 > **Como** administrador o encargado de difusión académica  
-> **Quiero** difundir automáticamente los cursos ofertados mediante canales de Telegram y generación de enlaces de WhatsApp y Facebook  
-> **Para** promocionar los cursos de manera ágil y masiva para alcanzar rápidamente el cupo mínimo de habilitación.
+> **Quiero** contar con herramientas para la difusión de cursos mediante el envío automatizado a grupos o canales de Telegram y la generación de una estructura formateada de publicación  
+> **Para** facilitar la divulgación ágil de la oferta académica con todos sus detalles (portada, aranceles y enlace directo) y alcanzar rápidamente el cupo mínimo requerido.
 
-El administrador cuenta con herramientas de marketing integradas en el panel. Puede difundir con un clic la ficha gráfica del curso con su texto promocional al canal oficial de Telegram vía Bot API y generar enlaces formateados para estados de WhatsApp y grupos de Facebook con metatags OpenGraph.
+El administrador cuenta con herramientas de difusión integradas en el panel. Puede difundir directamente con un clic la ficha gráfica del curso y su texto estructurado al canal o grupo oficial de Telegram vía Bot API. Para cualquier otra plataforma, el sistema formatea una estructura completa de publicación con los detalles del curso (nombre, contenido resumido, carga horaria, nivel, aranceles diferenciados y enlace directo de preinscripción), lista para ser copiada al portapapeles con un solo botón, manteniendo además las etiquetas OpenGraph para previsualizaciones enriquecidas.
 
 #### Criterios de Aceptación
 
-1. **Dado** un curso publicado con imagen de portada, **cuando** el administrador ejecuta la acción 'Difundir en Telegram', **entonces** el sistema transmite la fotografía y el texto resumen con aranceles y enlace directo al canal oficial configurado.
+1. **Dado** un curso publicado con imagen de portada, **cuando** el administrador ejecuta la acción 'Difundir curso' y confirma el envío, **entonces** el sistema transmite la fotografía de portada y el texto estructurado con aranceles y enlace directo al grupo o canal de Telegram configurado.
 
-2. **Dado** un curso publicado sin foto de portada, **cuando** se difunde por Telegram, **entonces** el servicio conmuta automáticamente a envío de mensaje de texto formateado sin fallar.
+2. **Dado** un curso publicado sin foto de portada, **cuando** se difunde a Telegram, **entonces** el servicio conmuta automáticamente al envío de mensaje de texto estructurado sin fallar.
 
-3. **Dado** que la clave o token del bot de Telegram es inválido o no está configurado, **cuando** se intenta la difusión, **entonces** el sistema maneja la excepción elegantemente y no filtra el token en logs ni vistas de error.
+3. **Dado** que la clave o token del bot de Telegram es inválido o no está configurado, **cuando** se intenta la difusión a Telegram, **entonces** el sistema maneja la excepción elegantemente informando al usuario y sin filtrar credenciales en logs ni vistas de error.
 
-4. **Dado** el modal de campaña de redes en Filament, **cuando** el administrador selecciona 'Compartir por WhatsApp', **entonces** se genera un enlace preformateado con mensaje persuasivo y URL corta del curso para chat móvil.
+4. **Dado** el modal de difusión del curso en Filament, **cuando** el administrador visualiza la estructura formateada de publicación, **entonces** dispone del texto con todos los detalles del curso (título, carga horaria, nivel, precios diferenciados y enlace directo) y un botón interactivo para copiar el contenido completo al portapapeles.
 
-5. **Dado** que se comparte el enlace del curso en redes sociales (Facebook, Twitter, WhatsApp), **cuando** la plataforma genera la previsualización, **entonces** el sistema entrega las etiquetas OpenGraph y Twitter Cards con la imagen y título oficial.
+5. **Dado** que se comparte el enlace público del curso, **cuando** cualquier plataforma genera la previsualización del enlace, **entonces** el sistema entrega las etiquetas OpenGraph con el título, descripción e imagen oficial del curso.
 
 ---
 

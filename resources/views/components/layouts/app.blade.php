@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name', 'UMSS Cursos') }}</title>
 
-    {{-- Open Graph / Facebook / WhatsApp --}}
+    {{-- Open Graph / Previsualización web --}}
     <meta property="og:type" content="{{ $ogType ?? 'website' }}">
     <meta property="og:url" content="{{ $ogUrl ?? url()->current() }}">
     <meta property="og:title" content="{{ $ogTitle ?? ($title ?? config('app.name', 'UMSS Cursos')) }}">

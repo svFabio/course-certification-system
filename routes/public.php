@@ -46,5 +46,3 @@ Route::get('/verificar-certificado/{codigo}/digital', PublicCertificateScannedDo
 Route::get('/boleta/{preinscription}', BoletaController::class)
     ->middleware('signed')
     ->name('boleta.descargar');
-
-Route::view('/asistencia', 'asistencia.escanear')->name('asistencia.escanear');

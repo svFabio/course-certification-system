@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\AttendanceScanResult;
 use App\Enums\AttendanceStatus;
 use App\Enums\UserRole;
 use App\Models\Attendance;
@@ -12,202 +11,65 @@ use App\Models\Preinscription;
 use App\Models\Session;
 use App\Models\User;
 use App\Services\AttendanceService;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
-it('registers attendance successfully via qr scan without requiring coordinates', function () {
-    $user = User::factory()->create();
-    $course = Course::factory()->create(['instructor_id' => $user->id]);
-    $group = Group::factory()->create(['course_id' => $course->id]);
-    $session = Session::factory()->create(['group_id' => $group->id]);
-    $preinscription = Preinscription::factory()->inscrito()->create([
-        'group_id' => $group->id,
-        'email' => $user->email,
-    ]);
-
-    $response = $this->actingAs($user)
-        ->withoutMiddleware(ValidateCsrfToken::class)
-        ->postJson('/api/asistencia/registrar', [
-            'session_id' => $session->id,
-        ]);
-
-    $response->assertOk()
-        ->assertJson([
-            'status' => AttendanceScanResult::PRESENTE->value,
-            'attendance_status' => AttendanceStatus::PRESENTE->value,
-        ]);
-
-    $this->assertDatabaseHas('attendances', [
-        'session_id' => $session->id,
-        'preinscription_id' => $preinscription->id,
-        'status' => AttendanceStatus::PRESENTE->value,
-    ]);
-});
-
-it('registers attendance with optional coordinates when provided', function () {
-    $user = User::factory()->create();
-    $course = Course::factory()->create(['instructor_id' => $user->id]);
-    $group = Group::factory()->create(['course_id' => $course->id]);
-    $session = Session::factory()->create(['group_id' => $group->id]);
-    $preinscription = Preinscription::factory()->inscrito()->create([
-        'group_id' => $group->id,
-        'email' => $user->email,
-    ]);
-
-    $response = $this->actingAs($user)
-        ->withoutMiddleware(ValidateCsrfToken::class)
-        ->postJson('/api/asistencia/registrar', [
-            'session_id' => $session->id,
-            'lat' => -17.3938,
-            'lng' => -66.1470,
-        ]);
-
-    $response->assertOk()
-        ->assertJson([
-            'status' => AttendanceScanResult::PRESENTE->value,
-            'attendance_status' => AttendanceStatus::PRESENTE->value,
-        ]);
-
-    $this->assertDatabaseHas('attendances', [
-        'session_id' => $session->id,
-        'preinscription_id' => $preinscription->id,
-        'status' => AttendanceStatus::PRESENTE->value,
-        'lat' => -17.3938,
-        'lng' => -66.1470,
-    ]);
-});
-
-it('rejects attendance registration when the instructor does not own the session group', function () {
-    $instructorA = User::factory()->create();
-    $instructorB = User::factory()->create();
-
-    $course = Course::factory()->create(['instructor_id' => $instructorA->id]);
-    $group = Group::factory()->create(['course_id' => $course->id]);
-    $session = Session::factory()->create(['group_id' => $group->id]);
-
-    // Resolvable for instructor B on purpose: only the ownership check can stop this request.
-    Preinscription::factory()->inscrito()->create([
-        'group_id' => $group->id,
-        'email' => $instructorB->email,
-    ]);
-
-    $response = $this->actingAs($instructorB)
-        ->withoutMiddleware(ValidateCsrfToken::class)
-        ->postJson('/api/asistencia/registrar', [
-            'session_id' => $session->id,
-        ]);
-
-    $response->assertStatus(403)
-        ->assertJson([
-            'message' => 'No tiene permisos para registrar asistencia en esta sesión.',
-        ]);
-
-    $this->assertDatabaseMissing('attendances', ['session_id' => $session->id]);
-});
-
-it('allows an admin to register attendance on any session group', function () {
+beforeEach(function () {
+    Role::firstOrCreate(['name' => UserRole::INSTRUCTOR->value]);
     Role::firstOrCreate(['name' => UserRole::ADMIN->value]);
+});
+
+it('authorizes instructor owner and admin to manage session attendance', function () {
+    $service = app(AttendanceService::class);
 
     $instructor = User::factory()->create();
+    $instructor->assignRole(UserRole::INSTRUCTOR->value);
+
+    $otherInstructor = User::factory()->create();
+    $otherInstructor->assignRole(UserRole::INSTRUCTOR->value);
+
     $admin = User::factory()->create();
     $admin->assignRole(UserRole::ADMIN->value);
 
     $course = Course::factory()->create(['instructor_id' => $instructor->id]);
     $group = Group::factory()->create(['course_id' => $course->id]);
     $session = Session::factory()->create(['group_id' => $group->id]);
+
+    expect($service->canManageSession($session, $instructor))->toBeTrue();
+    expect($service->canManageSession($session, $admin))->toBeTrue();
+    expect($service->canManageSession($session, $otherInstructor))->toBeFalse();
+    expect($service->canManageSession($session, null))->toBeFalse();
+});
+
+it('finds preinscription by CI regardless of case and trimming', function () {
+    $course = Course::factory()->create();
+    $group = Group::factory()->create(['course_id' => $course->id]);
+    $baseCi = (string) fake()->numerify('#######');
     $preinscription = Preinscription::factory()->inscrito()->create([
         'group_id' => $group->id,
-        'email' => $instructor->email,
+        'ci' => $baseCi.'-1A',
     ]);
 
-    $response = $this->actingAs($admin)
-        ->withoutMiddleware(ValidateCsrfToken::class)
-        ->postJson('/api/asistencia/registrar', [
-            'session_id' => $session->id,
-            'preinscription_id' => $preinscription->id,
-        ]);
+    $service = app(AttendanceService::class);
 
-    $response->assertOk();
-
-    $this->assertDatabaseHas('attendances', [
-        'session_id' => $session->id,
-        'preinscription_id' => $preinscription->id,
-        'status' => AttendanceStatus::PRESENTE->value,
-    ]);
+    $found = $service->findPreinscription(['ci' => ' '.$baseCi.'-1a '], $group->id);
+    expect($found)->not->toBeNull();
+    expect($found->id)->toBe($preinscription->id);
 });
 
-it('rejects a preinscription that does not belong to the session group', function () {
-    $instructor = User::factory()->create();
-
-    $course = Course::factory()->create(['instructor_id' => $instructor->id]);
-    $group = Group::factory()->create(['course_id' => $course->id]);
-    $session = Session::factory()->create(['group_id' => $group->id]);
-
-    $foreignPreinscription = Preinscription::factory()->inscrito()->create([
-        'group_id' => Group::factory()->create()->id,
-    ]);
-
-    $response = $this->actingAs($instructor)
-        ->withoutMiddleware(ValidateCsrfToken::class)
-        ->postJson('/api/asistencia/registrar', [
-            'session_id' => $session->id,
-            'preinscription_id' => $foreignPreinscription->id,
-        ]);
-
-    $response->assertStatus(422);
-
-    $this->assertDatabaseMissing('attendances', ['session_id' => $session->id]);
-});
-
-it('rejects out of range coordinates before geolocation math', function () {
-    $instructor = User::factory()->create();
-
-    $course = Course::factory()->create(['instructor_id' => $instructor->id]);
-    $group = Group::factory()->create(['course_id' => $course->id]);
-    $session = Session::factory()->create(['group_id' => $group->id]);
-
-    Preinscription::factory()->inscrito()->create([
-        'group_id' => $group->id,
-        'email' => $instructor->email,
-    ]);
-
-    $response = $this->actingAs($instructor)
-        ->withoutMiddleware(ValidateCsrfToken::class)
-        ->postJson('/api/asistencia/registrar', [
-            'session_id' => $session->id,
-            'lat' => 999,
-            'lng' => -66.15001,
-        ]);
-
-    $response->assertStatus(422);
-
-    $this->assertDatabaseMissing('attendances', ['session_id' => $session->id]);
-});
-
-it('persists a manual attendance batch atomically and clears prior gps coordinates', function () {
+it('persists a manual attendance batch atomically for the interactive matrix', function () {
     $course = Course::factory()->create();
     $group = Group::factory()->create(['course_id' => $course->id]);
     $sessions = Session::factory()->count(2)->create(['group_id' => $group->id]);
     $p1 = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
     $p2 = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
 
-    // Pre-existing attendance with GPS coordinates for p1
-    Attendance::factory()->create([
-        'session_id' => $sessions[0]->id,
-        'preinscription_id' => $p1->id,
-        'status' => AttendanceStatus::AUSENTE,
-        'lat' => -17.3935,
-        'lng' => -66.1450,
-        'distancia_metros' => 50.0,
-    ]);
-
     $data = [
         "{$p1->id}_{$sessions[0]->id}" => AttendanceStatus::PRESENTE->value,
         "{$p2->id}_{$sessions[0]->id}" => AttendanceStatus::JUSTIFICADO->value,
-        "{$p1->id}_{$sessions[1]->id}" => AttendanceStatus::PRESENTE->value,
+        "{$p1->id}_{$sessions[1]->id}" => AttendanceStatus::AUSENTE->value,
     ];
 
     app(AttendanceService::class)->registerManualBatch($group, $data);
@@ -215,15 +77,14 @@ it('persists a manual attendance batch atomically and clears prior gps coordinat
     $a1 = Attendance::where('session_id', $sessions[0]->id)->where('preinscription_id', $p1->id)->first();
     expect($a1)->not->toBeNull();
     expect($a1->status)->toBe(AttendanceStatus::PRESENTE);
-    expect($a1->lat)->toBeNull();
-    expect($a1->lng)->toBeNull();
-    expect($a1->distancia_metros)->toBeNull();
 
     $a2 = Attendance::where('session_id', $sessions[0]->id)->where('preinscription_id', $p2->id)->first();
+    expect($a2)->not->toBeNull();
     expect($a2->status)->toBe(AttendanceStatus::JUSTIFICADO);
 
     $a3 = Attendance::where('session_id', $sessions[1]->id)->where('preinscription_id', $p1->id)->first();
-    expect($a3->status)->toBe(AttendanceStatus::PRESENTE);
+    expect($a3)->not->toBeNull();
+    expect($a3->status)->toBe(AttendanceStatus::AUSENTE);
 });
 
 it('deletes attendance when status is blank in manual batch', function () {
@@ -246,18 +107,23 @@ it('deletes attendance when status is blank in manual batch', function () {
     expect(Attendance::where('session_id', $session->id)->count())->toBe(0);
 });
 
-it('finds preinscription by CI regardless of case and trimming', function () {
+it('calculates session attendance statistics accurately', function () {
     $course = Course::factory()->create();
     $group = Group::factory()->create(['course_id' => $course->id]);
-    $baseCi = (string) fake()->numerify('#######');
-    $preinscription = Preinscription::factory()->inscrito()->create([
-        'group_id' => $group->id,
-        'ci' => $baseCi.'-1A',
-    ]);
+    $session = Session::factory()->create(['group_id' => $group->id]);
 
-    $service = app(AttendanceService::class);
+    $p1 = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
+    $p2 = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
+    $p3 = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
 
-    $found = $service->findPreinscription(['ci' => ' '.$baseCi.'-1a '], $group->id);
-    expect($found)->not->toBeNull();
-    expect($found->id)->toBe($preinscription->id);
+    Attendance::factory()->presente()->create(['session_id' => $session->id, 'preinscription_id' => $p1->id]);
+    Attendance::factory()->create(['session_id' => $session->id, 'preinscription_id' => $p2->id, 'status' => AttendanceStatus::AUSENTE]);
+    Attendance::factory()->create(['session_id' => $session->id, 'preinscription_id' => $p3->id, 'status' => AttendanceStatus::JUSTIFICADO]);
+
+    $stats = app(AttendanceService::class)->getAttendanceStats($session);
+
+    expect($stats['total'])->toBe(3);
+    expect($stats['presentes'])->toBe(1);
+    expect($stats['ausentes'])->toBe(1);
+    expect($stats['justificados'])->toBe(1);
 });
