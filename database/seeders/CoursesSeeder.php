@@ -36,7 +36,7 @@ class CoursesSeeder extends Seeder
         $admin = User::where('email', 'admin@umss.edu.bo')->first();
         $instructors = User::role(UserRole::INSTRUCTOR->value)->get();
 
-        if ($instructors->isEmpty()) {
+        if ($admin === null || $instructors->isEmpty()) {
             return;
         }
 
@@ -74,7 +74,7 @@ class CoursesSeeder extends Seeder
                         'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 20,
                         'status' => GroupStatus::HABILITADO,
-                        'participants_count' => 15,
+                        'participants_count' => 16,
                     ],
                 ],
             ],
@@ -140,7 +140,7 @@ class CoursesSeeder extends Seeder
                         'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 20,
                         'status' => GroupStatus::HABILITADO,
-                        'participants_count' => 15,
+                        'participants_count' => 16,
                     ],
                 ],
             ],
@@ -351,7 +351,7 @@ class CoursesSeeder extends Seeder
                                             'apellido_paterno' => $est['pat'],
                                             'apellido_materno' => $est['mat'],
                                             'celular' => $est['cel'],
-                                            'email' => Str::slug($est['nom'], '.').'.'.Str::slug($est['pat']).'@gmail.com',
+                                            'email' => Str::slug($est['nom'], '.').'.'.Str::slug($est['pat']).'.'.Str::lower(Str::random(4)).'@example.umss.edu.bo',
                                             'tipo_participante' => $est['tipo'],
                                             'status' => $status,
                                             'fotocopia_ci' => $fotocopia,
@@ -373,7 +373,7 @@ class CoursesSeeder extends Seeder
                                                 'metodo' => $metodo,
                                                 'estado' => PaymentStatus::VERIFICADO,
                                                 'numero_comprobante' => 'REC-'.rand(10000, 99999),
-                                                'verificado_por' => $admin?->id,
+                                                'verificado_por' => $admin->id,
                                                 'verificado_en' => now()->subDays(rand(1, 10)),
                                             ]
                                         );
