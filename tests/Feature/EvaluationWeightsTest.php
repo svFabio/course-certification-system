@@ -204,11 +204,11 @@ it('builds teacher sheet formulas with the course attendance weight', function (
     $puntajeCell = collect($dataRow)->first(
         fn ($cell) => is_string($cell) && str_starts_with($cell, '=ROUND((')
     );
-    expect($puntajeCell)->toContain("*{$weight}, 2)");
+    expect($puntajeCell)->toContain("*{$weight};2)");
 
     $notaFinalCell = end($dataRow);
     // 2 sessions: identity A-E, sessions F-G, asistencia H, puntaje I → attendance cell I7
-    expect($notaFinalCell)->toStartWith('=ROUND(I7+')->toContain(', 2)');
+    expect($notaFinalCell)->toStartWith('=ROUND(I7+')->toContain(';2');
 })->with([50, 60]);
 
 it('applies a staged evaluation config atomically via applyEvaluationConfig', function () {
