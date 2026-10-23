@@ -336,7 +336,6 @@ class CourseResource extends Resource
     {
         return [
             CourseResource\RelationManagers\GroupsRelationManager::class,
-            CourseResource\RelationManagers\CertificatesRelationManager::class,
         ];
     }
 

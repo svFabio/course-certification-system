@@ -6,7 +6,6 @@ use App\Enums\CertificateLifecycleStatus;
 use App\Enums\CertificateType;
 use App\Enums\UserRole;
 use App\Filament\Admin\Resources\CertificateResource\Pages\ViewCertificate;
-use App\Filament\Admin\Resources\CourseResource\Pages\ViewCourse;
 use App\Filament\Admin\Resources\CourseResource\RelationManagers\CertificatesRelationManager;
 use App\Models\Certificate;
 use App\Models\Course;
@@ -152,7 +151,7 @@ it('exposes admin actions to upload mark delivered and download digital on relat
 
     Livewire::test(CertificatesRelationManager::class, [
         'ownerRecord' => $course,
-        'pageClass' => ViewCourse::class,
+        'pageClass' => ViewCertificate::class,
     ])
         ->assertCanSeeTableRecords([$generado, $digitalizado])
         ->assertSee('Generado')

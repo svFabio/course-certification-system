@@ -78,8 +78,8 @@ class CertificateResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('verGrupos')
-                    ->label('Ver Grupos')
-                    ->icon('heroicon-o-user-group')
+                    ->label('Ver Certificados')
+                    ->icon('heroicon-o-document-check')
                     ->color('primary')
                     ->url(fn (Course $record): string => CertificateResource::getUrl('view', ['record' => $record])),
             ]);
