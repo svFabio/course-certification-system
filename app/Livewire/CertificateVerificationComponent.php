@@ -59,6 +59,13 @@ class CertificateVerificationComponent extends Component
             ? app(EvaluationService::class)->finalGrade($record->preinscription)
             : null;
 
+        $hasScanned = $record->hasScannedCopy();
+        $isScannedImage = false;
+        if ($hasScanned && filled($record->pdf_escaneado_path)) {
+            $ext = strtolower(pathinfo((string) $record->pdf_escaneado_path, PATHINFO_EXTENSION));
+            $isScannedImage = in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true);
+        }
+
         $this->certificate = [
             'nombre' => $record->beneficiaryName(),
             'rol' => $record->isInstructorCertificate() ? 'Instructor' : 'Participante',
@@ -75,6 +82,10 @@ class CertificateVerificationComponent extends Component
             'estado_validez' => 'Certificado válido',
             'codigo_unico' => $record->codigo_unico,
             'download_url' => route('certificado.publico.descargar', ['codigo' => $record->codigo_unico]),
+            'has_scanned' => $hasScanned,
+            'scanned_url' => $hasScanned ? route('certificado.publico.digital', ['codigo' => $record->codigo_unico]) : null,
+            'scanned_type' => $isScannedImage ? 'image' : 'pdf',
+            'escaneado_en' => $record->escaneado_en?->format('d/m/Y'),
         ];
     }
 

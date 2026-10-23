@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\CertificateLifecycleStatus;
 use App\Enums\CertificateType;
 use App\Enums\UserRole;
+use App\Filament\Admin\Resources\CertificateResource\Pages\ViewCertificate;
 use App\Filament\Admin\Resources\CourseResource\Pages\ViewCourse;
 use App\Filament\Admin\Resources\CourseResource\RelationManagers\CertificatesRelationManager;
 use App\Models\Certificate;
@@ -161,4 +162,45 @@ it('exposes admin actions to upload mark delivered and download digital on relat
         ->assertTableActionHidden('descargarDigital', record: $generado)
         ->assertTableActionExists('descargarDigital', record: $digitalizado)
         ->assertTableActionHidden('marcarEntregado', record: $digitalizado);
+});
+
+it('exposes CertificatesRelationManager when viewing a course in CertificateResource', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole(UserRole::ADMIN->value);
+    $this->actingAs($admin);
+
+    $course = Course::factory()->create();
+    $group = Group::factory()->create(['course_id' => $course->id]);
+    $pre = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
+    $cert = Certificate::factory()->create([
+        'course_id' => $course->id,
+        'preinscription_id' => $pre->id,
+        'codigo_unico' => 'CERT-CERT-RESOURCE',
+    ]);
+
+    Livewire::test(CertificatesRelationManager::class, [
+        'ownerRecord' => $course,
+        'pageClass' => ViewCertificate::class,
+    ])
+        ->assertCanSeeTableRecords([$cert])
+        ->assertSee('CERT-CERT-RESOURCE')
+        ->assertTableActionExists('subirEscaneo', record: $cert);
+});
+
+it('attaches photo uploads in webp and jpg formats up to 10 mb', function () {
+    $certificate = Certificate::factory()->create([
+        'tipo' => CertificateType::APROBACION,
+        'codigo_unico' => 'CERT-PHOTO-WEBP',
+    ]);
+
+    $file = UploadedFile::fake()->create('foto-firmada.webp', 1500, 'image/webp');
+    $updated = app(CertificateService::class)->attachScannedCopy($certificate, $file);
+
+    expect($updated->hasScannedCopy())->toBeTrue()
+        ->and($updated->pdf_escaneado_path)->toBe('certificates/scanned/CERT-PHOTO-WEBP.webp');
+
+    $response = app(CertificateService::class)->downloadScanned($updated, inline: true);
+    expect($response->getStatusCode())->toBe(200)
+        ->and($response->headers->get('content-type'))->toBe('image/webp')
+        ->and($response->headers->get('content-disposition'))->toContain('inline');
 });

@@ -682,7 +682,7 @@ class CertificateService
      *
      * @throws ValidationException
      */
-    public function downloadScanned(Certificate $certificate): Response
+    public function downloadScanned(Certificate $certificate, bool $inline = false): Response
     {
         if (! $certificate->hasScannedCopy()) {
             throw ValidationException::withMessages([
@@ -705,8 +705,13 @@ class CertificateService
             'pdf' => 'application/pdf',
             'jpg', 'jpeg' => 'image/jpeg',
             'png' => 'image/png',
+            'webp' => 'image/webp',
             default => 'application/octet-stream',
         };
+
+        if ($inline) {
+            return Storage::disk($disk)->response($path, $filename, ['Content-Type' => $mime]);
+        }
 
         return Storage::disk($disk)->download($path, $filename, ['Content-Type' => $mime]);
     }
@@ -721,14 +726,14 @@ class CertificateService
         if (is_string($file)) {
             if (! filled($file)) {
                 throw ValidationException::withMessages([
-                    'archivo' => 'Debe seleccionar un archivo PDF, JPG o PNG.',
+                    'archivo' => 'Debe seleccionar un archivo PDF, JPG, PNG o WebP.',
                 ]);
             }
 
             $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-            if (! in_array($extension, ['pdf', 'jpg', 'jpeg', 'png'], true)) {
+            if (! in_array($extension, ['pdf', 'jpg', 'jpeg', 'png', 'webp'], true)) {
                 throw ValidationException::withMessages([
-                    'archivo' => 'El archivo debe ser PDF, JPG o PNG.',
+                    'archivo' => 'El archivo debe ser PDF, JPG, PNG o WebP.',
                 ]);
             }
 
@@ -742,20 +747,20 @@ class CertificateService
         }
 
         $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'pdf');
-        if (! in_array($extension, ['pdf', 'jpg', 'jpeg', 'png'], true)) {
+        if (! in_array($extension, ['pdf', 'jpg', 'jpeg', 'png', 'webp'], true)) {
             throw ValidationException::withMessages([
-                'archivo' => 'El archivo debe ser PDF, JPG o PNG.',
+                'archivo' => 'El archivo debe ser PDF, JPG, PNG o WebP.',
             ]);
         }
 
-        if ($file->getSize() > 5 * 1024 * 1024) {
+        if ($file->getSize() > 10 * 1024 * 1024) {
             throw ValidationException::withMessages([
-                'archivo' => 'El archivo no debe superar 5 MB.',
+                'archivo' => 'El archivo no debe superar 10 MB.',
             ]);
         }
 
         $path = 'certificates/scanned/'.$certificate->codigo_unico.'.'.$extension;
-        $options = in_array($extension, ['jpg', 'jpeg', 'png'], true)
+        $options = in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true)
             ? ['resource_type' => 'image']
             : ['resource_type' => 'raw'];
 

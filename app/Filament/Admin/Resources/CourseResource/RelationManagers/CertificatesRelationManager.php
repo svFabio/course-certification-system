@@ -155,30 +155,31 @@ class CertificatesRelationManager extends RelationManager
                             ->send();
                     }),
                 Tables\Actions\Action::make('subirEscaneo')
-                    ->label(fn (Certificate $record): string => $record->hasScannedCopy() ? 'Reemplazar digital' : 'Subir escaneo')
+                    ->label(fn (Certificate $record): string => $record->hasScannedCopy() ? 'Reemplazar foto/digital' : 'Subir foto/escaneo')
                     ->icon('heroicon-o-arrow-up-tray')
                     ->color('primary')
                     ->visible(fn (Certificate $record): bool => ! $record->isInstructorCertificate())
                     ->form([
                         Forms\Components\FileUpload::make('archivo')
-                            ->label('Certificado firmado y escaneado')
+                            ->label('Fotografía o escaneo del certificado firmado')
                             ->disk('cloudinary')
                             ->directory('certificates/scanned')
-                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
-                            ->maxSize(5120)
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
+                            ->maxSize(10240)
                             ->required()
-                            ->helperText('PDF, JPG o PNG. Máximo 5 MB.'),
+                            ->helperText('Foto o documento en PDF, JPG, PNG o WebP. Máximo 10 MB.'),
                     ])
                     ->modalHeading(fn (Certificate $record): string => $record->hasScannedCopy()
-                        ? 'Reemplazar certificado digitalizado'
-                        : 'Subir certificado escaneado')
+                        ? 'Reemplazar certificado firmado'
+                        : 'Subir foto o escaneo de certificado firmado')
+                    ->modalDescription('Suba la fotografía o escaneo del certificado físico con las firmas correspondientes para su verificación pública.')
                     ->modalSubmitActionLabel('Guardar')
                     ->action(function (Certificate $record, array $data, CertificateService $service): void {
                         try {
                             $service->attachScannedCopy($record, $data['archivo']);
                         } catch (ValidationException $e) {
                             Notification::make()
-                                ->title('No se pudo guardar el escaneo')
+                                ->title('No se pudo guardar el archivo')
                                 ->body(collect($e->errors())->flatten()->implode(' '))
                                 ->danger()
                                 ->send();
@@ -187,7 +188,7 @@ class CertificatesRelationManager extends RelationManager
                         }
 
                         Notification::make()
-                            ->title('Certificado digitalizado')
+                            ->title('Certificado digitalizado con éxito. Ya es accesible en la verificación pública.')
                             ->success()
                             ->send();
                     }),

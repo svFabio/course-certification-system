@@ -84,20 +84,44 @@
                             <dt class="text-xs font-semibold text-umss-gray-700 uppercase tracking-wider">Código único</dt>
                             <dd class="font-mono text-xs font-bold text-umss-black mt-0.5">{{ $certificate['codigo_unico'] ?? 'N/A' }}</dd>
                         </div>
+                        @if (! empty($certificate['has_scanned']))
+                            <div>
+                                <dt class="text-xs font-semibold text-umss-gray-700 uppercase tracking-wider">Estado Documental</dt>
+                                <dd class="inline-flex items-center gap-1.5 font-medium text-xs text-umss-green-dark bg-umss-green-light px-2.5 py-1 rounded-full mt-0.5">
+                                    <svg class="w-3.5 h-3.5 text-umss-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    Firma y sello digitalizados ({{ $certificate['escaneado_en'] }})
+                                </dd>
+                            </div>
+                        @endif
                     </dl>
 
-                    @if (! empty($certificate['download_url']))
+                    @if (! empty($certificate['download_url']) || ! empty($certificate['scanned_url']))
                         <div class="mt-6 pt-5 border-t border-umss-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                             <p class="text-xs text-umss-gray-700 leading-relaxed text-center sm:text-left">
                                 Documento oficial verificable emitido por la Universidad Mayor de San Simón.
                             </p>
-                            <a href="{{ $certificate['download_url'] }}" target="_blank" rel="noopener noreferrer"
-                                class="btn-primary inline-flex items-center gap-2 px-5 py-2.5 bg-umss-navy hover:bg-umss-navy-dark text-umss-white font-semibold text-sm tracking-wide rounded-lg shadow-sm transition whitespace-nowrap">
-                                <svg class="w-4 h-4 text-umss-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                </svg>
-                                Descargar Certificado PDF
-                            </a>
+                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+                                @if (! empty($certificate['has_scanned']) && ! empty($certificate['scanned_url']))
+                                    <a href="{{ $certificate['scanned_url'] }}" target="_blank" rel="noopener noreferrer"
+                                        class="btn-primary inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-umss-green hover:bg-umss-green-dark text-umss-white font-semibold text-sm tracking-wide rounded-lg shadow-sm transition whitespace-nowrap">
+                                        <svg class="w-4 h-4 text-umss-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        Ver Certificado Firmado
+                                    </a>
+                                @endif
+                                @if (! empty($certificate['download_url']))
+                                    <a href="{{ $certificate['download_url'] }}" target="_blank" rel="noopener noreferrer"
+                                        class="btn-primary inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-umss-navy hover:bg-umss-navy-dark text-umss-white font-semibold text-sm tracking-wide rounded-lg shadow-sm transition whitespace-nowrap">
+                                        <svg class="w-4 h-4 text-umss-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                        </svg>
+                                        Descargar Certificado PDF
+                                    </a>
+                                @endif
+                            </div>
                         </div>
                     @endif
                 </div>
