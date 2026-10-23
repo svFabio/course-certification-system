@@ -116,8 +116,6 @@ class CertificateService
         return $created;
     }
 
-     @return Collection<int, Certificate>
-     
     public function generateInstructorCertificates(Course $course, bool $onePerGroup = false): Collection
     {
         $course->loadMissing(['groups', 'instructor']);
@@ -190,7 +188,6 @@ class CertificateService
         );
     }
 
-    
     public function publicAbsoluteUrl(string $path): string
     {
         $base = rtrim((string) config('app.public_url', config('app.url')), '/');
@@ -228,7 +225,6 @@ class CertificateService
             ->notify(new CertificateReadyNotification($certificate));
     }
 
-   
     public function resendReadyNotification(Certificate $certificate): void
     {
         $this->notifyCertificateReady($certificate);
@@ -334,7 +330,7 @@ class CertificateService
                     ['Content-Type' => 'application/pdf']
                 );
             } catch (\Throwable) {
-               
+                // Fallback to on-the-fly rendering if storage streaming fails
             }
         }
 
@@ -391,7 +387,7 @@ class CertificateService
                 return 'local';
             }
         } catch (\Throwable) {
-            
+            // Local disk unavailable
         }
 
         return null;
@@ -623,7 +619,6 @@ class CertificateService
         return $this->generatePdf($certificate)->output();
     }
 
-   
     public function attachScannedCopy(Certificate $certificate, UploadedFile|string $file): Certificate
     {
         if ($certificate->isInstructorCertificate()) {
@@ -768,7 +763,7 @@ class CertificateService
                     Storage::disk($disk)->delete($path);
                 }
             } catch (\Throwable) {
-               
+                // ignore cleanup failures
             }
         }
     }
@@ -792,7 +787,7 @@ class CertificateService
                 return 'local';
             }
         } catch (\Throwable) {
-            
+            // Local unavailable
         }
 
         return null;
