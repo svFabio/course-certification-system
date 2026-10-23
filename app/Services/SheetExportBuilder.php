@@ -235,14 +235,17 @@ class SheetExportBuilder
 
     /**
      * NOTA FINAL = puntaje_asistencia + sum(nota * ponderacion / 100) — same formula as EvaluationService.
-     * Uses ';' as argument separator for Spanish/Es Google Sheets locales.
+     * Uses ';' as formula argument delimiter for Spanish/Google Sheets regional settings.
+     * Weights are cast to int to prevent locale decimal-point parse errors (e.g. '10.00' vs '10').
+     * IF(ISNUMBER(...)) ensures unrecorded or blank criterion cells safely evaluate to 0 without breaking the formula.
      */
     private function buildWeightedFinalGradeFormula(Collection $criteria, int $gradeStartIndex, int $currentRow, string $attendanceScoreCell): string
     {
         $terms = $criteria->map(function (mixed $criterion, int $index) use ($gradeStartIndex, $currentRow): string {
             $col = $this->columnLetter($gradeStartIndex + $index);
+            $weight = (int) round((float) $criterion->ponderacion);
 
-            return "{$col}{$currentRow}*{$criterion->ponderacion}/100";
+            return "IF(ISNUMBER({$col}{$currentRow});{$col}{$currentRow}*{$weight}/100;0)";
         })->implode('+');
 
         if ($terms === '') {

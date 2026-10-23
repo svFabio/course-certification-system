@@ -51,6 +51,10 @@ class SheetExportService
             $tabs[] = $tab;
         }
 
+        if (! empty($tabs)) {
+            $this->sheets->cleanupDefaultTabs();
+        }
+
         return $tabs;
     }
 }

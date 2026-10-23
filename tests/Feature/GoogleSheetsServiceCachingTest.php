@@ -85,3 +85,17 @@ it('still reports a missing tab with the same error', function () {
     expect(fn () => $this->service->getSheetIdByName('NO_EXISTE'))
         ->toThrow(InvalidArgumentException::class, "Sheet tab 'NO_EXISTE' not found in spreadsheet.");
 });
+
+it('cleans up default and template tabs when content sheets exist', function () {
+    $this->spreadsheet = new Spreadsheet([
+        'sheets' => [
+            new Sheet(['properties' => new SheetProperties(['title' => 'Hoja 1', 'sheetId' => 0])]),
+            new Sheet(['properties' => new SheetProperties(['title' => 'PLANTILLA_CAJA', 'sheetId' => 1])]),
+            new Sheet(['properties' => new SheetProperties(['title' => 'NOTAS-G1', 'sheetId' => 2])]),
+        ],
+    ]);
+
+    $this->service->cleanupDefaultTabs();
+
+    expect($this->batchUpdates)->toBe(1);
+});

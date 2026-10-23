@@ -137,8 +137,6 @@ class GoogleSheetsSettings extends Page implements HasForms
                 $service = app(GoogleSheetsService::class);
                 $id = $service->createSpreadsheet('UMSS Cursos - Planillas');
                 $service->setSpreadsheetId($id);
-                $service->createTemplateTabs();
-                $service->populateTemplateTabs();
 
                 $data['spreadsheet_id'] = $id;
                 SystemSetting::set('google_sheets_spreadsheet_id', $id);
