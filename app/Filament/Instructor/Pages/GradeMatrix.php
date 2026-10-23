@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Instructor\Pages;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\CourseStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Enums\UserRole;
 use App\Events\GroupSheetsNeedRefresh;
@@ -352,6 +353,11 @@ class GradeMatrix extends Page
         }
     }
 
+    public function isCourseFinalized(): bool
+    {
+        return $this->scopedCourse()?->status === CourseStatus::FINALIZADO;
+    }
+
     /**
      * Stage a cell value on blur/change. No validation, no persistence and no
      * notification here: everything is validated and saved by saveAll().
@@ -359,6 +365,10 @@ class GradeMatrix extends Page
      */
     public function stageNota(int $preinscriptionId, int $criteriaKey, string $nota): void
     {
+        if ($this->isCourseFinalized()) {
+            return;
+        }
+
         $key = $this->notaKey($preinscriptionId, $criteriaKey);
 
         if ($nota === '') {
@@ -454,6 +464,10 @@ class GradeMatrix extends Page
      */
     public function saveCriteria(): void
     {
+        if ($this->isCourseFinalized()) {
+            return;
+        }
+
         $validated = $this->validate([
             'criteriaNombre' => ['required', 'string', 'max:255'],
             'criteriaPonderacion' => ['required', 'integer', 'min:1', 'max:100'],
@@ -502,6 +516,10 @@ class GradeMatrix extends Page
      */
     public function removeCriteria(int $criteriaId): void
     {
+        if ($this->isCourseFinalized()) {
+            return;
+        }
+
         foreach ($this->criteria as $index => $criterion) {
             if ((int) $criterion['id'] !== $criteriaId) {
                 continue;
@@ -533,6 +551,16 @@ class GradeMatrix extends Page
 
         if ($course === null) {
             $this->lastError = 'Seleccione un curso para guardar los cambios.';
+            Notification::make()
+                ->title($this->lastError)
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        if ($this->isCourseFinalized()) {
+            $this->lastError = 'El curso se encuentra finalizado y sus calificaciones están bloqueadas.';
             Notification::make()
                 ->title($this->lastError)
                 ->danger()

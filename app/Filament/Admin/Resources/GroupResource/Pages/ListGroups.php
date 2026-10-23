@@ -27,7 +27,7 @@ class ListGroups extends ListRecords
         if ($courses->isNotEmpty()) {
             Notification::make()
                 ->title('Sobredemanda detectada')
-                ->body('Cursos completos: '.$courses->pluck('nombre')->join(', ').'. Considere abrir un grupo adicional. (HU-14)')
+                ->body('Cursos completos: '.$courses->pluck('nombre')->join(', ').'. Considere abrir un grupo adicional.')
                 ->warning()
                 ->send();
         }
