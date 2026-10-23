@@ -336,18 +336,16 @@ class CoursesSeeder extends Seeder
                                 $targetCount = min($gData['participants_count'], count($poolEstudiantes));
 
                                 // Poda de exceso de ejecuciones previas acumuladas para asegurar cupos reales
-                                if ($group->status !== GroupStatus::FINALIZADO) {
-                                    $existing = $group->preinscriptions()->get();
-                                    if ($existing->count() > $targetCount) {
-                                        $excess = $existing->slice($targetCount);
-                                        foreach ($excess as $p) {
-                                            $p->payments()->delete();
-                                            $p->attendances()->delete();
-                                            $p->grades()->delete();
-                                            $p->certificate()?->delete();
-                                            $p->studentRequests()->delete();
-                                            $p->delete();
-                                        }
+                                $existing = $group->preinscriptions()->get();
+                                if ($existing->count() > $targetCount) {
+                                    $excess = $existing->slice($targetCount);
+                                    foreach ($excess as $p) {
+                                        $p->certificate()?->delete();
+                                        $p->grades()->delete();
+                                        $p->attendances()->delete();
+                                        $p->payments()->delete();
+                                        $p->studentRequests()->delete();
+                                        $p->delete();
                                     }
                                 }
 
