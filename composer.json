@@ -8,6 +8,7 @@
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "^2.0",
         "cloudinary-labs/cloudinary-laravel": "^3.0",
+        "fakerphp/faker": "^1.24",
         "filament/filament": "^3.0",
         "google/apiclient": "^2.16",
         "laravel/framework": "^11.0",
@@ -21,7 +22,6 @@
         "spatie/laravel-permission": "^6.0"
     },
     "require-dev": {
-        "fakerphp/faker": "^1.23",
         "laravel/pint": "^1.0",
         "laravel/sail": "^1.0",
         "mockery/mockery": "^1.6",
