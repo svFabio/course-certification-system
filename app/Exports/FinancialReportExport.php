@@ -27,9 +27,13 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
 
     public function title(): string
     {
-        return $this->course !== null
-            ? 'Financiero - '.mb_substr($this->course->nombre, 0, 20)
-            : 'Reporte Financiero General';
+        if ($this->course !== null) {
+            $clean = preg_replace('/[\\\\\\/?*[\\]:]/', '', $this->course->nombre);
+
+            return mb_substr('Financiero - '.$clean, 0, 31);
+        }
+
+        return 'Reporte Financiero General';
     }
 
     public function array(): array
@@ -72,7 +76,7 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
         $totalInscritosGeneral = 0;
 
         foreach ($groups as $group) {
-            $courseName = $group->course?->nombre ?? 'N/A';
+            $courseName = $this->course?->nombre ?? $group->course?->nombre ?? 'N/A';
             $groupName = $group->nombre;
 
             $payments = $group->preinscriptions->flatMap->payments;
@@ -119,14 +123,16 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
             number_format($totalNetoGeneral, 2, '.', ''),
         ];
 
-        // Distribución institucional de ingresos netos (HU-19 Criterio 2: 20% Facultad, 80% Lab y Docente)
-        $retencionFacultad = $totalNetoGeneral * (BusinessRules::FACULTY_RETENTION_PERCENT / 100);
-        $presupuestoDocenteLab = $totalNetoGeneral * (BusinessRules::LAB_AND_TEACHER_PERCENT / 100);
+        // Distribución institucional de ingresos netos (HU-19 Criterio 2)
+        $distribucion = BusinessRules::calculateFinancialDistribution($totalNetoGeneral);
+
+        $labelFacultad = sprintf('Retención Facultativa Institucional (%.0f%%):', BusinessRules::FACULTY_RETENTION_PERCENT);
+        $labelDocenteLab = sprintf('Presupuesto Laboratorio y Honorarios Docentes (%.0f%%):', BusinessRules::LAB_AND_TEACHER_PERCENT);
 
         $rows[] = [''];
         $rows[] = ['DISTRIBUCIÓN INSTITUCIONAL (RECAUDACIÓN NETA)'];
-        $rows[] = ['Retención Facultativa Institucional (20%):', '', '', '', '', '', '', number_format($retencionFacultad, 2, '.', '')];
-        $rows[] = ['Presupuesto Laboratorio y Honorarios Docentes (80%):', '', '', '', '', '', '', number_format($presupuestoDocenteLab, 2, '.', '')];
+        $rows[] = [$labelFacultad, '', '', '', '', '', '', number_format($distribucion['facultad'], 2, '.', '')];
+        $rows[] = [$labelDocenteLab, '', '', '', '', '', '', number_format($distribucion['docente_lab'], 2, '.', '')];
 
         return $rows;
     }

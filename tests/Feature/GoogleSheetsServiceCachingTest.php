@@ -108,6 +108,7 @@ it('auto restores missing credentials file from system settings if present', fun
     if (file_exists($tempPath)) {
         unlink($tempPath);
     }
+    SystemSetting::where('key', 'google_sheets_credentials_json')->delete();
 
     SystemSetting::set('google_sheets_credentials_json', json_encode(['type' => 'service_account']));
 
@@ -121,6 +122,7 @@ it('auto restores missing credentials file from system settings if present', fun
     if (file_exists($tempPath)) {
         unlink($tempPath);
     }
+    SystemSetting::where('key', 'google_sheets_credentials_json')->delete();
 });
 
 it('reports isConfigured as true when credentials exist in system settings even before file restoration', function () {
@@ -130,6 +132,7 @@ it('reports isConfigured as true when credentials exist in system settings even 
     if (file_exists($tempPath)) {
         unlink($tempPath);
     }
+    SystemSetting::where('key', 'google_sheets_credentials_json')->delete();
 
     SystemSetting::set('google_sheets_spreadsheet_id', 'test_spreadsheet_123');
     SystemSetting::set('google_sheets_enabled', '1');
@@ -137,4 +140,11 @@ it('reports isConfigured as true when credentials exist in system settings even 
     SystemSetting::set('google_sheets_credentials_json', json_encode(['type' => 'service_account']));
 
     expect(GoogleSheetsService::isConfigured())->toBeTrue();
+
+    SystemSetting::whereIn('key', [
+        'google_sheets_spreadsheet_id',
+        'google_sheets_enabled',
+        'google_sheets_auth_method',
+        'google_sheets_credentials_json',
+    ])->delete();
 });

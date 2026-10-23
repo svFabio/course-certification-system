@@ -34,6 +34,19 @@ final class BusinessRules
 
     public const LAB_AND_TEACHER_PERCENT = 80.0;
 
+    /**
+     * Compute institutional distribution of net course revenue (HU-19).
+     *
+     * @return array{facultad: float, docente_lab: float}
+     */
+    public static function calculateFinancialDistribution(float $netAmount): array
+    {
+        return [
+            'facultad' => round($netAmount * (self::FACULTY_RETENTION_PERCENT / 100), 2),
+            'docente_lab' => round($netAmount * (self::LAB_AND_TEACHER_PERCENT / 100), 2),
+        ];
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Grade rules
