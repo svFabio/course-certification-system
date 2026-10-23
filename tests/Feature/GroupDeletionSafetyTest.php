@@ -13,6 +13,8 @@ use App\Models\Preinscription;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use DomainException;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -72,4 +74,54 @@ it('hides delete action in GroupResource table for groups that have preinscripti
     Livewire::test(GroupResource\Pages\ListGroups::class)
         ->assertTableActionHidden('delete', $groupWithStudents)
         ->assertTableActionVisible('delete', $emptyGroup);
+});
+
+it('enforces database-level foreign key restriction blocking raw sql group deletion', function () {
+    $course = Course::factory()->create();
+    $group = Group::factory()->create(['course_id' => $course->id]);
+
+    Preinscription::factory()->inscrito()->create([
+        'group_id' => $group->id,
+        'email' => fake()->safeEmail(),
+    ]);
+
+    $exceptionThrown = false;
+    DB::beginTransaction();
+    try {
+        DB::table('groups')->where('id', $group->id)->delete();
+    } catch (QueryException $e) {
+        DB::rollBack();
+        $exceptionThrown = true;
+        expect($e->getCode())->toBe('23503');
+    }
+
+    expect($exceptionThrown)->toBeTrue()
+        ->and(Group::whereKey($group->id)->exists())->toBeTrue();
+});
+
+it('enforces database-level foreign key restriction blocking raw sql preinscription deletion with payments', function () {
+    $course = Course::factory()->create();
+    $group = Group::factory()->create(['course_id' => $course->id]);
+    $preinscription = Preinscription::factory()->inscrito()->create([
+        'group_id' => $group->id,
+        'email' => fake()->safeEmail(),
+    ]);
+    $payment = Payment::factory()->verified()->create([
+        'preinscription_id' => $preinscription->id,
+        'monto' => 100.00,
+    ]);
+
+    $exceptionThrown = false;
+    DB::beginTransaction();
+    try {
+        DB::table('preinscriptions')->where('id', $preinscription->id)->delete();
+    } catch (QueryException $e) {
+        DB::rollBack();
+        $exceptionThrown = true;
+        expect($e->getCode())->toBe('23503');
+    }
+
+    expect($exceptionThrown)->toBeTrue()
+        ->and(Preinscription::whereKey($preinscription->id)->exists())->toBeTrue()
+        ->and(Payment::whereKey($payment->id)->exists())->toBeTrue();
 });

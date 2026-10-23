@@ -6,6 +6,8 @@ namespace App\Support;
 
 use App\Enums\CertificateType;
 use App\Enums\TipoParticipante;
+use Carbon\Carbon;
+use Closure;
 
 final class BusinessRules
 {
@@ -116,6 +118,25 @@ final class BusinessRules
     | Methods
     |--------------------------------------------------------------------------
     */
+
+    public static function calculateSessionEndTime(Carbon|string $horaInicio, string|int $cargaHoraria): Carbon
+    {
+        $inicio = $horaInicio instanceof Carbon ? $horaInicio->copy() : Carbon::parse($horaInicio);
+        $durationHours = self::SESSION_DURATION_HOURS[(string) $cargaHoraria] ?? 1.5;
+        $minutes = (int) round($durationHours * 60);
+
+        return $inicio->addMinutes($minutes);
+    }
+
+    public static function validateMaxGroupCapacity(int|string|null $cupoMinimo): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($cupoMinimo): void {
+            $min = (int) $cupoMinimo;
+            if ($min > 0 && (int) $value < $min) {
+                $fail("El cupo máximo debe ser mayor o igual al cupo mínimo ({$min}).");
+            }
+        };
+    }
 
     public static function calculatePrice(int $hours, string|TipoParticipante $participantType): float
     {

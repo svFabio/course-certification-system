@@ -36,9 +36,10 @@ class Group extends Model
                 return;
             }
 
-            $duration = BusinessRules::SESSION_DURATION_HOURS[$group->course->carga_horaria] ?? 1.5;
-
-            $group->hora_fin = $group->hora_inicio->copy()->addMinutes((int) round($duration * 60));
+            $group->hora_fin = BusinessRules::calculateSessionEndTime(
+                $group->hora_inicio,
+                $group->course->carga_horaria
+            );
         });
 
         static::deleting(function (Group $group): void {

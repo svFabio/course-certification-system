@@ -75,12 +75,10 @@ class GroupResource extends Resource
                     ->live()
                     ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, $state) {
                         $courseId = $get('course_id');
-                        if ($courseId) {
+                        if ($courseId && $state) {
                             $course = Course::find($courseId);
                             if ($course) {
-                                $duration = BusinessRules::SESSION_DURATION_HOURS[$course->carga_horaria] ?? 1.5;
-                                $inicio = Carbon::parse($state);
-                                $set('hora_fin', $inicio->copy()->addMinutes((int) ($duration * 60))->format('H:i'));
+                                $set('hora_fin', BusinessRules::calculateSessionEndTime($state, $course->carga_horaria)->format('H:i'));
                             }
                         }
                     }),
@@ -96,14 +94,9 @@ class GroupResource extends Resource
                 Forms\Components\TextInput::make('cupo_maximo')
                     ->numeric()
                     ->required()
-                    ->rules(function (Forms\Get $get) {
-                        return function ($attribute, $value, $fail) use ($get) {
-                            $min = (int) $get('cupo_minimo');
-                            if ($min > 0 && (int) $value < $min) {
-                                $fail("El cupo máximo debe ser mayor o igual al cupo mínimo ({$min}).");
-                            }
-                        };
-                    }),
+                    ->rules(fn (Forms\Get $get): array => [
+                        BusinessRules::validateMaxGroupCapacity($get('cupo_minimo')),
+                    ]),
                 Forms\Components\Select::make('status')
                     ->label('Estado')
                     ->options(GroupStatus::class)
