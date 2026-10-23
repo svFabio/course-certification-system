@@ -192,8 +192,7 @@ class CourseResource extends Resource
 
                             return [
                                 Forms\Components\Textarea::make('copy_redes')
-                                    ->label('Texto para publicaciones (Copy / Pitch)')
-                                    ->helperText('Copie este texto para publicar en la Fanpage de Facebook, Instagram o grupos de WhatsApp.')
+                                    ->label('Texto para publicaciones')
                                     ->default($promoText)
                                     ->rows(8),
                                 Forms\Components\View::make('filament.forms.components.campana-redes-links')
