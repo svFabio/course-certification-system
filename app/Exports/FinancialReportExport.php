@@ -6,8 +6,10 @@ namespace App\Exports;
 
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Enums\PreinscriptionStatus;
 use App\Models\Course;
 use App\Models\Group;
+use App\Support\DesignTokens;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -74,16 +76,16 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
 
             $payments = $group->preinscriptions->flatMap->payments;
 
-            $verifiedPayments = $payments->where('estado', PaymentStatus::VERIFICADO->value);
-            $refundedPayments = $payments->where('estado', PaymentStatus::REEMBOLSADO->value);
+            $verifiedPayments = $payments->where('estado', PaymentStatus::VERIFICADO);
+            $refundedPayments = $payments->where('estado', PaymentStatus::REEMBOLSADO);
 
-            $efectivo = (float) $verifiedPayments->where('metodo', PaymentMethod::EFECTIVO->value)->sum('monto');
-            $qr = (float) $verifiedPayments->where('metodo', PaymentMethod::QR->value)->sum('monto');
+            $efectivo = (float) $verifiedPayments->where('metodo', PaymentMethod::EFECTIVO)->sum('monto');
+            $qr = (float) $verifiedPayments->where('metodo', PaymentMethod::QR)->sum('monto');
 
             $recaudado = $efectivo + $qr;
             $reembolsos = (float) $refundedPayments->sum('monto');
             $neto = $recaudado - $reembolsos;
-            $inscritosCount = $verifiedPayments->count();
+            $inscritosCount = $group->preinscriptions->where('status', PreinscriptionStatus::INSCRITO)->count();
 
             $totalInscritosGeneral += $inscritosCount;
             $totalRecaudadoGeneral += $recaudado;
@@ -123,32 +125,37 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
     {
         $lastRow = $sheet->getHighestRow();
 
+        $navy = ltrim(DesignTokens::NAVY, '#');
+        $green = ltrim(DesignTokens::GREEN, '#');
+        $white = ltrim(DesignTokens::WHITE, '#');
+        $greenLight = ltrim(DesignTokens::GREEN_LIGHT, '#');
+
         return [
             1 => [
-                'font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => '0E2E5F']],
+                'font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => $navy]],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],
             2 => [
-                'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => '0E2E5F']],
+                'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],
             3 => [
-                'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => '16A34A']],
+                'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => $green]],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],
             7 => [
-                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'font' => ['bold' => true, 'color' => ['rgb' => $white]],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '0E2E5F'],
+                    'startColor' => ['rgb' => $navy],
                 ],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],
             $lastRow => [
-                'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => '0E2E5F']],
+                'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => 'DCFCE7'],
+                    'startColor' => ['rgb' => $greenLight],
                 ],
             ],
         ];

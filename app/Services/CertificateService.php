@@ -116,6 +116,11 @@ class CertificateService
         return $created;
     }
 
+    /**
+     * HU-32: emit instructor participation certificate(s).
+     *
+     * @return Collection<int, Certificate>
+     */
     public function generateInstructorCertificates(Course $course, bool $onePerGroup = false): Collection
     {
         $course->loadMissing(['groups', 'instructor']);
@@ -188,6 +193,9 @@ class CertificateService
         );
     }
 
+    /**
+     * Build an absolute URL using APP_PUBLIC_URL when set (e.g. Render), else APP_URL.
+     */
     public function publicAbsoluteUrl(string $path): string
     {
         $base = rtrim((string) config('app.public_url', config('app.url')), '/');
@@ -225,6 +233,9 @@ class CertificateService
             ->notify(new CertificateReadyNotification($certificate));
     }
 
+    /**
+     * Resend certificate availability notification.
+     */
     public function resendReadyNotification(Certificate $certificate): void
     {
         $this->notifyCertificateReady($certificate);
@@ -343,25 +354,15 @@ class CertificateService
         $path = 'certificates/'.$certificate->codigo_unico.'.pdf';
         $content = $pdf->output();
 
-        $saved = false;
         try {
             $saved = (bool) Storage::disk('cloudinary')->put($path, $content, [
                 'resource_type' => 'raw',
             ]);
-        } catch (\Throwable) {
-            $saved = false;
-        }
-
-        if (! $saved) {
-            try {
-                $saved = (bool) Storage::disk('local')->put($path, $content);
-            } catch (\Throwable) {
-                // Local fallback failed
+            if ($saved) {
+                $certificate->update(['pdf_path' => $path]);
             }
-        }
-
-        if ($saved) {
-            $certificate->update(['pdf_path' => $path]);
+        } catch (\Throwable) {
+            // Cloudinary write error handled gracefully
         }
 
         return $certificate->fresh() ?? $certificate;
@@ -619,6 +620,12 @@ class CertificateService
         return $this->generatePdf($certificate)->output();
     }
 
+    /**
+     * Admin uploads (or replaces) the physically signed & scanned certificate.
+     * Accepts a Cloudinary/local storage path (Filament FileUpload) or an UploadedFile.
+     *
+     * @throws ValidationException
+     */
     public function attachScannedCopy(Certificate $certificate, UploadedFile|string $file): Certificate
     {
         if ($certificate->isInstructorCertificate()) {
@@ -644,6 +651,8 @@ class CertificateService
     }
 
     /**
+     * Mark that a physical, printed certificate was handed over to the student.
+     *
      * @throws ValidationException
      */
     public function markAsDelivered(Certificate $certificate): Certificate
@@ -669,6 +678,8 @@ class CertificateService
     }
 
     /**
+     * Stream or download the digitized/scanned certificate document.
+     *
      * @throws ValidationException
      */
     public function downloadScanned(Certificate $certificate): Response
@@ -700,12 +711,30 @@ class CertificateService
         return Storage::disk($disk)->download($path, $filename, ['Content-Type' => $mime]);
     }
 
+    /**
+     * Store the scanned file in cloud (Cloudinary) or local fallback storage.
+     *
+     * @throws ValidationException
+     */
     private function storeScannedFile(Certificate $certificate, UploadedFile|string $file): string
     {
         if (is_string($file)) {
             if (! filled($file)) {
                 throw ValidationException::withMessages([
                     'archivo' => 'Debe seleccionar un archivo PDF, JPG o PNG.',
+                ]);
+            }
+
+            $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+            if (! in_array($extension, ['pdf', 'jpg', 'jpeg', 'png'], true)) {
+                throw ValidationException::withMessages([
+                    'archivo' => 'El archivo debe ser PDF, JPG o PNG.',
+                ]);
+            }
+
+            if ($this->resolveDiskForPath($file) === null) {
+                throw ValidationException::withMessages([
+                    'archivo' => 'No se encontró el archivo subido en el almacenamiento.',
                 ]);
             }
 
@@ -738,21 +767,17 @@ class CertificateService
                 $certificate->codigo_unico.'.'.$extension,
                 $options
             );
-            if ($saved) {
-                return $path;
-            }
         } catch (\Throwable) {
             $saved = false;
         }
 
-        $localPath = $file->storeAs('certificates/scanned', $certificate->codigo_unico.'.'.$extension, 'local');
-        if (! filled($localPath)) {
+        if (! $saved) {
             throw ValidationException::withMessages([
-                'archivo' => 'No se pudo guardar el archivo escaneado.',
+                'archivo' => 'No se pudo guardar el archivo escaneado en Cloudinary.',
             ]);
         }
 
-        return $localPath;
+        return $path;
     }
 
     private function deleteStoredFile(string $path): void

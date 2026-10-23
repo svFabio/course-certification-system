@@ -79,6 +79,30 @@ it('attaches a scanned copy from an existing storage path string', function () {
         ->and($updated->estado)->toBe(CertificateLifecycleStatus::DIGITALIZADO);
 });
 
+it('rejects a scanned storage path that has no allowed extension', function () {
+    $certificate = Certificate::factory()->create([
+        'tipo' => CertificateType::APROBACION,
+        'estado' => CertificateLifecycleStatus::GENERADO,
+    ]);
+
+    expect(fn () => app(CertificateService::class)
+        ->attachScannedCopy($certificate, 'certificates/scanned/nota.txt'))
+        ->toThrow(ValidationException::class);
+});
+
+it('rejects a scanned storage path that does not exist', function () {
+    $certificate = Certificate::factory()->create([
+        'tipo' => CertificateType::APROBACION,
+        'estado' => CertificateLifecycleStatus::GENERADO,
+    ]);
+
+    expect(fn () => app(CertificateService::class)
+        ->attachScannedCopy($certificate, 'certificates/scanned/missing.pdf'))
+        ->toThrow(ValidationException::class);
+
+    expect($certificate->fresh()->hasScannedCopy())->toBeFalse();
+});
+
 it('rejects scanned upload for instructor certificates', function () {
     $certificate = Certificate::factory()->instructor()->create();
 

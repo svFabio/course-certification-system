@@ -7,9 +7,11 @@ namespace App\Filament\Widgets;
 use App\Enums\CourseStatus;
 use App\Enums\GroupStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\PreinscriptionStatus;
 use App\Models\Course;
 use App\Models\Group;
 use App\Models\Payment;
+use App\Models\Preinscription;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -20,6 +22,8 @@ class StatsOverviewWidget extends BaseWidget
     protected function getStats(): array
     {
         $pendingPaymentsCount = Payment::where('estado', PaymentStatus::PENDIENTE)->count();
+        $totalInscritosCount = Preinscription::where('status', PreinscriptionStatus::INSCRITO)->count();
+        $totalRecaudado = (float) Payment::where('estado', PaymentStatus::VERIFICADO)->sum('monto');
 
         $activeCoursesCount = Course::where('status', CourseStatus::EN_CURSO)->count();
         $enabledGroupsCount = Group::where('status', GroupStatus::HABILITADO)->count();
@@ -47,6 +51,16 @@ class StatsOverviewWidget extends BaseWidget
         }
 
         return [
+            Stat::make('Recaudación Verificada', 'Bs. '.number_format($totalRecaudado, 2, '.', ','))
+                ->description('Ingresos confirmados en caja')
+                ->descriptionIcon('heroicon-m-banknotes')
+                ->color('success'),
+
+            Stat::make('Estudiantes Inscritos', (string) $totalInscritosCount)
+                ->description('Matrículas activas confirmadas')
+                ->descriptionIcon('heroicon-m-user-group')
+                ->color('primary'),
+
             Stat::make('Preinscripciones por Aprobar', (string) $pendingPaymentsCount)
                 ->description($pendingPaymentsCount > 0 ? 'Pagos pendientes de revisión' : 'Cero pagos pendientes')
                 ->descriptionIcon($pendingPaymentsCount > 0 ? 'heroicon-m-exclamation-circle' : 'heroicon-m-check-circle')

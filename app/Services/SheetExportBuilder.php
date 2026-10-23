@@ -77,6 +77,23 @@ class SheetExportBuilder
             ];
         }
 
+        if ($preinscriptions->isNotEmpty()) {
+            $lastRow = 6 + $preinscriptions->count();
+            $rows[] = [
+                '',
+                '',
+                '',
+                '',
+                '',
+                'TOTAL GENERAL',
+                '',
+                "=SUM(H7:H{$lastRow})",
+                "=SUM(I7:I{$lastRow})",
+                '',
+                '',
+            ];
+        }
+
         return $rows;
     }
 
@@ -165,16 +182,20 @@ class SheetExportBuilder
 
     private function getCashPreinscriptions(): Collection
     {
-        return $this->group->preinscriptions->filter(fn (Preinscription $p) => in_array($p->status, [
-            PreinscriptionStatus::INSCRITO,
-            PreinscriptionStatus::PENDIENTE_PAGO,
-        ]))->values();
+        return $this->group->preinscriptions
+            ->filter(fn (Preinscription $p) => in_array($p->status, [
+                PreinscriptionStatus::INSCRITO,
+                PreinscriptionStatus::PENDIENTE_PAGO,
+            ]))
+            ->sortBy(['apellido_paterno', 'apellido_materno', 'nombres'])
+            ->values();
     }
 
     private function getTeacherPreinscriptions(): Collection
     {
         return $this->group->preinscriptions
             ->filter(fn (Preinscription $p) => $p->status === PreinscriptionStatus::INSCRITO)
+            ->sortBy(['apellido_paterno', 'apellido_materno', 'nombres'])
             ->values();
     }
 

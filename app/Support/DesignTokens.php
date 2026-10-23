@@ -28,9 +28,17 @@ final class DesignTokens
 
     public const GREEN = '#16A34A';
 
+    public const GREEN_DARK = '#15803D';
+
+    public const GREEN_LIGHT = '#DCFCE7';
+
     public const AMBER = '#D97706';
 
+    public const AMBER_LIGHT = '#FEF3C7';
+
     public const SKY = '#0284C7';
+
+    public const SKY_LIGHT = '#E0F2FE';
 
     /**
      * @return array{0: int, 1: int, 2: int}

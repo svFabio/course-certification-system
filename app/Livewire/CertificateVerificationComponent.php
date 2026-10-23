@@ -6,6 +6,7 @@ namespace App\Livewire;
 
 use App\Models\Certificate;
 use App\Services\CertificateService;
+use App\Services\EvaluationService;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -46,11 +47,16 @@ class CertificateVerificationComponent extends Component
 
         $dates = app(CertificateService::class)->courseDateRange($record->course);
 
+        $finalGrade = (! $record->isInstructorCertificate() && $record->preinscription)
+            ? app(EvaluationService::class)->finalGrade($record->preinscription)
+            : null;
+
         $this->certificate = [
             'nombre' => $record->beneficiaryName(),
             'rol' => $record->isInstructorCertificate() ? 'Instructor' : 'Participante',
             'curso' => $record->course?->nombre,
             'tipo' => $record->tipo?->getLabel(),
+            'nota_final' => $finalGrade !== null ? number_format($finalGrade, 1).' / 100' : null,
             'grupos' => $record->isInstructorCertificate() ? ($record->grupos_detalle ?: null) : null,
             'carga_horaria' => $record->course?->carga_horaria
                 ? $record->course->carga_horaria.' horas'

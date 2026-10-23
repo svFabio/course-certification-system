@@ -30,4 +30,19 @@ enum CertificateLifecycleStatus: string implements HasColor, HasLabel
             self::DIGITALIZADO => 'success',
         };
     }
+
+    public function isGenerado(): bool
+    {
+        return $this === self::GENERADO;
+    }
+
+    public function isEntregado(): bool
+    {
+        return $this === self::ENTREGADO;
+    }
+
+    public function isDigitalizado(): bool
+    {
+        return $this === self::DIGITALIZADO;
+    }
 }

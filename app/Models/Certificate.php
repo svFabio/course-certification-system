@@ -70,6 +70,16 @@ class Certificate extends Model
         return filled($this->pdf_escaneado_path);
     }
 
+    public function isDelivered(): bool
+    {
+        return $this->estado === CertificateLifecycleStatus::ENTREGADO;
+    }
+
+    public function isDigitized(): bool
+    {
+        return $this->estado === CertificateLifecycleStatus::DIGITALIZADO;
+    }
+
     public function beneficiaryName(): string
     {
         if ($this->isInstructorCertificate()) {

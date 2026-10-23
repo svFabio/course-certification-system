@@ -8,6 +8,7 @@ use App\Enums\PreinscriptionStatus;
 use App\Models\Course;
 use App\Models\Preinscription;
 use App\Services\EvaluationService;
+use App\Support\DesignTokens;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -129,35 +130,39 @@ class CourseClosingExport implements FromArray, ShouldAutoSize, WithStyles, With
 
     public function styles(Worksheet $sheet): array
     {
-        // Estilo institucional UMSS (Azul #0E2E5F, Blanco)
+        $navy = ltrim(DesignTokens::NAVY, '#');
+        $red = ltrim(DesignTokens::RED, '#');
+        $white = ltrim(DesignTokens::WHITE, '#');
+        $gray100 = ltrim(DesignTokens::GRAY_100, '#');
+
         return [
             1 => [
-                'font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => '0E2E5F']],
+                'font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => $navy]],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],
             2 => [
-                'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => '0E2E5F']],
+                'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],
             3 => [
-                'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => 'E01D2E']],
+                'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => $red]],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],
             9 => [
-                'font' => ['bold' => true, 'color' => ['rgb' => '0E2E5F']],
+                'font' => ['bold' => true, 'color' => ['rgb' => $navy]],
             ],
             10 => [
                 'font' => ['bold' => true],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => 'F5F5F5'],
+                    'startColor' => ['rgb' => $gray100],
                 ],
             ],
             12 => [
-                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'font' => ['bold' => true, 'color' => ['rgb' => $white]],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '0E2E5F'],
+                    'startColor' => ['rgb' => $navy],
                 ],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],

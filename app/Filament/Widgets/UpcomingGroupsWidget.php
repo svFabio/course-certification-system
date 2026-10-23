@@ -6,6 +6,7 @@ namespace App\Filament\Widgets;
 
 use App\Enums\GroupStatus;
 use App\Enums\PreinscriptionStatus;
+use App\Filament\Admin\Resources\GroupResource;
 use App\Models\Group;
 use App\Support\BusinessRules;
 use Filament\Tables;
@@ -123,6 +124,7 @@ class UpcomingGroupsWidget extends BaseWidget
                         return $committed >= $min ? 'heroicon-m-check-circle' : 'heroicon-m-exclamation-triangle';
                     }),
             ])
+            ->recordUrl(fn (Group $record): string => GroupResource::getUrl('view', ['record' => $record]))
             ->paginated([5, 10])
             ->defaultPaginationPageOption(5);
     }

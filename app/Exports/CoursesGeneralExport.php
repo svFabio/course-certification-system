@@ -6,6 +6,7 @@ namespace App\Exports;
 
 use App\Enums\PreinscriptionStatus;
 use App\Models\Course;
+use App\Support\DesignTokens;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -95,24 +96,27 @@ class CoursesGeneralExport implements FromArray, ShouldAutoSize, WithStyles, Wit
 
     public function styles(Worksheet $sheet): array
     {
+        $navy = ltrim(DesignTokens::NAVY, '#');
+        $white = ltrim(DesignTokens::WHITE, '#');
+
         return [
             1 => [
-                'font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => '0E2E5F']],
+                'font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => $navy]],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],
             2 => [
-                'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => '0E2E5F']],
+                'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],
             3 => [
-                'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => '0E2E5F']],
+                'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => $navy]],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],
             6 => [
-                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'font' => ['bold' => true, 'color' => ['rgb' => $white]],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '0E2E5F'],
+                    'startColor' => ['rgb' => $navy],
                 ],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],

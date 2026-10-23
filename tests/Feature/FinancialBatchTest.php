@@ -65,7 +65,7 @@ it('blocks payment verification when auxiliar certificate has not been approved'
 
     expect(fn () => app(PaymentService::class)->registerAndVerify(
         $preinscription,
-        PaymentMethod::EFECTIVO->value,
+        PaymentMethod::EFECTIVO,
         'R-0001',
     ))->toThrow(ValidationException::class);
 
@@ -78,7 +78,7 @@ it('registers and verifies payment at auxiliar price once the certificate is app
 
     $payment = app(PaymentService::class)->registerAndVerify(
         $preinscription,
-        PaymentMethod::QR->value,
+        PaymentMethod::QR,
         'QR-2026-AUX',
     );
 
@@ -102,7 +102,7 @@ it('blocks inscription when the CI photocopy has not been delivered', function (
 
     expect(fn () => app(PaymentService::class)->registerAndVerify(
         $preinscription,
-        PaymentMethod::EFECTIVO->value,
+        PaymentMethod::EFECTIVO,
         'R-CI-01',
     ))->toThrow(ValidationException::class);
 
@@ -132,7 +132,7 @@ it('blocks verifying a payment when the CI photocopy has not been delivered', fu
 
 it('requests a refund on an enrolled preinscription', function () {
     $preinscription = makeAuxiliarPreinscription('approved');
-    app(PaymentService::class)->registerAndVerify($preinscription, PaymentMethod::EFECTIVO->value, 'R-1');
+    app(PaymentService::class)->registerAndVerify($preinscription, PaymentMethod::EFECTIVO, 'R-1');
 
     app(PaymentService::class)->requestRefund($preinscription, 'No alcanzó el cupo mínimo');
 
@@ -147,7 +147,7 @@ it('confirms the refund and marks the payment as reembolsado', function () {
     $preinscription = makeAuxiliarPreinscription('approved');
     $user = User::factory()->create();
     $this->actingAs($user);
-    app(PaymentService::class)->registerAndVerify($preinscription, PaymentMethod::EFECTIVO->value, 'R-2');
+    app(PaymentService::class)->registerAndVerify($preinscription, PaymentMethod::EFECTIVO, 'R-2');
     app(PaymentService::class)->requestRefund($preinscription, 'Cancelación de curso');
 
     app(PaymentService::class)->confirmRefund($preinscription);
@@ -161,7 +161,7 @@ it('confirms the refund and marks the payment as reembolsado', function () {
 
 it('cannot request a refund twice on the same preinscription', function () {
     $preinscription = makeAuxiliarPreinscription('approved');
-    app(PaymentService::class)->registerAndVerify($preinscription, PaymentMethod::EFECTIVO->value, 'R-3');
+    app(PaymentService::class)->registerAndVerify($preinscription, PaymentMethod::EFECTIVO, 'R-3');
     app(PaymentService::class)->requestRefund($preinscription, 'Motivo');
 
     expect(fn () => app(PaymentService::class)->requestRefund($preinscription, 'Otro motivo'))
@@ -170,7 +170,7 @@ it('cannot request a refund twice on the same preinscription', function () {
 
 it('cancels a pending refund and keeps the participant enrolled', function () {
     $preinscription = makeAuxiliarPreinscription('approved');
-    app(PaymentService::class)->registerAndVerify($preinscription, PaymentMethod::EFECTIVO->value, 'R-4');
+    app(PaymentService::class)->registerAndVerify($preinscription, PaymentMethod::EFECTIVO, 'R-4');
     app(PaymentService::class)->requestRefund($preinscription, 'Cambio de opinión');
 
     app(PaymentService::class)->cancelRefundRequest($preinscription);
@@ -237,7 +237,7 @@ it('rejects moving a preinscription to a full group', function () {
 
 it('generates a downloadable boleta with a correlative for verified payment', function () {
     $preinscription = makeAuxiliarPreinscription('approved');
-    app(PaymentService::class)->registerAndVerify($preinscription, PaymentMethod::QR->value, 'QR-BOLETA');
+    app(PaymentService::class)->registerAndVerify($preinscription, PaymentMethod::QR, 'QR-BOLETA');
 
     $service = app(BoletaService::class);
     $response = $service->download($preinscription);

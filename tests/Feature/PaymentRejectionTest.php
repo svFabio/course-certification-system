@@ -19,6 +19,7 @@ use App\Services\PaymentService;
 use App\Services\PreinscriptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 
@@ -56,6 +57,8 @@ it('rejects a verified payment through the relation manager action and notifies 
         'status' => PreinscriptionStatus::PENDIENTE_PAGO,
     ]);
 
+    // Creating a verified payment auto-enrolls the student; we then force the
+    // preinscription back to pendiente_pago to exercise the rejection path.
     $payment = Payment::factory()->create([
         'preinscription_id' => $preinscription->id,
         'estado' => PaymentStatus::VERIFICADO,
@@ -120,6 +123,30 @@ it('hides the reject payment action when the student already has an emitted cert
         'ownerRecord' => $group->fresh(),
         'pageClass' => ViewGroup::class,
     ])->assertTableActionHidden('rechazarPago', $preinscription->fresh());
+});
+
+it('refuses to reject a payment once the certificate was issued', function () {
+    Mail::fake();
+
+    $group = makeRejectionTestGroup();
+    $preinscription = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
+    $payment = Payment::factory()->create([
+        'preinscription_id' => $preinscription->id,
+        'estado' => PaymentStatus::VERIFICADO,
+    ]);
+    Certificate::factory()->create([
+        'preinscription_id' => $preinscription->id,
+        'course_id' => $group->course_id,
+    ]);
+
+    expect(fn () => app(PaymentService::class)->reject($payment, 'Pago duplicado'))
+        ->toThrow(ValidationException::class);
+
+    expect($payment->fresh()->estado)->toBe(PaymentStatus::VERIFICADO)
+        ->and($payment->fresh()->motivo_rechazo)->toBeNull()
+        ->and($preinscription->fresh()->status)->toBe(PreinscriptionStatus::INSCRITO);
+
+    Mail::assertNothingQueued();
 });
 
 it('notifies when rejecting the only verified payment of an enrolled preinscription', function () {

@@ -6,6 +6,8 @@ use App\Enums\CertificateType;
 use App\Livewire\CertificateVerificationComponent;
 use App\Models\Certificate;
 use App\Models\Course;
+use App\Models\EvaluationCriteria;
+use App\Models\Grade;
 use App\Models\Group;
 use App\Models\Preinscription;
 use App\Models\User;
@@ -64,4 +66,41 @@ it('verifies instructor certificates by public code', function () {
         ->assertSet('certificate.nombre', 'Docente Demo')
         ->assertSee('Grupo A, Grupo B')
         ->assertSee('Certificado válido');
+});
+
+it('displays final grade for student certificates when available', function () {
+    $course = Course::factory()->create(['attendance_weight' => 50]);
+    $group = Group::factory()->create(['course_id' => $course->id]);
+    $pre = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
+
+    $criteria = EvaluationCriteria::factory()->create([
+        'course_id' => $course->id,
+        'ponderacion' => 50.0,
+    ]);
+
+    Grade::factory()->create([
+        'evaluation_criteria_id' => $criteria->id,
+        'preinscription_id' => $pre->id,
+        'nota' => 90.0,
+    ]);
+
+    $certificate = Certificate::factory()->create([
+        'preinscription_id' => $pre->id,
+        'course_id' => $course->id,
+        'tipo' => CertificateType::APROBACION,
+        'codigo_unico' => 'CERT-2026-GRADE01',
+    ]);
+
+    Livewire::test(CertificateVerificationComponent::class, ['codigo' => $certificate->codigo_unico])
+        ->assertSet('certificate.nota_final', '45.0 / 100')
+        ->assertSee('Nota final')
+        ->assertSee('45.0 / 100');
+});
+
+it('supports /verificar/{codigo} alias redirecting to verification page', function () {
+    $this->withoutVite();
+
+    $response = $this->get('/verificar/CERT-12345');
+
+    $response->assertRedirect('/verificar-certificado?codigo=CERT-12345');
 });

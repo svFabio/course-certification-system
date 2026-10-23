@@ -6,9 +6,11 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\CourseLevel;
 use App\Enums\CourseStatus;
+use App\Enums\TipoParticipante;
 use App\Exports\CourseClosingExport;
 use App\Exports\FinancialReportExport;
 use App\Filament\Admin\Resources\CourseResource\Pages;
+use App\Jobs\BroadcastCourseToTelegram;
 use App\Models\Course;
 use App\Services\CourseService;
 use App\Services\TelegramChannelService;
@@ -69,10 +71,13 @@ class CourseResource extends Resource
                                 ->required()
                                 ->live()
                                 ->afterStateUpdated(function (Forms\Set $set, $state) {
-                                    $prices = BusinessRules::PRICING[$state] ?? [];
-                                    $set('precio_umss', $prices['umss'] ?? 0);
-                                    $set('precio_externo', $prices['externo'] ?? 0);
-                                    $set('precio_auxiliar', $prices['auxiliar'] ?? 0);
+                                    if (! $state) {
+                                        return;
+                                    }
+                                    $hours = (int) $state;
+                                    $set('precio_umss', BusinessRules::calculatePrice($hours, TipoParticipante::UMSS));
+                                    $set('precio_externo', BusinessRules::calculatePrice($hours, TipoParticipante::EXTERNO));
+                                    $set('precio_auxiliar', BusinessRules::calculatePrice($hours, TipoParticipante::AUXILIAR));
                                 }),
                             Forms\Components\Select::make('nivel')
                                 ->options(CourseLevel::class)
@@ -169,8 +174,9 @@ class CourseResource extends Resource
                         ->modalHeading(fn (Course $record): string => "Campaña de Difusión: {$record->nombre}")
                         ->modalDescription('Herramientas para promocionar este curso en Facebook, WhatsApp y canales institucionales.')
                         ->form(function (Course $record): array {
-                            $firstGroup = $record->groups->first();
-                            $url = $firstGroup ? route('preinscripcion', $firstGroup) : route('home');
+                            $group = $record->nextGroupOpenForPreinscription();
+                            $url = $group ? route('preinscripcion', $group) : route('home');
+                            $linkLabel = $group ? 'Preinscripciones abiertas' : 'Ver cursos disponibles';
                             $promoText = "🎓 CURSO DISPONIBLE EN LA UMSS\n\n"
                                 ."📌 {$record->nombre}\n\n"
                                 .'📖 '.strip_tags((string) $record->contenido)."\n\n"
@@ -179,7 +185,7 @@ class CourseResource extends Resource
                                 ."💰 Inversión:\n"
                                 .'   • Estudiantes UMSS: Bs. '.number_format((float) $record->precio_umss, 2)."\n"
                                 .'   • Profesionales y Externos: Bs. '.number_format((float) $record->precio_externo, 2)."\n\n"
-                                ."🔗 Preinscripciones abiertas:\n{$url}";
+                                ."🔗 {$linkLabel}:\n{$url}";
 
                             $fbUrl = 'https://www.facebook.com/sharer/sharer.php?u='.rawurlencode($url);
                             $waUrl = 'https://api.whatsapp.com/send?text='.rawurlencode($promoText);
@@ -199,21 +205,23 @@ class CourseResource extends Resource
                         })
                         ->modalSubmitActionLabel('Publicar en Canal de Telegram')
                         ->action(function (Course $record, TelegramChannelService $service): void {
-                            $result = $service->broadcastCourse($record);
-
-                            if ($result['success']) {
-                                Notification::make()
-                                    ->title('Difusión en Telegram exitosa')
-                                    ->body($result['message'])
-                                    ->success()
-                                    ->send();
-                            } else {
+                            if (! $service->isConfigured()) {
                                 Notification::make()
                                     ->title('Aviso de difusión')
-                                    ->body($result['message'])
+                                    ->body('El bot de Telegram o el ID del canal no están configurados en el entorno (TELEGRAM_BOT_TOKEN / TELEGRAM_CHANNEL_CHAT_ID).')
                                     ->warning()
                                     ->send();
+
+                                return;
                             }
+
+                            BroadcastCourseToTelegram::dispatch($record->id);
+
+                            Notification::make()
+                                ->title('Difusión en cola')
+                                ->body('El anuncio se publicará en el canal de Telegram en segundo plano.')
+                                ->success()
+                                ->send();
                         }),
                     Tables\Actions\Action::make('publicar')
                         ->label('Publicar curso')

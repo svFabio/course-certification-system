@@ -38,8 +38,6 @@ it('dispatches a sheets refresh event when attendance is updated', function () {
         'status' => AttendanceStatus::AUSENTE,
     ]);
 
-    Event::fake([GroupSheetsNeedRefresh::class]);
-
     $attendance->update(['status' => AttendanceStatus::PRESENTE]);
 
     Event::assertDispatched(GroupSheetsNeedRefresh::class, fn ($event) => $event->groupId === $group->id);

@@ -16,7 +16,7 @@ abstract class TestCase extends BaseTestCase
         $_ENV['DB_DATABASE'] = 'plataforma_formacion_testing';
         $_SERVER['DB_DATABASE'] = 'plataforma_formacion_testing';
 
-        $dbHost = (string) (getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? ($_SERVER['DB_HOST'] ?? '127.0.0.1')));
+        $dbHost = getenv('DB_HOST') ?: (file_exists('/.dockerenv') ? 'postgres' : ($_ENV['DB_HOST'] ?? '127.0.0.1'));
         putenv("DB_HOST={$dbHost}");
         $_ENV['DB_HOST'] = $dbHost;
         $_SERVER['DB_HOST'] = $dbHost;

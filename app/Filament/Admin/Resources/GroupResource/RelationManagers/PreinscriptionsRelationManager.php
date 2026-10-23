@@ -141,17 +141,29 @@ class PreinscriptionsRelationManager extends RelationManager
                             ->default(fn (Preinscription $record) => (bool) $record->fotocopia_ci),
                     ])
                     ->action(function (Preinscription $record, array $data) {
-                        app(PaymentService::class)->registerAndVerify(
-                            $record,
-                            $data['metodo'],
-                            $data['numero_comprobante'] ?? null,
-                            (bool) ($data['fotocopia_ci'] ?? false),
-                        );
+                        try {
+                            $method = $data['metodo'] instanceof PaymentMethod
+                                ? $data['metodo']
+                                : PaymentMethod::from((string) $data['metodo']);
 
-                        Notification::make()
-                            ->title('Pago registrado y estudiante inscrito con éxito.')
-                            ->success()
-                            ->send();
+                            app(PaymentService::class)->registerAndVerify(
+                                $record,
+                                $method,
+                                $data['numero_comprobante'] ?? null,
+                                (bool) ($data['fotocopia_ci'] ?? false),
+                            );
+
+                            Notification::make()
+                                ->title('Pago registrado y estudiante inscrito con éxito.')
+                                ->success()
+                                ->send();
+                        } catch (ValidationException $e) {
+                            Notification::make()
+                                ->title('Error al registrar pago')
+                                ->body(collect($e->errors())->flatten()->first() ?? $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
                     }),
                 Tables\Actions\Action::make('marcarRetirado')
                     ->label('Marcar retirado')
@@ -240,7 +252,17 @@ class PreinscriptionsRelationManager extends RelationManager
                             return;
                         }
 
-                        app(PaymentService::class)->reject($payment, $data['motivo_rechazo']);
+                        try {
+                            app(PaymentService::class)->reject($payment, $data['motivo_rechazo']);
+                        } catch (ValidationException $e) {
+                            Notification::make()
+                                ->title('No se pudo rechazar el pago')
+                                ->body(collect($e->errors())->flatten()->implode(' '))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
 
                         Notification::make()
                             ->title('Pago rechazado. Se notificó al estudiante y se liberó el cupo.')

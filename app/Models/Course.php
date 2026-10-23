@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\CourseLevel;
 use App\Enums\CourseStatus;
+use App\Enums\GroupStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -54,6 +55,24 @@ class Course extends Model
     public function groups(): HasMany
     {
         return $this->hasMany(Group::class);
+    }
+
+    /**
+     * Oldest group that still accepts public preinscriptions.
+     *
+     * Uses the same rule the public preinscription page enforces (AGENTS.md §2):
+     * enabled or pending-enablement groups, with free committed capacity.
+     * Closed, in-progress and full groups are skipped so public links never
+     * dead-end the visitor.
+     */
+    public function nextGroupOpenForPreinscription(): ?Group
+    {
+        return $this->groups()
+            ->whereIn('status', [GroupStatus::HABILITADO, GroupStatus::NO_HABILITADO])
+            ->withConfirmedCount()
+            ->orderBy('id')
+            ->get()
+            ->first(fn (Group $group): bool => ! $group->esta_lleno);
     }
 
     public function evaluationCriteria(): HasMany

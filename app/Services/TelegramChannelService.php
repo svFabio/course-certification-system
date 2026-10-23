@@ -33,8 +33,9 @@ class TelegramChannelService
         $precioUmss = number_format((float) $course->precio_umss, 2);
         $precioExterno = number_format((float) $course->precio_externo, 2);
 
-        $firstGroup = $course->groups->first();
-        $courseUrl = $firstGroup ? route('preinscripcion', $firstGroup) : route('home');
+        $group = $course->nextGroupOpenForPreinscription();
+        $courseUrl = $group ? route('preinscripcion', $group) : route('home');
+        $linkLabel = $group ? 'Preinscripciones abiertas' : 'Ver cursos disponibles';
 
         return "🎓 <b>NUEVO CURSO DISPONIBLE</b>\n\n"
             ."<b>{$nombre}</b>\n\n"
@@ -42,7 +43,7 @@ class TelegramChannelService
             ."⏱ <b>Carga horaria:</b> {$carga} horas\n"
             ."📊 <b>Nivel:</b> {$nivel}\n"
             ."💰 <b>Inversión:</b> Bs. {$precioUmss} (UMSS) | Bs. {$precioExterno} (Externo)\n\n"
-            ."🔗 <b>Preinscripciones abiertas:</b>\n"
+            ."🔗 <b>{$linkLabel}:</b>\n"
             ."<a href=\"{$courseUrl}\">{$courseUrl}</a>";
     }
 

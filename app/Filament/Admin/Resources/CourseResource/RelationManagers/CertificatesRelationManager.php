@@ -125,7 +125,7 @@ class CertificatesRelationManager extends RelationManager
                     ->label('Descargar imprimible')
                     ->icon('heroicon-o-printer')
                     ->color('gray')
-                    ->url(fn (Certificate $record): string => app(CertificateService::class)->publicDownloadUrl($record))
+                    ->url(fn (Certificate $record, CertificateService $service): string => $service->publicDownloadUrl($record))
                     ->openUrlInNewTab(),
                 Tables\Actions\Action::make('marcarEntregado')
                     ->label('Marcar entregado')
@@ -245,10 +245,5 @@ class CertificatesRelationManager extends RelationManager
     protected function canCreate(): bool
     {
         return false;
-    }
-
-    protected function getTableQuery(): ?Builder
-    {
-        return parent::getTableQuery()?->with(['preinscription.group', 'instructor']);
     }
 }

@@ -51,6 +51,12 @@
                             <dt class="text-xs font-semibold text-umss-gray-700 uppercase tracking-wider">Tipo</dt>
                             <dd class="font-medium text-umss-black mt-0.5">{{ $certificate['tipo'] ?? 'N/A' }}</dd>
                         </div>
+                        @if (! empty($certificate['nota_final']))
+                            <div>
+                                <dt class="text-xs font-semibold text-umss-gray-700 uppercase tracking-wider">Nota final</dt>
+                                <dd class="font-bold text-umss-navy mt-0.5">{{ $certificate['nota_final'] }}</dd>
+                            </div>
+                        @endif
                         <div>
                             <dt class="text-xs font-semibold text-umss-gray-700 uppercase tracking-wider">Carga horaria</dt>
                             <dd class="font-medium text-umss-black mt-0.5">{{ $certificate['carga_horaria'] ?? 'N/A' }}</dd>

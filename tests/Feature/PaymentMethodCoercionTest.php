@@ -50,12 +50,12 @@ it('registers and verifies a payment when given a PaymentMethod enum instance', 
     expect($preinscription->fresh()->status)->toBe(PreinscriptionStatus::INSCRITO);
 });
 
-it('registers and verifies a payment when given a payment method string', function () {
+it('registers and verifies a payment when converted from a payment method string', function () {
     $preinscription = makeUmssPreinscriptionPendingPayment();
 
     $payment = app(PaymentService::class)->registerAndVerify(
         $preinscription,
-        PaymentMethod::EFECTIVO->value,
+        PaymentMethod::from('efectivo'),
         null,
     );
 

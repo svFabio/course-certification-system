@@ -15,10 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class PaymentService
 {
-    public function registerAndVerify(Preinscription $preinscription, string|PaymentMethod $method, ?string $reference, bool $fotocopiaCi = false): Payment
+    public function registerAndVerify(Preinscription $preinscription, PaymentMethod $method, ?string $reference, bool $fotocopiaCi = false): Payment
     {
-        $method = $method instanceof PaymentMethod ? $method->value : $method;
-
         $this->assertAuxiliarCertificateApproved($preinscription);
         $this->assertPhotocopyDelivered($preinscription, $fotocopiaCi);
 
@@ -77,6 +75,14 @@ class PaymentService
 
     public function reject(Payment $payment, string $reason): void
     {
+        $payment->loadMissing('preinscription.certificate');
+
+        if ($payment->preinscription?->certificate !== null) {
+            throw ValidationException::withMessages([
+                'preinscription' => 'No se puede rechazar el pago: el certificado del participante ya fue emitido.',
+            ]);
+        }
+
         DB::transaction(function () use ($payment, $reason): void {
             $payment->update([
                 'estado' => PaymentStatus::RECHAZADO,
