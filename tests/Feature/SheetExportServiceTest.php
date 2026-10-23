@@ -33,6 +33,7 @@ it('writes both tabs when exporting BOTH', function () {
     $sheets->shouldReceive('checkTabExists')->with($teacherTab)->once()->andReturn(false);
     $sheets->shouldReceive('createTab')->with($teacherTab)->once();
     $sheets->shouldReceive('writeCells')->with($teacherTab.'!A1', Mockery::type('array'))->once();
+    $sheets->shouldReceive('cleanupDefaultTabs')->once();
 
     $tabs = app(SheetExportService::class)->exportGroup($group, ExportType::BOTH);
 

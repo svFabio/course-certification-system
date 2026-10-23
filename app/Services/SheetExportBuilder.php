@@ -150,10 +150,10 @@ class SheetExportBuilder
             $asistenciaCol = $this->columnLetter(5 + $sessionCount);
 
             $asistenciaFormula = $sessionCount > 0
-                ? "=COUNTIF({$firstAttendanceCol}{$currentRow}:{$lastAttendanceCol}{$currentRow};1)"
+                ? "=COUNTIF({$firstAttendanceCol}{$currentRow}:{$lastAttendanceCol}{$currentRow}, 1)"
                 : '0';
             $puntajeFormula = $sessionCount > 0
-                ? "=ROUND(({$asistenciaCol}{$currentRow}/{$sessionCount})*{$attendanceWeight};2)"
+                ? "=ROUND(({$asistenciaCol}{$currentRow}/{$sessionCount})*{$attendanceWeight}, 2)"
                 : '0';
 
             $gradeStartIndex = 5 + $sessionCount + 2;
@@ -235,21 +235,22 @@ class SheetExportBuilder
 
     /**
      * NOTA FINAL = puntaje_asistencia + sum(nota * ponderacion / 100) — same formula as EvaluationService.
-     * Uses ';' as argument separator for Spanish/Es Google Sheets locales.
+     * Google Sheets API expects English formula grammar with comma (',') function argument separators.
+     * Uses N() to coerce blank/unrecorded criterion cells to 0, preventing parse and value calculation errors.
      */
     private function buildWeightedFinalGradeFormula(Collection $criteria, int $gradeStartIndex, int $currentRow, string $attendanceScoreCell): string
     {
         $terms = $criteria->map(function (mixed $criterion, int $index) use ($gradeStartIndex, $currentRow): string {
             $col = $this->columnLetter($gradeStartIndex + $index);
 
-            return "{$col}{$currentRow}*{$criterion->ponderacion}/100";
+            return "N({$col}{$currentRow})*{$criterion->ponderacion}/100";
         })->implode('+');
 
         if ($terms === '') {
-            return "=ROUND({$attendanceScoreCell};2)";
+            return "=ROUND({$attendanceScoreCell}, 2)";
         }
 
-        return "=ROUND({$attendanceScoreCell}+{$terms};2)";
+        return "=ROUND({$attendanceScoreCell}+{$terms}, 2)";
     }
 
     /**

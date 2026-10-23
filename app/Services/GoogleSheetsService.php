@@ -176,6 +176,45 @@ class GoogleSheetsService
         $this->forgetSpreadsheetCache();
     }
 
+    /**
+     * Delete default blank sheets ('Sheet1', 'Hoja 1') and unused template sheets
+     * ('PLANTILLA_CAJA', 'PLANTILLA_DOCENTE') when real content sheets exist.
+     * Google requires at least 1 sheet to remain in the spreadsheet at all times.
+     */
+    public function cleanupDefaultTabs(array $protectedTabNames = []): void
+    {
+        $sheets = $this->fetchSpreadsheet()->getSheets();
+        $totalSheets = count($sheets);
+
+        $junkTitles = ['Sheet1', 'Hoja 1', 'PLANTILLA_CAJA', 'PLANTILLA_DOCENTE'];
+        $deleteRequests = [];
+
+        foreach ($sheets as $sheet) {
+            $title = $sheet->getProperties()->getTitle();
+            $sheetId = $sheet->getProperties()->getSheetId();
+
+            $isJunk = in_array($title, $junkTitles, true)
+                || ($sheetId === 0 && (str_starts_with($title, 'Sheet') || str_starts_with($title, 'Hoja')));
+
+            if ($isJunk && ! in_array($title, $protectedTabNames, true)) {
+                if ($totalSheets - count($deleteRequests) > 1) {
+                    $deleteRequests[] = new Request([
+                        'deleteSheet' => [
+                            'sheetId' => $sheetId,
+                        ],
+                    ]);
+                }
+            }
+        }
+
+        if (! empty($deleteRequests)) {
+            $requestBody = new BatchUpdateSpreadsheetRequest;
+            $requestBody->setRequests($deleteRequests);
+            $this->service()->spreadsheets->batchUpdate($this->spreadsheetId, $requestBody);
+            $this->forgetSpreadsheetCache();
+        }
+    }
+
     public function setSpreadsheetId(string $spreadsheetId): void
     {
         $this->spreadsheetId = $spreadsheetId;
