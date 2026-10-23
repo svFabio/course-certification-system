@@ -374,6 +374,20 @@ class GoogleSheetsService
         $path = self::resolveCredentialsPath();
 
         if (! file_exists($path)) {
+            $json = SystemSetting::get('google_sheets_credentials_json', '');
+            if (filled($json)) {
+                $dir = dirname($path);
+                if (! is_dir($dir)) {
+                    @mkdir($dir, 0755, true);
+                }
+                @file_put_contents($path, $json);
+                @chmod($path, 0600);
+
+                if (file_exists($path)) {
+                    return $path;
+                }
+            }
+
             throw new \RuntimeException(
                 'Google Service Account credentials not found. '
                 .'Configure them in Admin > Configuración > Google Sheets.'
@@ -410,8 +424,11 @@ class GoogleSheetsService
                 && self::isOAuthConnected();
         }
 
+        $hasCredentials = file_exists(self::resolveCredentialsPath())
+            || filled(SystemSetting::get('google_sheets_credentials_json', ''));
+
         return $enabled
             && ! empty($spreadsheetId)
-            && file_exists(self::resolveCredentialsPath());
+            && $hasCredentials;
     }
 }

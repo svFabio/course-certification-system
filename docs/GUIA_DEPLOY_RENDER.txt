@@ -61,9 +61,9 @@ Paso 1: Conectar Repositorio en Render
 Paso 2: Revision de Servicios Detectados
    Render detectara la creacion de:
    - 1 Grupo de variables de entorno: 'umss-shared-env'
-   - 1 Web Service: 'umss-certification-web' (Docker con Dockerfile.prod)
-   - 1 Background Worker: 'umss-queue-worker' (procesador de colas)
-   - 1 Cron Job: 'umss-cron-scheduler' (ejecutor de tareas programadas cada 1 min)
+   - 1 Web Service: 'umss-certification-web' (Docker con Dockerfile.prod, plan free)
+   (Nota: El procesamiento de colas corre automáticamente en background dentro del
+   mismo contenedor para operar 100% en el Free Tier sin costo adicional).
 
 Paso 3: Carga de Secretos y Variables de Entorno
    En la pantalla de configuracion del Blueprint o en el menu "Environment Groups",
@@ -71,12 +71,10 @@ Paso 3: Carga de Secretos y Variables de Entorno
 
    - APP_KEY:
      El valor generado previamente (base64:...).
-   - APP_URL:
+   - APP_URL / APP_PUBLIC_URL / ASSET_URL:
      La URL publica de tu Web Service (ej. https://umss-certification-web.onrender.com).
      (Nota: si aun no conoces el dominio final, puedes poner una temporal y
      actualizarla tras el primer deploy).
-   - ASSET_URL:
-     El mismo valor que APP_URL.
    - DATABASE_URL:
      Pega aqui la cadena de conexion completa de Neon copiada en el punto 1.B:
      postgresql://usuario:password@endpoint.neon.tech/neondb?sslmode=require
@@ -90,6 +88,8 @@ Paso 3: Carga de Secretos y Variables de Entorno
      Tu API Secret.
    - MAIL_HOST, MAIL_USERNAME, MAIL_PASSWORD, MAIL_FROM_ADDRESS:
      Tus credenciales SMTP.
+   - TELEGRAM_BOT_TOKEN / TELEGRAM_CHANNEL_CHAT_ID (HU-20):
+     Token del bot de Telegram y Chat ID / @canal para difusion automatica.
    - GOOGLE_SHEETS_SPREADSHEET_ID:
      El ID de la hoja de Google Sheets si usas exportacion automatica.
 

@@ -9,6 +9,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
 use App\Models\Course;
 use App\Models\Group;
+use App\Support\BusinessRules;
 use App\Support\DesignTokens;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -119,8 +120,8 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
         ];
 
         // Distribución institucional de ingresos netos (HU-19 Criterio 2: 20% Facultad, 80% Lab y Docente)
-        $retencionFacultad = $totalNetoGeneral * 0.20;
-        $presupuestoDocenteLab = $totalNetoGeneral * 0.80;
+        $retencionFacultad = $totalNetoGeneral * (BusinessRules::FACULTY_RETENTION_PERCENT / 100);
+        $presupuestoDocenteLab = $totalNetoGeneral * (BusinessRules::LAB_AND_TEACHER_PERCENT / 100);
 
         $rows[] = [''];
         $rows[] = ['DISTRIBUCIÓN INSTITUCIONAL (RECAUDACIÓN NETA)'];

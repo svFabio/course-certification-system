@@ -24,11 +24,15 @@ envVarGroups:
         value: database
       - key: FILESYSTEM_DISK
         value: cloudinary
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
 
       # ─── Secrets & URLs to fill in Render Dashboard ─────────────────────────
       - key: APP_KEY
         sync: false
       - key: APP_URL
+        sync: false
+      - key: APP_PUBLIC_URL
         sync: false
       - key: ASSET_URL
         sync: false
@@ -71,6 +75,12 @@ envVarGroups:
         sync: false
       - key: GOOGLE_SERVICE_ACCOUNT_JSON_PATH
         value: storage/app/google/credentials.json
+
+      # Telegram Channel Integration (HU-20)
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHANNEL_CHAT_ID
+        sync: false
 
 services:
   # ─── 1. Web Service (Laravel HTTP / Filament Admin / Livewire + In-container Worker) ──

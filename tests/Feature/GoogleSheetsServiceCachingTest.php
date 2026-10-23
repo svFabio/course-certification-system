@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\SystemSetting;
 use App\Services\GoogleSheetsService;
 use Google\Service\Sheets as SheetsClient;
 use Google\Service\Sheets\Resource\Spreadsheets;
@@ -98,4 +99,42 @@ it('cleans up default and template tabs when content sheets exist', function () 
     $this->service->cleanupDefaultTabs();
 
     expect($this->batchUpdates)->toBe(1);
+});
+
+it('auto restores missing credentials file from system settings if present', function () {
+    $tempPath = storage_path('app/google/test_creds_'.uniqid().'.json');
+    config(['services.google.sheets.credentials_path' => $tempPath]);
+
+    if (file_exists($tempPath)) {
+        unlink($tempPath);
+    }
+
+    SystemSetting::set('google_sheets_credentials_json', json_encode(['type' => 'service_account']));
+
+    $method = new ReflectionMethod(GoogleSheetsService::class, 'getCredentialsPath');
+    $method->setAccessible(true);
+    $resolved = $method->invoke($this->service);
+
+    expect($resolved)->toBe($tempPath)
+        ->and(file_exists($tempPath))->toBeTrue();
+
+    if (file_exists($tempPath)) {
+        unlink($tempPath);
+    }
+});
+
+it('reports isConfigured as true when credentials exist in system settings even before file restoration', function () {
+    $tempPath = storage_path('app/google/nonexistent_'.uniqid().'.json');
+    config(['services.google.sheets.credentials_path' => $tempPath]);
+
+    if (file_exists($tempPath)) {
+        unlink($tempPath);
+    }
+
+    SystemSetting::set('google_sheets_spreadsheet_id', 'test_spreadsheet_123');
+    SystemSetting::set('google_sheets_enabled', '1');
+    SystemSetting::set('google_sheets_auth_method', 'service_account');
+    SystemSetting::set('google_sheets_credentials_json', json_encode(['type' => 'service_account']));
+
+    expect(GoogleSheetsService::isConfigured())->toBeTrue();
 });

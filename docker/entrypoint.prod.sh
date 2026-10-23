@@ -31,8 +31,9 @@ fi
 # ─── Run pending migrations ───────────────────────────────────────────────────
 # Run migrations only when booting the web server (avoid race conditions in workers)
 if [ "$1" = "apache2-foreground" ] || [ -z "$1" ]; then
-    echo "[entrypoint.prod] Running migrations"
+    echo "[entrypoint.prod] Running migrations and roles seeder"
     php artisan migrate --force --no-interaction
+    php artisan db:seed --class=RolesAndPermissionsSeeder --force --no-interaction
 fi
 
 # ─── Laravel production optimizations ────────────────────────────────────────

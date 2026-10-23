@@ -130,10 +130,20 @@ it('exports financial reconciliation report by course and consolidated', functio
     $generalRows = $generalExport->array();
     expect($generalExport->title())->toBe('Reporte Financiero General');
 
-    $summaryRow = end($generalRows);
-    expect($summaryRow[0])->toBe('TOTAL GENERAL')
-        ->and($summaryRow[3])->toBe('350.00')
-        ->and($summaryRow[7])->toBe('150.00');
+    $totalRow = collect($generalRows)->firstWhere(0, 'TOTAL GENERAL');
+    expect($totalRow[0])->toBe('TOTAL GENERAL')
+        ->and($totalRow[3])->toBe('350.00')
+        ->and($totalRow[7])->toBe('150.00');
+
+    // HU-19 Criteria 2: 20% facultad, 80% docente/lab
+    $facultyRow = collect($generalRows)->first(fn ($r) => str_contains($r[0] ?? '', 'Retención Facultativa'));
+    $docenteRow = collect($generalRows)->first(fn ($r) => str_contains($r[0] ?? '', 'Presupuesto Laboratorio'));
+    expect($facultyRow[7])->toBe('30.00') // 150 * 0.20
+        ->and($docenteRow[7])->toBe('120.00'); // 150 * 0.80
+
+    // Check style keys
+    $styles = $generalExport->styles(new Worksheet);
+    expect($styles)->toHaveKey(8);
 });
 
 it('exports general course catalog with filters and styles', function () {

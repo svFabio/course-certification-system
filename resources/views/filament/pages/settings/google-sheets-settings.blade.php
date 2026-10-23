@@ -4,7 +4,7 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-4">
                 {{-- Logo oficial de Google Sheets --}}
-                <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 shadow-inner">
+                <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-umss-green-light border border-umss-green shadow-inner">
                     <svg class="h-8 w-8" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M25 5H10C8.34315 5 7 6.34315 7 8V32C7 33.6569 8.34315 35 10 35H30C31.6569 35 33 33.6569 33 32V13L25 5Z" fill="#0F9D58"/>
                         <path d="M25 5V13H33L25 5Z" fill="#87CEAB"/>
