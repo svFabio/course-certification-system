@@ -72,7 +72,7 @@ class CoursesSeeder extends Seeder
                         'hora_inicio' => '14:15',
                         'hora_fin' => '15:45',
                         'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
-                        'cupo_maximo' => 20,
+                        'cupo_maximo' => 25,
                         'status' => GroupStatus::HABILITADO,
                         'participants_count' => 16,
                     ],
@@ -94,9 +94,9 @@ class CoursesSeeder extends Seeder
                         'hora_inicio' => '09:45',
                         'hora_fin' => '11:15',
                         'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
-                        'cupo_maximo' => 30,
+                        'cupo_maximo' => 20,
                         'status' => GroupStatus::HABILITADO,
-                        'participants_count' => 22,
+                        'participants_count' => 20,
                     ],
                 ],
             ],
@@ -138,7 +138,7 @@ class CoursesSeeder extends Seeder
                         'hora_inicio' => '08:15',
                         'hora_fin' => '09:45',
                         'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
-                        'cupo_maximo' => 20,
+                        'cupo_maximo' => 25,
                         'status' => GroupStatus::HABILITADO,
                         'participants_count' => 16,
                     ],
@@ -234,8 +234,9 @@ class CoursesSeeder extends Seeder
             ],
         ];
 
-        // Pool de estudiantes generado con fake() — nunca datos personales reales
+        // Pool de estudiantes generado con fake() y semilla determinista para idempotencia
         // (AGENTS.md §5: seeders usan fake() / credenciales genéricas).
+        fake()->seed(1024);
         $poolEstudiantes = [];
         for ($i = 0; $i < 90; $i++) {
             $tipo = match ($i % 3) {
@@ -303,6 +304,11 @@ class CoursesSeeder extends Seeder
                                     ]
                                 );
 
+                                $group->update([
+                                    'cupo_maximo' => $gData['cupo_maximo'],
+                                    'cupo_minimo' => $gData['cupo_minimo'],
+                                ]);
+
                                 // Crear 10 Sesiones académicas para el grupo
                                 $startDate = Carbon::create(2026, 7, 6);
                                 $sessionCount = 0;
@@ -326,21 +332,47 @@ class CoursesSeeder extends Seeder
                                     $currentDay->addDay();
                                 }
 
-                                // Inscribir participantes sin repetir CI dentro del mismo curso
+                                // Inscribir participantes sin exceder targetCount
                                 $targetCount = min($gData['participants_count'], count($poolEstudiantes));
-                                for ($i = 0; $i < $targetCount; $i++) {
+
+                                // Poda de exceso de ejecuciones previas acumuladas para asegurar cupos reales
+                                if ($group->status !== GroupStatus::FINALIZADO) {
+                                    $existing = $group->preinscriptions()->get();
+                                    if ($existing->count() > $targetCount) {
+                                        $excess = $existing->slice($targetCount);
+                                        foreach ($excess as $p) {
+                                            $p->payments()->delete();
+                                            $p->attendances()->delete();
+                                            $p->grades()->delete();
+                                            $p->certificate()?->delete();
+                                            $p->studentRequests()->delete();
+                                            $p->delete();
+                                        }
+                                    }
+                                }
+
+                                if ($group->preinscriptions()->count() >= $targetCount) {
+                                    continue;
+                                }
+
+                                $needed = $targetCount - $group->preinscriptions()->count();
+                                for ($i = 0; $i < $needed; $i++) {
                                     $est = $poolEstudiantes[$estudianteCursor % count($poolEstudiantes)];
                                     $estudianteCursor++;
 
-                                    // Variedad de estados para QA
+                                    // Variedad de estados para QA (si el grupo busca estar lleno al 100%, todos confirmados)
+                                    $isFullTarget = $gData['participants_count'] >= $gData['cupo_maximo'];
                                     $status = PreinscriptionStatus::INSCRITO;
                                     $fotocopia = true;
-                                    if ($i === $targetCount - 1) {
-                                        $status = PreinscriptionStatus::PENDIENTE_PAGO;
-                                        $fotocopia = false;
-                                    } elseif ($i === $targetCount - 2) {
-                                        $status = PreinscriptionStatus::RECHAZADO;
-                                        $fotocopia = false;
+
+                                    if (! $isFullTarget) {
+                                        if ($i === $targetCount - 1) {
+                                            $status = PreinscriptionStatus::PENDIENTE_PAGO;
+                                            $fotocopia = false;
+                                        } elseif ($i === $targetCount - 2) {
+                                            $status = PreinscriptionStatus::RECHAZADO;
+                                            $fotocopia = false;
+                                        }
                                     }
 
                                     $preinscription = Preinscription::firstOrCreate(

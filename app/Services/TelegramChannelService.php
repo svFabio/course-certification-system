@@ -50,7 +50,7 @@ class TelegramChannelService
     /**
      * @return array{success: bool, message: string}
      */
-    public function broadcastCourse(Course $course): array
+    public function broadcastCourse(Course $course, ?string $customCaption = null): array
     {
         if (! $this->isConfigured()) {
             return [
@@ -59,19 +59,24 @@ class TelegramChannelService
             ];
         }
 
-        $caption = $this->formatCaption($course);
+        $caption = ! empty($customCaption) ? $customCaption : $this->formatCaption($course);
+        $parseMode = ! empty($customCaption) ? null : 'HTML';
         $token = $this->botToken;
         $chatId = $this->channelChatId;
 
         try {
             // Intentar primero con foto de portada si existe
             if (! empty($course->portada_url)) {
-                $response = Http::timeout(10)->post("https://api.telegram.org/bot{$token}/sendPhoto", [
+                $photoPayload = [
                     'chat_id' => $chatId,
                     'photo' => $course->portada_url,
                     'caption' => $caption,
-                    'parse_mode' => 'HTML',
-                ]);
+                ];
+                if ($parseMode !== null) {
+                    $photoPayload['parse_mode'] = $parseMode;
+                }
+
+                $response = Http::timeout(10)->post("https://api.telegram.org/bot{$token}/sendPhoto", $photoPayload);
 
                 if ($response->successful()) {
                     Log::info('Telegram broadcast sent with photo', [
@@ -93,12 +98,16 @@ class TelegramChannelService
             }
 
             // Fallback a mensaje de texto si no hay foto o sendPhoto falló
-            $response = Http::timeout(10)->post("https://api.telegram.org/bot{$token}/sendMessage", [
+            $textPayload = [
                 'chat_id' => $chatId,
                 'text' => $caption,
-                'parse_mode' => 'HTML',
                 'disable_web_page_preview' => false,
-            ]);
+            ];
+            if ($parseMode !== null) {
+                $textPayload['parse_mode'] = $parseMode;
+            }
+
+            $response = Http::timeout(10)->post("https://api.telegram.org/bot{$token}/sendMessage", $textPayload);
 
             if ($response->successful()) {
                 Log::info('Telegram broadcast sent as text', [

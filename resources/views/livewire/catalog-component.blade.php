@@ -108,21 +108,21 @@
 
                     @if ($atCapacity[$course->id])
                         {{-- Course at capacity: single interest-registration entry point --}}
-                        <div class="p-4 bg-umss-amber-light/60 border-t border-umss-gray-100">
+                        <div class="p-4 bg-umss-gray-100/60 border-t border-umss-gray-100">
                             @if ($interestSubmitted && $interestCourseId === $course->id)
                                 @if ($interestAlreadyRegistered)
                                     <p class="text-xs text-umss-amber-dark font-medium text-center">
-                                        Ya estás anotado(a) para este curso. Te avisaremos cuando haya cupo disponible.
+                                        Ya te encuentras en lista de espera para este curso ante futuras aperturas.
                                     </p>
                                 @else
                                     <p class="text-xs text-umss-green-dark font-medium text-center">
-                                        ¡Listo! Te avisaremos por correo cuando haya cupo disponible en este curso.
+                                        ¡Listo! Registramos tu interés para este curso ante futuras aperturas.
                                     </p>
                                 @endif
                             @else
                                 <button type="button" wire:click="openInterest({{ $course->id }})"
                                     class="btn-primary w-full">
-                                    Avisarme cuando haya cupo
+                                    Registrar interés
                                 </button>
 
                                 @if ($interestCourseId === $course->id)
@@ -135,7 +135,7 @@
                                         @enderror
                                         <div class="flex items-center gap-2">
                                             <button type="submit" class="btn-primary w-full">
-                                                Registrarme
+                                                Anotarme en lista de espera
                                             </button>
                                             <button type="button" wire:click="closeInterest"
                                                 class="shrink-0 text-xs font-semibold text-umss-gray-700 hover:text-umss-navy">
