@@ -100,7 +100,7 @@ class UpcomingGroupsWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('confirmed_count')
                     ->label('Inscritos')
                     ->alignCenter()
-                    ->formatStateUsing(fn ($state, Group $record) => "{$state} / {$record->cupo_maximo}"),
+                    ->formatStateUsing(fn ($state, Group $record) => $record->cupo_maximo !== null ? "{$state} / {$record->cupo_maximo}" : "{$state} / —"),
 
                 Tables\Columns\TextColumn::make('pending_count')
                     ->label('Pend. Pago')

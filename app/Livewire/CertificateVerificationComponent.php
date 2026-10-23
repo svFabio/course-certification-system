@@ -28,6 +28,8 @@ class CertificateVerificationComponent extends Component
 
     public function verify(): void
     {
+        $this->codigo = trim((string) $this->codigo);
+
         $this->validate([
             'codigo' => ['required', 'string', 'min:5', 'max:50', 'regex:/^[a-zA-Z0-9\-_]+$/'],
         ], [
@@ -37,8 +39,13 @@ class CertificateVerificationComponent extends Component
         $this->searched = true;
         $this->certificate = null;
 
+        $searchCode = strtoupper($this->codigo);
+
         $record = Certificate::with(['preinscription', 'instructor', 'course.groups.sessions'])
-            ->where('codigo_unico', trim($this->codigo))
+            ->where(function ($query) use ($searchCode) {
+                $query->where('codigo_unico', $searchCode)
+                    ->orWhereRaw('UPPER(codigo_unico) = ?', [$searchCode]);
+            })
             ->first();
 
         if ($record === null) {

@@ -145,6 +145,10 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
         $green = ltrim(DesignTokens::GREEN, '#');
         $white = ltrim(DesignTokens::WHITE, '#');
         $greenLight = ltrim(DesignTokens::GREEN_LIGHT, '#');
+        $gray100 = ltrim(DesignTokens::GRAY_100, '#');
+
+        $totalGeneralRow = max(9, $lastRow - 4);
+        $distributionHeaderRow = max(10, $lastRow - 2);
 
         return [
             1 => [
@@ -167,12 +171,22 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
                 ],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],
-            $lastRow => [
+            $totalGeneralRow => [
                 'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
                     'startColor' => ['rgb' => $greenLight],
                 ],
+            ],
+            $distributionHeaderRow => [
+                'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => $gray100],
+                ],
+            ],
+            $lastRow => [
+                'font' => ['bold' => true, 'size' => 10, 'color' => ['rgb' => $navy]],
             ],
         ];
     }

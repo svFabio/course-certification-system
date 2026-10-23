@@ -43,6 +43,11 @@ it('allows unauthenticated public user to download an emitted certificate by uni
 
     $response->assertOk()
         ->assertHeader('content-type', 'application/pdf');
+
+    // Case-insensitive public download
+    $this->get(route('certificado.publico.descargar', ['codigo' => strtolower($codigo)]))
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
 });
 
 it('rejects public download with 404 for unknown unique code', function () {

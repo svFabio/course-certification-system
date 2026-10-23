@@ -25,7 +25,9 @@ class CourseClosingExport implements FromArray, ShouldAutoSize, WithStyles, With
 
     public function title(): string
     {
-        return 'Cierre - '.mb_substr($this->course->nombre, 0, 20);
+        $clean = preg_replace('/[\\\\\\/?*[\\]:]/', '', $this->course->nombre);
+
+        return mb_substr('Cierre - '.$clean, 0, 31);
     }
 
     public function array(): array

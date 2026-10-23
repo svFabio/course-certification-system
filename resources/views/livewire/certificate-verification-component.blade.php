@@ -5,15 +5,20 @@
             <p class="text-xs text-umss-gray-700 mt-1">Consulte la autenticidad y estado de validez de certificados emitidos por la Universidad Mayor de San Simón.</p>
         </div>
 
-        <form wire:submit="verify" class="flex flex-col sm:flex-row gap-3 mb-8">
-            <div class="flex-1">
-                <label for="codigo" class="sr-only">Código del Certificado</label>
-                <input type="text" id="codigo" wire:model="codigo" placeholder="Ingrese el código único (ej. CERT-2024-XXXX)"
-                    class="input-umss w-full text-sm font-sans focus:border-umss-navy focus:ring-1 focus:ring-umss-navy" required>
+        <form wire:submit="verify" class="mb-8">
+            <div class="flex flex-col sm:flex-row gap-3">
+                <div class="flex-1">
+                    <label for="codigo" class="sr-only">Código del Certificado</label>
+                    <input type="text" id="codigo" wire:model="codigo" placeholder="Ingrese el código único (ej. CERT-2024-XXXX)"
+                        class="input-umss w-full text-sm font-sans focus:border-umss-navy focus:ring-1 focus:ring-umss-navy" required>
+                    @error('codigo')
+                        <p class="text-xs text-umss-red mt-1 font-medium">{{ $message }}</p>
+                    @enderror
+                </div>
+                <button type="submit" class="btn-primary !h-[42px] px-6 bg-umss-navy hover:bg-umss-navy-dark text-umss-white font-semibold text-sm tracking-wide transition shadow-sm whitespace-nowrap">
+                    Verificar
+                </button>
             </div>
-            <button type="submit" class="btn-primary !h-[42px] px-6 bg-umss-navy hover:bg-umss-navy-dark text-umss-white font-semibold text-sm tracking-wide transition shadow-sm whitespace-nowrap">
-                Verificar
-            </button>
         </form>
 
         @if ($searched)

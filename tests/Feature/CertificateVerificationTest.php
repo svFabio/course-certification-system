@@ -37,6 +37,12 @@ it('shows valid certificate details for an emitted student certificate via publi
         ->assertSee('Certificado válido')
         ->assertSee('Curso Verificacion')
         ->assertDontSee($pre->ci ?? 'SENSITIVE_SHOULD_NOT_APPEAR');
+
+    // Case-insensitive verification
+    Livewire::test(CertificateVerificationComponent::class, ['codigo' => strtolower($certificate->codigo_unico)])
+        ->assertSet('searched', true)
+        ->assertSet('certificate.valido', true)
+        ->assertSee('Certificado válido');
 });
 
 it('shows not found message for unknown codes', function () {

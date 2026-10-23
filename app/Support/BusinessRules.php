@@ -119,17 +119,24 @@ final class BusinessRules
 
     public static function calculatePrice(int $hours, string|TipoParticipante $participantType): float
     {
-        $type = $participantType instanceof TipoParticipante ? $participantType->value : $participantType;
+        $type = $participantType instanceof TipoParticipante
+            ? $participantType
+            : TipoParticipante::tryFrom($participantType);
+
+        if ($type === null) {
+            throw new \InvalidArgumentException("Invalid participant type: {$participantType}");
+        }
+
         $hoursKey = (string) $hours;
 
         if (! isset(self::PRICING[$hoursKey])) {
             throw new \InvalidArgumentException("Invalid hours: {$hours}. Must be 20 or 30.");
         }
 
-        $price = self::PRICING[$hoursKey][$type] ?? null;
+        $price = self::PRICING[$hoursKey][$type->value] ?? null;
 
         if ($price === null) {
-            throw new \InvalidArgumentException("Invalid participant type: {$type}");
+            throw new \InvalidArgumentException("Invalid participant type: {$type->value}");
         }
 
         return (float) $price;
@@ -162,16 +169,27 @@ final class BusinessRules
      * Get pricing for a given course hours and participant type.
      * Returns the full pricing array if no participant type given.
      */
-    public static function getPricing(?string $participantType = null): float|array
+    public static function getPricing(string|TipoParticipante|null $participantType = null): float|array
     {
         if ($participantType === null) {
             return self::PRICING;
         }
 
+        $type = $participantType instanceof TipoParticipante
+            ? $participantType
+            : TipoParticipante::tryFrom($participantType);
+
+        if ($type === null) {
+            throw new \InvalidArgumentException("Invalid participant type: {$participantType}");
+        }
+
         // Return pricing for all hour types for this participant
         $result = [];
         foreach (self::PRICING as $hours => $prices) {
-            $result[$hours] = $prices[$participantType] ?? 0;
+            if (! isset($prices[$type->value])) {
+                throw new \InvalidArgumentException("Missing price configuration for participant type: {$type->value}");
+            }
+            $result[$hours] = (float) $prices[$type->value];
         }
 
         return $result;
