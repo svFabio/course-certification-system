@@ -55,8 +55,7 @@ it('rejects a verified payment through the relation manager action and notifies 
         'status' => PreinscriptionStatus::PENDIENTE_PAGO,
     ]);
 
-    // Creating a verified payment auto-enrolls the student; we then force the
-    // preinscription back to pendiente_pago to exercise the rejection path.
+    
     $payment = Payment::factory()->create([
         'preinscription_id' => $preinscription->id,
         'estado' => PaymentStatus::VERIFICADO,

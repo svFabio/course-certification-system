@@ -116,11 +116,8 @@ class CertificateService
         return $created;
     }
 
-    /**
-     * HU-32: emit instructor participation certificate(s).
-     *
-     * @return Collection<int, Certificate>
-     */
+     @return Collection<int, Certificate>
+     
     public function generateInstructorCertificates(Course $course, bool $onePerGroup = false): Collection
     {
         $course->loadMissing(['groups', 'instructor']);
@@ -193,9 +190,7 @@ class CertificateService
         );
     }
 
-    /**
-     * Build an absolute URL using APP_PUBLIC_URL when set (e.g. Render), else APP_URL.
-     */
+    
     public function publicAbsoluteUrl(string $path): string
     {
         $base = rtrim((string) config('app.public_url', config('app.url')), '/');
@@ -233,9 +228,7 @@ class CertificateService
             ->notify(new CertificateReadyNotification($certificate));
     }
 
-    /**
-     * Resend certificate availability notification.
-     */
+   
     public function resendReadyNotification(Certificate $certificate): void
     {
         $this->notifyCertificateReady($certificate);
@@ -341,7 +334,7 @@ class CertificateService
                     ['Content-Type' => 'application/pdf']
                 );
             } catch (\Throwable) {
-                // Fallback to on-the-fly rendering if storage streaming fails
+               
             }
         }
 
@@ -398,7 +391,7 @@ class CertificateService
                 return 'local';
             }
         } catch (\Throwable) {
-            // Local disk unavailable
+            
         }
 
         return null;
@@ -630,12 +623,7 @@ class CertificateService
         return $this->generatePdf($certificate)->output();
     }
 
-    /**
-     * Admin uploads (or replaces) the physically signed & scanned certificate.
-     * Accepts a Cloudinary/local storage path (Filament FileUpload) or an UploadedFile.
-     *
-     * @throws ValidationException
-     */
+   
     public function attachScannedCopy(Certificate $certificate, UploadedFile|string $file): Certificate
     {
         if ($certificate->isInstructorCertificate()) {
@@ -780,7 +768,7 @@ class CertificateService
                     Storage::disk($disk)->delete($path);
                 }
             } catch (\Throwable) {
-                // ignore cleanup failures
+               
             }
         }
     }
@@ -804,7 +792,7 @@ class CertificateService
                 return 'local';
             }
         } catch (\Throwable) {
-            // Local unavailable
+            
         }
 
         return null;
