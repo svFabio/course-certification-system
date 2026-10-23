@@ -76,3 +76,8 @@ it('sorts students alphabetically and appends total formulas in cash sheet', fun
     expect($summaryRow[7])->toBe('=SUM(H7:H8)');
     expect($summaryRow[8])->toBe('=SUM(I7:I8)');
 });
+
+it('sanitizes forbidden characters from group sheet tab names', function () {
+    expect(SheetExportBuilder::sanitizeTabName('Grupo 1: Mañana / Tarde *[Test]?\\'))
+        ->toBe('Grupo 1- Mañana - Tarde --Test---');
+});

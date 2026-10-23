@@ -712,7 +712,7 @@ class CertificateService
     }
 
     /**
-     * Store the scanned file in cloud (Cloudinary) or local fallback storage.
+     * Store the scanned file in cloud (Cloudinary) storage.
      *
      * @throws ValidationException
      */

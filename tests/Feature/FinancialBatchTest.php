@@ -22,10 +22,10 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
-function makeAuxiliarPreinscription(string $approved = 'pending', int $courseId = 20): Preinscription
+function makeAuxiliarPreinscription(string $approved = 'pending', int $cargaHoraria = 20): Preinscription
 {
     $course = Course::factory()->create([
-        'carga_horaria' => (string) $courseId,
+        'carga_horaria' => (string) $cargaHoraria,
         'status' => CourseStatus::PUBLICADO,
     ]);
     $group = Group::factory()->create([

@@ -118,6 +118,15 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
             number_format($totalNetoGeneral, 2, '.', ''),
         ];
 
+        // Distribución institucional de ingresos netos (HU-19 Criterio 2: 20% Facultad, 80% Lab y Docente)
+        $retencionFacultad = $totalNetoGeneral * 0.20;
+        $presupuestoDocenteLab = $totalNetoGeneral * 0.80;
+
+        $rows[] = [''];
+        $rows[] = ['DISTRIBUCIÓN INSTITUCIONAL (RECAUDACIÓN NETA)'];
+        $rows[] = ['Retención Facultativa Institucional (20%):', '', '', '', '', '', '', number_format($retencionFacultad, 2, '.', '')];
+        $rows[] = ['Presupuesto Laboratorio y Honorarios Docentes (80%):', '', '', '', '', '', '', number_format($presupuestoDocenteLab, 2, '.', '')];
+
         return $rows;
     }
 
@@ -143,7 +152,7 @@ class FinancialReportExport implements FromArray, ShouldAutoSize, WithStyles, Wi
                 'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => $green]],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],
-            7 => [
+            8 => [
                 'font' => ['bold' => true, 'color' => ['rgb' => $white]],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,

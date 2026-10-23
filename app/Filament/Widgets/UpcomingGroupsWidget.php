@@ -40,12 +40,12 @@ class UpcomingGroupsWidget extends BaseWidget
         $min = $group->cupo_minimo ?? BusinessRules::MIN_GROUP_CAPACITY;
         $max = $group->cupo_maximo;
 
-        if ($committed >= $max) {
+        if ($max !== null && $committed >= $max) {
             return 'Cupo Lleno';
         }
 
         if ($committed >= $min) {
-            $disponibles = $max - $committed;
+            $disponibles = $max !== null ? max(0, $max - $committed) : 0;
 
             return "Habilitado ({$disponibles} disponibles)";
         }
@@ -61,7 +61,7 @@ class UpcomingGroupsWidget extends BaseWidget
         $min = $group->cupo_minimo ?? BusinessRules::MIN_GROUP_CAPACITY;
         $max = $group->cupo_maximo;
 
-        if ($committed >= $max) {
+        if ($max !== null && $committed >= $max) {
             return 'danger';
         }
 

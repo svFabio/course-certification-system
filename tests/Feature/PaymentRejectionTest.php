@@ -6,6 +6,7 @@ use App\Enums\CourseStatus;
 use App\Enums\GroupStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\PreinscriptionStatus;
+use App\Enums\UserRole;
 use App\Filament\Admin\Resources\GroupResource\Pages\ViewGroup;
 use App\Filament\Admin\Resources\GroupResource\RelationManagers\PreinscriptionsRelationManager;
 use App\Mail\PaymentRejectedNotification;
@@ -26,10 +27,10 @@ use Spatie\Permission\Models\Role;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    Role::firstOrCreate(['name' => 'admin']);
+    Role::firstOrCreate(['name' => UserRole::ADMIN->value]);
 
     $this->admin = User::factory()->create();
-    $this->admin->assignRole('admin');
+    $this->admin->assignRole(UserRole::ADMIN->value);
 });
 
 function makeRejectionTestGroup(): Group

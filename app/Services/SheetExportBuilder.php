@@ -29,14 +29,22 @@ class SheetExportBuilder
         ]);
     }
 
+    public static function sanitizeTabName(string $name): string
+    {
+        $sanitized = (string) preg_replace('/[\*\?\:\/\\\\\[\]]/', '-', $name);
+        $sanitized = trim($sanitized, " '");
+
+        return mb_substr($sanitized, 0, 100);
+    }
+
     public function getCashSheetTabName(): string
     {
-        return 'CAJA-'.$this->group->nombre;
+        return self::sanitizeTabName('CAJA-'.$this->group->nombre);
     }
 
     public function getTeacherSheetTabName(): string
     {
-        return 'NOTAS-'.$this->group->nombre;
+        return self::sanitizeTabName('NOTAS-'.$this->group->nombre);
     }
 
     public function buildCashSheetRows(): array
