@@ -7,6 +7,7 @@ namespace App\Livewire;
 use App\Models\Certificate;
 use App\Services\CertificateService;
 use App\Services\EvaluationService;
+use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -77,7 +78,7 @@ class CertificateVerificationComponent extends Component
         ];
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.certificate-verification-component');
     }

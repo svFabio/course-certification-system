@@ -45,7 +45,11 @@ class UpcomingGroupsWidget extends BaseWidget
         }
 
         if ($committed >= $min) {
-            $disponibles = $max !== null ? max(0, $max - $committed) : 0;
+            if ($max === null) {
+                return 'Habilitado';
+            }
+
+            $disponibles = max(0, $max - $committed);
 
             return "Habilitado ({$disponibles} disponibles)";
         }
