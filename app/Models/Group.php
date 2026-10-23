@@ -40,6 +40,15 @@ class Group extends Model
 
             $group->hora_fin = $group->hora_inicio->copy()->addMinutes((int) round($duration * 60));
         });
+
+        static::deleting(function (Group $group): void {
+            if ($group->preinscriptions()->exists()) {
+                throw new \DomainException(
+                    'No se puede eliminar un grupo que ya contiene preinscripciones o pagos registrados. '
+                    .'Utilice la opción de "Fusión de Grupos" para transferir a los estudiantes o procese las devoluciones de caja correspondientes.'
+                );
+            }
+        });
     }
 
     protected function casts(): array

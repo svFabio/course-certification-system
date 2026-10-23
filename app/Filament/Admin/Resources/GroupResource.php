@@ -24,6 +24,8 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
 
@@ -90,7 +92,7 @@ class GroupResource extends Resource
                     ->numeric()
                     ->default(BusinessRules::MIN_GROUP_CAPACITY)
                     ->required()
-                    ->minValue(1),
+                    ->minValue(BusinessRules::MIN_GROUP_CAPACITY),
                 Forms\Components\TextInput::make('cupo_maximo')
                     ->numeric()
                     ->required()
@@ -271,7 +273,7 @@ class GroupResource extends Resource
 
                             foreach ($activeParticipants as $participant) {
                                 $isInscrito = $participant->status === PreinscriptionStatus::INSCRITO;
-                                $statusBadge = $isInscrito ? 'Inscrito' : 'Pendiente de pago';
+                                $statusBadge = $participant->status->getLabel() ?? ($isInscrito ? 'Inscrito' : 'Pendiente de pago');
                                 $label = "{$participant->nombres} {$participant->apellido_paterno} (CI: {$participant->ci}) — [{$statusBadge}]";
 
                                 $options = $isInscrito
@@ -313,13 +315,61 @@ class GroupResource extends Resource
                             ->send();
                     }),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->hidden(function (Group $record): bool {
+                        if (isset($record->preinscriptions_count)) {
+                            return (int) $record->preinscriptions_count > 0;
+                        }
+
+                        if (isset($record->confirmados) && (int) $record->confirmados > 0) {
+                            return true;
+                        }
+
+                        return $record->preinscriptions()->exists();
+                    })
+                    ->tooltip('Solo se pueden eliminar grupos vacíos sin participantes registrados'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (Collection $records): void {
+                            $withStudents = $records->filter(function (Group $g): bool {
+                                if (isset($g->preinscriptions_count)) {
+                                    return (int) $g->preinscriptions_count > 0;
+                                }
+
+                                if (isset($g->confirmados) && (int) $g->confirmados > 0) {
+                                    return true;
+                                }
+
+                                return $g->preinscriptions()->exists();
+                            });
+
+                            if ($withStudents->isNotEmpty()) {
+                                Notification::make()
+                                    ->title('No se pueden eliminar grupos con estudiantes')
+                                    ->body('Uno o más grupos seleccionados tienen participantes matriculados o pagos registrados. Utilice la Fusión Asistida.')
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $records->each->delete();
+
+                            Notification::make()
+                                ->title('Grupos eliminados con éxito')
+                                ->success()
+                                ->send();
+                        }),
                 ]),
             ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->withCount('preinscriptions');
     }
 
     public static function getRelations(): array

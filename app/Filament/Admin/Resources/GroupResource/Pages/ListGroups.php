@@ -42,6 +42,7 @@ class ListGroups extends ListRecords
         }
 
         return $query->withCount([
+            'preinscriptions',
             'preinscriptions as confirmados' => fn (Builder $q): Builder => $q->whereIn('status', [
                 PreinscriptionStatus::PENDIENTE_PAGO,
                 PreinscriptionStatus::INSCRITO,

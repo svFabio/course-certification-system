@@ -61,6 +61,8 @@ class GroupsRelationManager extends RelationManager
                 ->helperText('Se calcula automáticamente según la carga horaria del curso.'),
             Forms\Components\TextInput::make('cupo_minimo')
                 ->numeric()
+                ->required()
+                ->minValue(BusinessRules::MIN_GROUP_CAPACITY)
                 ->default(BusinessRules::MIN_GROUP_CAPACITY),
             Forms\Components\TextInput::make('cupo_maximo')
                 ->numeric()
@@ -115,10 +117,7 @@ class GroupsRelationManager extends RelationManager
                     ->color('primary')
                     ->url(fn (Group $record): string => GroupResource::getUrl('view', ['record' => $record])),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
-            ]);
+            ->bulkActions([]);
     }
 }

@@ -166,12 +166,78 @@ class CoursesSeeder extends Seeder
                     ],
                 ],
             ],
+            [
+                'nombre' => 'Python para Ciencia de Datos e Inteligencia Artificial',
+                'contenido' => 'Manipulación y limpieza de datos con Pandas y NumPy, visualización estadística con Seaborn, modelos de machine learning supervisado con Scikit-Learn y proyectos prácticos aplicados a la industria.',
+                'portada_path' => 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&h=675&q=80',
+                'carga_horaria' => '30',
+                'nivel' => CourseLevel::AVANZADO,
+                'periodo' => '1-2026',
+                'status' => CourseStatus::PUBLICADO,
+                'instructor_id' => $inst2->id,
+                'groups' => [
+                    [
+                        'nombre' => 'Grupo Noche',
+                        'aula' => 'Laboratorio de Posgrado - Informática',
+                        'hora_inicio' => '18:45',
+                        'hora_fin' => '20:15',
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
+                        'cupo_maximo' => 30,
+                        'status' => GroupStatus::HABILITADO,
+                        'participants_count' => 19,
+                    ],
+                ],
+            ],
+            [
+                'nombre' => 'Business Intelligence con Power BI y Excel Avanzado',
+                'contenido' => 'Modelado relacional de datos en Power Pivot, fórmulas DAX fundamentales y avanzadas, diseño de cuadros de mando interactivos e integración con bases de datos SQL empresariales.',
+                'portada_path' => 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&h=675&q=80',
+                'carga_horaria' => '20',
+                'nivel' => CourseLevel::INTERMEDIO,
+                'periodo' => '1-2026',
+                'status' => CourseStatus::EN_CURSO,
+                'instructor_id' => $inst3->id,
+                'groups' => [
+                    [
+                        'nombre' => 'Grupo 1 (Intensivo)',
+                        'aula' => 'Laboratorio de Informática 3',
+                        'hora_inicio' => '14:15',
+                        'hora_fin' => '15:45',
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
+                        'cupo_maximo' => 25,
+                        'status' => GroupStatus::HABILITADO,
+                        'participants_count' => 17,
+                    ],
+                ],
+            ],
+            [
+                'nombre' => 'Desarrollo de Aplicaciones Móviles con Flutter y Dart',
+                'contenido' => 'Construcción de interfaces multiplataforma, gestión de estado con Provider y Riverpod, integración con Cloud Firestore y compilación nativa para Android e iOS.',
+                'portada_path' => 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=1200&h=675&q=80',
+                'carga_horaria' => '30',
+                'nivel' => CourseLevel::AVANZADO,
+                'periodo' => '1-2026',
+                'status' => CourseStatus::FINALIZADO,
+                'instructor_id' => $inst4->id,
+                'groups' => [
+                    [
+                        'nombre' => 'Grupo Graduado',
+                        'aula' => 'Aula Magna de Tecnología',
+                        'hora_inicio' => '16:00',
+                        'hora_fin' => '17:30',
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
+                        'cupo_maximo' => 25,
+                        'status' => GroupStatus::FINALIZADO,
+                        'participants_count' => 16,
+                    ],
+                ],
+            ],
         ];
 
         // Pool de estudiantes generado con fake() — nunca datos personales reales
         // (AGENTS.md §5: seeders usan fake() / credenciales genéricas).
         $poolEstudiantes = [];
-        for ($i = 0; $i < 40; $i++) {
+        for ($i = 0; $i < 90; $i++) {
             $tipo = match ($i % 3) {
                 0 => TipoParticipante::UMSS,
                 1 => TipoParticipante::AUXILIAR,
@@ -338,8 +404,11 @@ class CoursesSeeder extends Seeder
                             ['nota' => (float) $grade3]
                         );
 
-                        // Certificado para los primeros con notas sobresalientes
-                        if ($i < 5 && $course->status === CourseStatus::PUBLICADO) {
+                        // Certificados para cursos finalizados o estudiantes destacados
+                        $shouldEmitCertificate = ($course->status === CourseStatus::FINALIZADO)
+                            || ($i < 5 && $course->status === CourseStatus::PUBLICADO);
+
+                        if ($shouldEmitCertificate) {
                             Certificate::firstOrCreate(
                                 ['preinscription_id' => $preinscription->id, 'course_id' => $course->id],
                                 [
@@ -363,6 +432,22 @@ class CoursesSeeder extends Seeder
                         );
                     }
                 }
+            }
+
+            if ($course->status === CourseStatus::FINALIZADO && $course->instructor_id !== null) {
+                Certificate::firstOrCreate(
+                    [
+                        'course_id' => $course->id,
+                        'instructor_id' => $course->instructor_id,
+                        'tipo' => CertificateType::INSTRUCTOR,
+                    ],
+                    [
+                        'codigo_unico' => 'CERT-DOC-'.strtoupper(Str::random(6)),
+                        'grupos_detalle' => 'Grupo Graduado',
+                        'pdf_path' => null,
+                        'emitido_en' => now()->subDays(2),
+                    ]
+                );
             }
         }
     }
