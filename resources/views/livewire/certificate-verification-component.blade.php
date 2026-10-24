@@ -56,12 +56,6 @@
                             <dt class="text-xs font-semibold text-umss-gray-700 uppercase tracking-wider">Tipo</dt>
                             <dd class="font-medium text-umss-black mt-0.5">{{ $certificate['tipo'] ?? 'N/A' }}</dd>
                         </div>
-                        @if (! empty($certificate['nota_final']))
-                            <div>
-                                <dt class="text-xs font-semibold text-umss-gray-700 uppercase tracking-wider">Nota final</dt>
-                                <dd class="font-bold text-umss-navy mt-0.5">{{ $certificate['nota_final'] }}</dd>
-                            </div>
-                        @endif
                         <div>
                             <dt class="text-xs font-semibold text-umss-gray-700 uppercase tracking-wider">Carga horaria</dt>
                             <dd class="font-medium text-umss-black mt-0.5">{{ $certificate['carga_horaria'] ?? 'N/A' }}</dd>
@@ -99,10 +93,10 @@
 
                     @if (! empty($certificate['download_url']) || ! empty($certificate['scanned_url']))
                         <div class="mt-6 pt-5 border-t border-umss-gray-200 flex flex-col gap-4">
-                            <p class="text-xs text-umss-gray-700 leading-relaxed text-center sm:text-left">
+                            <p class="text-xs text-umss-gray-700 leading-relaxed text-center">
                                 Documento oficial verificable emitido por la Universidad Mayor de San Simón.
                             </p>
-                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 w-full">
+                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full">
                                 @if (! empty($certificate['has_scanned']) && ! empty($certificate['scanned_url']))
                                     <a href="{{ $certificate['scanned_url'] }}" target="_blank" rel="noopener noreferrer"
                                         class="btn-primary inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-umss-green hover:bg-umss-green-dark text-umss-white font-semibold text-sm tracking-wide rounded-lg shadow-sm transition">
