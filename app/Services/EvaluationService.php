@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\CourseStatus;
 use App\Models\Attendance;
 use App\Models\Course;
 use App\Models\EvaluationCriteria;
@@ -51,8 +52,18 @@ class EvaluationService
      *
      * @throws ValidationException
      */
+    public function assertCourseNotFinalized(Course $course): void
+    {
+        if ($course->status === CourseStatus::FINALIZADO) {
+            throw ValidationException::withMessages([
+                'course' => 'No se pueden modificar calificaciones ni evaluaciones de un curso finalizado.',
+            ]);
+        }
+    }
+
     public function setAttendanceWeight(Course $course, int $weight): void
     {
+        $this->assertCourseNotFinalized($course);
         $this->assertAttendanceWeightInRange($weight);
         $this->assertWeightsSumTo100($weight, $this->criteriaSum($course));
 
@@ -69,6 +80,7 @@ class EvaluationService
      */
     public function setCriteria(Course $course, array $criteria): void
     {
+        $this->assertCourseNotFinalized($course);
         $totalWeight = (int) round(array_sum(array_column($criteria, 'ponderacion')));
 
         $this->assertWeightsSumTo100($this->attendanceWeight($course), $totalWeight);
@@ -93,6 +105,7 @@ class EvaluationService
      */
     public function addCriteria(Course $course, string $nombre, int $ponderacion): EvaluationCriteria
     {
+        $this->assertCourseNotFinalized($course);
         $this->assertWeightsSumTo100(
             $this->attendanceWeight($course),
             $this->criteriaSum($course) + $ponderacion,
@@ -115,6 +128,13 @@ class EvaluationService
     public function updateCriteria(EvaluationCriteria $criterion, string $nombre, int $ponderacion, ?Course $course = null): void
     {
         $target = $course ?? $criterion->course;
+        if ($target !== null) {
+            $this->assertCourseNotFinalized($target);
+        }
+        if ($criterion->course !== null && ! $criterion->course->is($target)) {
+            $this->assertCourseNotFinalized($criterion->course);
+        }
+
         $oldWeight = (int) round((float) $criterion->ponderacion);
 
         if ($target->is($criterion->course)) {
@@ -149,6 +169,9 @@ class EvaluationService
     public function removeCriteria(EvaluationCriteria $criterion): void
     {
         $course = $criterion->course;
+        if ($course !== null) {
+            $this->assertCourseNotFinalized($course);
+        }
 
         $this->assertWeightsSumTo100(
             $this->attendanceWeight($course),
@@ -264,6 +287,7 @@ class EvaluationService
      */
     public function applyEvaluationConfig(Course $course, int $attendanceWeight, array $criteriaOps, array $gradeWrites): void
     {
+        $this->assertCourseNotFinalized($course);
         $this->assertAttendanceWeightInRange($attendanceWeight);
 
         $criteriaSum = 0;
@@ -403,6 +427,11 @@ class EvaluationService
 
     public function recordGrades(Preinscription $preinscription, array $grades): void
     {
+        $course = $preinscription->group?->course;
+        if ($course !== null) {
+            $this->assertCourseNotFinalized($course);
+        }
+
         DB::transaction(function () use ($preinscription, $grades) {
             foreach ($grades as $criteriaId => $score) {
                 Grade::updateOrCreate(

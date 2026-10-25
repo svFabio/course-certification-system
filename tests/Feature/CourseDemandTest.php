@@ -101,7 +101,7 @@ it('warns admins on the groups list page when a course has no free seat anywhere
 
     expect($demandNotification)->not->toBeNull();
     expect($demandNotification['body'])->toContain('Curso en Sobredemanda');
-    expect($demandNotification['body'])->toContain('Considere abrir un grupo adicional. (HU-14)');
+    expect($demandNotification['body'])->toContain('Considere abrir un grupo adicional.');
     expect($demandNotification['status'])->toBe('warning');
 });
 

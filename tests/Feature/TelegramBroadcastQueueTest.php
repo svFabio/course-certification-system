@@ -87,7 +87,7 @@ it('queues the broadcast instead of calling telegram during the admin request', 
     Group::factory()->habilitado()->create(['course_id' => $course->id]);
 
     Livewire::test(ListCourses::class)
-        ->callTableAction('campañaRedes', $course);
+        ->callTableAction('difundirCurso', $course);
 
     Queue::assertPushed(
         BroadcastCourseToTelegram::class,

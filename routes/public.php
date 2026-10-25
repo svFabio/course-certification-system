@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\BoletaController;
 use App\Http\Controllers\PublicCertificateDownloadController;
+use App\Http\Controllers\PublicCertificateScannedDownloadController;
 use App\Livewire\CatalogComponent;
 use App\Livewire\CertificateVerificationComponent;
 use App\Livewire\PreinscriptionComponent;
@@ -37,8 +38,11 @@ Route::get('/verificar-certificado/{codigo}/descargar', PublicCertificateDownloa
     ->where('codigo', '[A-Za-z0-9\-_]+')
     ->name('certificado.publico.descargar');
 
+Route::get('/verificar-certificado/{codigo}/digital', PublicCertificateScannedDownloadController::class)
+    ->middleware('throttle:30,1')
+    ->where('codigo', '[A-Za-z0-9\-_]+')
+    ->name('certificado.publico.digital');
+
 Route::get('/boleta/{preinscription}', BoletaController::class)
     ->middleware('signed')
     ->name('boleta.descargar');
-
-Route::view('/asistencia', 'asistencia.escanear')->name('asistencia.escanear');

@@ -65,7 +65,7 @@ $sprintsData = [
     [
         'Sprint 2',
         '28/09/2026 - 11/10/2026 (2 semanas)',
-        'Gestión académica avanzada: sincronización con Google Sheets, asistencia docente en grilla y por código QR, feriados institucionales, fusión asistida de grupos con devoluciones de caja, bandeja de solicitudes estudiantiles y lista de espera para cursos llenos.',
+        'Gestión académica avanzada: sincronización con Google Sheets, asistencia docente en matriz interactiva en línea, feriados institucionales, fusión asistida de grupos con devoluciones de caja, bandeja de solicitudes estudiantiles y lista de espera para cursos llenos.',
         '7 HUs (HU-09 a HU-15)',
         '41 SP',
         'Completado (100%)',
@@ -73,7 +73,7 @@ $sprintsData = [
     [
         'Sprint 3',
         '12/10/2026 - 23/10/2026 (2 semanas)',
-        'Evaluación y certificación: matriz de calificaciones docente (100%), cierre de curso con emisión directa de certificados verificables con QR en Cloudinary, actas de cierre y reportes de caja en Excel para Jefatura, difusión en redes sociales (Telegram Bot, WhatsApp, Facebook, OpenGraph) y dashboard de monitoreo con semáforo.',
+        'Evaluación y certificación: matriz de calificaciones docente (100%), cierre de curso con emisión directa de certificados verificables con QR en Cloudinary, actas de cierre y reportes de caja en Excel para Jefatura, difusión de cursos (Telegram Bot, formato estructurado para difusión, OpenGraph) y dashboard de monitoreo con semáforo.',
         '6 HUs (HU-16 a HU-21)',
         '35 SP',
         'En curso / Cierre (95%)',
@@ -247,11 +247,11 @@ $hus = [
         '11d2e9d, c93b132, db61f2c, e3cc65b, 84a7b7b', 8,
     ],
     [
-        'HU-10', 'Sprint 2', 'Registro y Control de Asistencia Docente y QR',
+        'HU-10', 'Sprint 2', 'Registro y Control de Asistencia Docente',
         'Instructor',
-        'Generar código QR por sesión y registrar la asistencia desde una matriz visual rápida',
+        'Registrar la asistencia de estudiantes desde una matriz interactiva en línea rápida',
         'Controlar el presentismo diario de estudiantes en aula en menos de 2 minutos',
-        '1. Página MarkAttendance en panel de docente. 2. QR dinámico por sesión. 3. Estados: presente, ausente, justificado.',
+        '1. Página MarkAttendance en panel de docente. 2. Matriz interactiva por sesión. 3. Estados: presente, ausente, justificado.',
         'MarkAttendance.php, AttendanceService.php, SessionResource.php',
         'b1b29d6, e525be5, 95665d2, 31e1a50', 5,
     ],
@@ -339,12 +339,12 @@ $hus = [
         '81204c1, e527018', 8,
     ],
     [
-        'HU-20', 'Sprint 3', 'Campaña de Difusión en Redes Sociales (Telegram, WhatsApp, FB)',
+        'HU-20', 'Sprint 3', 'Difusión de Cursos',
         'Administrador',
-        'Publicar el curso con 1 clic en el canal oficial de Telegram y generar tarjetas Open Graph',
-        'Masificar la inscripción en redes sociales con un afiche profesional y enlace directo',
-        '1. TelegramChannelService con envío de afiche y copy en HTML. 2. Modal Filament con enlaces a WhatsApp y Facebook. 3. Meta tags Open Graph.',
-        'TelegramChannelService.php, campana-redes-links.blade.php, app.blade.php',
+        'Publicar el curso con 1 clic en el canal o grupo oficial de Telegram y generar estructura formateada para difusión',
+        'Facilitar la inscripción masiva mediante difusión directa a Telegram y copia rápida de la estructura de publicación',
+        '1. TelegramChannelService con envío de portada y ficha a Telegram. 2. Modal Filament con estructura formateada de publicación y botón de copiado. 3. Meta tags Open Graph.',
+        'TelegramChannelService.php, difusion-links.blade.php, app.blade.php',
         '434437e, 6e0cac6, 95ce455', 6,
     ],
     [
@@ -470,7 +470,7 @@ $commitMapping = [
     ['8750e16', '2026-10-17', 'Sprint 3', 'HU-06, HU-13', 'Domain Invariants Test', 'test(domain): cover group auto-enablement and refund flows'],
     ['434437e', '2026-10-19', 'Sprint 3', 'HU-20', 'SEO & OpenGraph Cards', 'feat(seo): add open graph and twitter card meta tags for course preinscriptions'],
     ['6e0cac6', '2026-10-19', 'Sprint 3', 'HU-20', 'Telegram Broadcast Service', 'feat(telegram): add channel broadcast service for published courses'],
-    ['95ce455', '2026-10-20', 'Sprint 3', 'HU-20', 'Social Campaign Modal', 'feat(filament): add social media campaign action and group table actions'],
+    ['95ce455', '2026-10-20', 'Sprint 3', 'HU-20', 'Course Diffusion Modal', 'feat(filament): add course diffusion action and group table actions'],
     ['3b8a12e', '2026-10-20', 'Sprint 3', 'HU-06, HU-21', 'Upcoming Semaphore Rules', 'fix(dashboard): align upcoming groups semaphore with committed capacity rules'],
 ];
 

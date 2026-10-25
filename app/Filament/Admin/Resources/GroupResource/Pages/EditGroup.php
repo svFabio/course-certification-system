@@ -20,7 +20,6 @@ class EditGroup extends EditRecord
         return [
             $this->getBackAction(),
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
         ];
     }
 }

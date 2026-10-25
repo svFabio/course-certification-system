@@ -42,8 +42,8 @@
             <div class="w-10 h-10 rounded-lg bg-umss-navy/10 flex items-center justify-center text-umss-navy mb-4 font-bold text-lg">
                 📋
             </div>
-            <h3 class="font-bold text-base mb-2 text-umss-navy">Control de Asistencia QR</h3>
-            <p class="text-umss-gray-700 text-xs leading-relaxed">Registro ágil de asistencia presencial mediante escaneo de código QR provisto por el docente en la sesión.</p>
+            <h3 class="font-bold text-base mb-2 text-umss-navy">Control de Asistencia Interactivo</h3>
+            <p class="text-umss-gray-700 text-xs leading-relaxed">Registro ágil de asistencia de estudiantes mediante matriz interactiva en línea gestionada por el docente.</p>
         </div>
     </div>
 </x-app-layout>

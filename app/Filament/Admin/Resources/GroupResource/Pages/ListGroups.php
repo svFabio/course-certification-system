@@ -27,7 +27,7 @@ class ListGroups extends ListRecords
         if ($courses->isNotEmpty()) {
             Notification::make()
                 ->title('Sobredemanda detectada')
-                ->body('Cursos completos: '.$courses->pluck('nombre')->join(', ').'. Considere abrir un grupo adicional. (HU-14)')
+                ->body('Cursos completos: '.$courses->pluck('nombre')->join(', ').'. Considere abrir un grupo adicional.')
                 ->warning()
                 ->send();
         }
@@ -42,6 +42,7 @@ class ListGroups extends ListRecords
         }
 
         return $query->withCount([
+            'preinscriptions',
             'preinscriptions as confirmados' => fn (Builder $q): Builder => $q->whereIn('status', [
                 PreinscriptionStatus::PENDIENTE_PAGO,
                 PreinscriptionStatus::INSCRITO,

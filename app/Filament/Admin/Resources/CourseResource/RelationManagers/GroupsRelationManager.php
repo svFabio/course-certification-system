@@ -8,7 +8,6 @@ use App\Enums\GroupStatus;
 use App\Filament\Admin\Resources\GroupResource;
 use App\Models\Group;
 use App\Support\BusinessRules;
-use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -49,10 +48,8 @@ class GroupsRelationManager extends RelationManager
                 ->live()
                 ->afterStateUpdated(function (Forms\Set $set, $state) {
                     $course = $this->getOwnerRecord();
-                    if ($course) {
-                        $duration = BusinessRules::SESSION_DURATION_HOURS[$course->carga_horaria] ?? 1.5;
-                        $inicio = Carbon::parse($state);
-                        $set('hora_fin', $inicio->copy()->addMinutes((int) ($duration * 60))->format('H:i'));
+                    if ($course && $state) {
+                        $set('hora_fin', BusinessRules::calculateSessionEndTime($state, $course->carga_horaria)->format('H:i'));
                     }
                 }),
             Forms\Components\TimePicker::make('hora_fin')
@@ -61,18 +58,15 @@ class GroupsRelationManager extends RelationManager
                 ->helperText('Se calcula automáticamente según la carga horaria del curso.'),
             Forms\Components\TextInput::make('cupo_minimo')
                 ->numeric()
+                ->required()
+                ->minValue(BusinessRules::MIN_GROUP_CAPACITY)
                 ->default(BusinessRules::MIN_GROUP_CAPACITY),
             Forms\Components\TextInput::make('cupo_maximo')
                 ->numeric()
                 ->required()
-                ->rules(function (Forms\Get $get) {
-                    return function ($attribute, $value, $fail) use ($get) {
-                        $min = (int) $get('cupo_minimo');
-                        if ($min > 0 && (int) $value < $min) {
-                            $fail("El cupo máximo debe ser mayor o igual al cupo mínimo ({$min}).");
-                        }
-                    };
-                }),
+                ->rules(fn (Forms\Get $get): array => [
+                    BusinessRules::validateMaxGroupCapacity($get('cupo_minimo')),
+                ]),
             Forms\Components\Select::make('status')
                 ->label('Estado')
                 ->options(GroupStatus::class)
@@ -115,10 +109,7 @@ class GroupsRelationManager extends RelationManager
                     ->color('primary')
                     ->url(fn (Group $record): string => GroupResource::getUrl('view', ['record' => $record])),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
-            ]);
+            ->bulkActions([]);
     }
 }

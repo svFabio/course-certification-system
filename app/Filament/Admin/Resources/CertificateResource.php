@@ -6,6 +6,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\CourseStatus;
 use App\Filament\Admin\Resources\CertificateResource\Pages;
+use App\Filament\Admin\Resources\CourseResource\RelationManagers\CertificatesRelationManager;
 use App\Filament\Admin\Resources\CourseResource\RelationManagers\GroupsRelationManager;
 use App\Models\Course;
 use Filament\Forms\Form;
@@ -77,8 +78,8 @@ class CertificateResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('verGrupos')
-                    ->label('Ver Grupos')
-                    ->icon('heroicon-o-user-group')
+                    ->label('Ver Certificados')
+                    ->icon('heroicon-o-document-check')
                     ->color('primary')
                     ->url(fn (Course $record): string => CertificateResource::getUrl('view', ['record' => $record])),
             ]);
@@ -94,6 +95,7 @@ class CertificateResource extends Resource
     public static function getRelations(): array
     {
         return [
+            CertificatesRelationManager::class,
             GroupsRelationManager::class,
         ];
     }

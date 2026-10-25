@@ -166,13 +166,13 @@ class CourseResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\Action::make('campañaRedes')
-                        ->label('Campaña en Redes')
+                    Tables\Actions\Action::make('difundirCurso')
+                        ->label('Difundir curso')
                         ->icon('heroicon-o-megaphone')
                         ->color('info')
                         ->visible(fn (Course $record): bool => $record->status === CourseStatus::PUBLICADO)
-                        ->modalHeading(fn (Course $record): string => "Campaña de Difusión: {$record->nombre}")
-                        ->modalDescription('Herramientas para promocionar este curso en Facebook, WhatsApp y canales institucionales.')
+                        ->modalHeading(fn (Course $record): string => "Difusión del curso: {$record->nombre}")
+                        ->modalDescription('Estructura de publicación formateada con los detalles del curso (portada, aranceles y enlace). Puede copiar el texto estructurado o difundirlo directamente al canal o grupo de Telegram.')
                         ->form(function (Course $record): array {
                             $group = $record->nextGroupOpenForPreinscription();
                             $url = $group ? route('preinscripcion', $group) : route('home');
@@ -184,26 +184,20 @@ class CourseResource extends Resource
                                 .'📊 Nivel: '.($record->nivel?->value ?? 'General')."\n"
                                 ."💰 Inversión:\n"
                                 .'   • Estudiantes UMSS: Bs. '.number_format((float) $record->precio_umss, 2)."\n"
-                                .'   • Profesionales y Externos: Bs. '.number_format((float) $record->precio_externo, 2)."\n\n"
+                                .'   • Profesionales y Externos: Bs. '.number_format((float) $record->precio_externo, 2)."\n"
+                                .'   • Auxiliares de Docencia: Bs. '.number_format((float) $record->precio_auxiliar, 2)."\n\n"
                                 ."🔗 {$linkLabel}:\n{$url}";
 
-                            $fbUrl = 'https://www.facebook.com/sharer/sharer.php?u='.rawurlencode($url);
-                            $waUrl = 'https://api.whatsapp.com/send?text='.rawurlencode($promoText);
-
                             return [
-                                Forms\Components\Textarea::make('copy_redes')
-                                    ->label('Texto para publicaciones (Copy / Pitch)')
-                                    ->helperText('Copie este texto para publicar en la Fanpage de Facebook, Instagram o grupos de WhatsApp.')
+                                Forms\Components\Textarea::make('texto_difusion')
+                                    ->label('Estructura formateada de publicación')
                                     ->default($promoText)
-                                    ->rows(8),
-                                Forms\Components\View::make('filament.forms.components.campana-redes-links')
-                                    ->viewData([
-                                        'fbUrl' => $fbUrl,
-                                        'waUrl' => $waUrl,
-                                    ]),
+                                    ->rows(8)
+                                    ->helperText('Texto estructurado con los detalles del curso, listo para copiar al portapapeles.'),
+                                Forms\Components\View::make('filament.forms.components.difusion-links'),
                             ];
                         })
-                        ->modalSubmitActionLabel('Publicar en Canal de Telegram')
+                        ->modalSubmitActionLabel('Difundir en grupo/canal de Telegram')
                         ->action(function (Course $record, TelegramChannelService $service): void {
                             if (! $service->isConfigured()) {
                                 Notification::make()
@@ -219,7 +213,7 @@ class CourseResource extends Resource
 
                             Notification::make()
                                 ->title('Difusión en cola')
-                                ->body('El anuncio se publicará en el canal de Telegram en segundo plano.')
+                                ->body('El anuncio se publicará en el grupo o canal de Telegram en segundo plano.')
                                 ->success()
                                 ->send();
                         }),
@@ -337,7 +331,6 @@ class CourseResource extends Resource
     {
         return [
             CourseResource\RelationManagers\GroupsRelationManager::class,
-            CourseResource\RelationManagers\CertificatesRelationManager::class,
         ];
     }
 

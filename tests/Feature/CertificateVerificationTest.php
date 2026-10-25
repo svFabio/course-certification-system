@@ -74,7 +74,7 @@ it('verifies instructor certificates by public code', function () {
         ->assertSee('Certificado válido');
 });
 
-it('displays final grade for student certificates when available', function () {
+it('does not display final grade for student certificates on public verification', function () {
     $course = Course::factory()->create(['attendance_weight' => 50]);
     $group = Group::factory()->create(['course_id' => $course->id]);
     $pre = Preinscription::factory()->inscrito()->create(['group_id' => $group->id]);
@@ -98,9 +98,8 @@ it('displays final grade for student certificates when available', function () {
     ]);
 
     Livewire::test(CertificateVerificationComponent::class, ['codigo' => $certificate->codigo_unico])
-        ->assertSet('certificate.nota_final', '45.0 / 100')
-        ->assertSee('Nota final')
-        ->assertSee('45.0 / 100');
+        ->assertDontSee('Nota final')
+        ->assertDontSee('45.0 / 100');
 });
 
 it('supports /verificar/{codigo} alias redirecting to verification page', function () {

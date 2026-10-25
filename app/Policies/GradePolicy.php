@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Enums\CourseStatus;
 use App\Enums\UserRole;
 use App\Models\Grade;
 use App\Models\User;
@@ -35,6 +36,10 @@ class GradePolicy
 
     public function update(User $user, Grade $grade): bool
     {
+        if ($grade->evaluationCriteria?->course?->status === CourseStatus::FINALIZADO) {
+            return false;
+        }
+
         if ($user->hasRole(UserRole::ADMIN->value)) {
             return true;
         }
@@ -48,6 +53,10 @@ class GradePolicy
 
     public function delete(User $user, Grade $grade): bool
     {
+        if ($grade->evaluationCriteria?->course?->status === CourseStatus::FINALIZADO) {
+            return false;
+        }
+
         return $user->hasRole(UserRole::ADMIN->value) || $user->hasRole(UserRole::INSTRUCTOR->value);
     }
 

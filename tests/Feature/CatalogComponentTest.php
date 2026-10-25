@@ -109,7 +109,7 @@ it('shows the interest call to action only for courses without available capacit
 
     $html = Livewire::test(CatalogComponent::class)->html();
 
-    expect(substr_count($html, 'Avisarme cuando haya cupo'))->toBe(1);
+    expect(substr_count($html, 'Registrar interés'))->toBe(1);
     expect($html)
         ->toContain('Curso Lleno CTA')
         ->toContain('Curso Abierto CTA');
@@ -122,7 +122,7 @@ it('does not offer interest registration when a free seat exists anywhere', func
     $html = Livewire::test(CatalogComponent::class)->html();
 
     expect($html)
-        ->not->toContain('Avisarme cuando haya cupo')
+        ->not->toContain('Registrar interés')
         ->toContain('Preinscribirse');
 });
 
@@ -144,7 +144,7 @@ it('registers an anonymous interest from the catalog and shows a confirmation', 
         ->set('interestEmail', $email)
         ->call('registerInterest')
         ->assertHasNoErrors()
-        ->assertSee('¡Listo! Te avisaremos por correo');
+        ->assertSee('¡Listo! Registramos tu interés para este curso ante futuras aperturas.');
 
     expect(CourseInterest::where('course_id', $course->id)->where('email', $email)->count())->toBe(1);
 });
@@ -171,7 +171,7 @@ it('shows a friendly already-registered state when the same email registers twic
         ->set('interestEmail', $email)
         ->call('registerInterest')
         ->assertHasNoErrors()
-        ->assertSee('Ya estás anotado(a) para este curso');
+        ->assertSee('Ya te encuentras en lista de espera para este curso ante futuras aperturas.');
 
     expect(CourseInterest::where('course_id', $course->id)->count())->toBe(1);
 });

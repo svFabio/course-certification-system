@@ -89,25 +89,32 @@
                 </div>
 
                 <div class="flex flex-wrap items-center justify-end gap-3">
-                    <span class="text-xs text-umss-gray-700">
-                        Edite libremente (columnas, ponderaciones y notas) y pulse «Guardar cambios» para validar y guardar todo a la vez.
-                    </span>
-
-                    @if($this->hasUnsavedChanges())
-                        <span class="inline-flex items-center rounded-full border border-umss-amber bg-umss-amber-light px-2.5 py-1 text-[11px] font-bold text-umss-amber-dark">
-                            Cambios sin guardar
+                    @if($this->isCourseFinalized())
+                        <span class="inline-flex items-center gap-1.5 rounded-full border border-umss-navy/30 bg-umss-gray-100 px-3 py-1 text-xs font-semibold text-umss-navy">
+                            <x-filament::icon icon="heroicon-m-lock-closed" class="h-4 w-4 text-umss-navy" style="width: 16px; height: 16px;" />
+                            <span>Curso finalizado — Calificaciones y evaluaciones bloqueadas</span>
                         </span>
-                        <x-filament::button wire:click="saveAll" size="sm" color="primary" icon="heroicon-o-check">
-                            Guardar cambios
-                        </x-filament::button>
-                        <x-filament::button wire:click="discardChanges" size="sm" color="gray" icon="heroicon-o-arrow-uturn-left">
-                            Descartar
+                    @else
+                        <span class="text-xs text-umss-gray-700">
+                            Edite libremente (columnas, ponderaciones y notas) y pulse «Guardar cambios» para validar y guardar todo a la vez.
+                        </span>
+
+                        @if($this->hasUnsavedChanges())
+                            <span class="inline-flex items-center rounded-full border border-umss-amber bg-umss-amber-light px-2.5 py-1 text-[11px] font-bold text-umss-amber-dark">
+                                Cambios sin guardar
+                            </span>
+                            <x-filament::button wire:click="saveAll" size="sm" color="primary" icon="heroicon-o-check">
+                                Guardar cambios
+                            </x-filament::button>
+                            <x-filament::button wire:click="discardChanges" size="sm" color="gray" icon="heroicon-o-arrow-uturn-left">
+                                Descartar
+                            </x-filament::button>
+                        @endif
+
+                        <x-filament::button wire:click="openCreateCriteria" size="sm" icon="heroicon-o-plus">
+                            Nueva evaluación
                         </x-filament::button>
                     @endif
-
-                    <x-filament::button wire:click="openCreateCriteria" size="sm" icon="heroicon-o-plus">
-                        Nueva evaluación
-                    </x-filament::button>
                 </div>
             </div>
         @endif
@@ -191,25 +198,27 @@
                                         <div class="text-[10px] font-normal text-umss-gray-700 normal-case tracking-normal">
                                             {{ $criterion['ponderacion_label'] }}
                                         </div>
-                                        <div class="mt-1 flex items-center justify-center gap-1">
-                                            <button
-                                                type="button"
-                                                wire:click="openEditCriteria({{ $criterion['id'] }})"
-                                                title="Editar evaluación"
-                                                class="rounded p-1 text-umss-navy transition hover:bg-umss-gray-200"
-                                            >
-                                                <x-filament::icon icon="heroicon-o-pencil-square" class="h-3.5 w-3.5" style="width: 14px; height: 14px;" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                wire:click="removeCriteria({{ $criterion['id'] }})"
-                                                wire:confirm="¿Quitar esta evaluación de la matriz? El cambio se aplicará al guardar."
-                                                title="Eliminar evaluación"
-                                                class="rounded p-1 text-umss-red transition hover:bg-umss-red/10"
-                                            >
-                                                <x-filament::icon icon="heroicon-o-trash" class="h-3.5 w-3.5" style="width: 14px; height: 14px;" />
-                                            </button>
-                                        </div>
+                                        @if(! $this->isCourseFinalized())
+                                            <div class="mt-1 flex items-center justify-center gap-1">
+                                                <button
+                                                    type="button"
+                                                    wire:click="openEditCriteria({{ $criterion['id'] }})"
+                                                    title="Editar evaluación"
+                                                    class="rounded p-1 text-umss-navy transition hover:bg-umss-gray-200"
+                                                >
+                                                    <x-filament::icon icon="heroicon-o-pencil-square" class="h-3.5 w-3.5" style="width: 14px; height: 14px;" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    wire:click="removeCriteria({{ $criterion['id'] }})"
+                                                    wire:confirm="¿Quitar esta evaluación de la matriz? El cambio se aplicará al guardar."
+                                                    title="Eliminar evaluación"
+                                                    class="rounded p-1 text-umss-red transition hover:bg-umss-red/10"
+                                                >
+                                                    <x-filament::icon icon="heroicon-o-trash" class="h-3.5 w-3.5" style="width: 14px; height: 14px;" />
+                                                </button>
+                                            </div>
+                                        @endif
                                     </th>
                                 @endforeach
                                 <th class="whitespace-nowrap px-3 py-3 text-center font-bold text-umss-navy uppercase tracking-wider border-l border-umss-gray-200 min-w-[110px]">
@@ -238,9 +247,14 @@
                                                 min="0"
                                                 max="100"
                                                 step="0.01"
-                                                wire:change="stageNota({{ $row['id'] }}, {{ $criterion['id'] }}, $event.target.value)"
+                                                @if(! $this->isCourseFinalized())
+                                                    wire:change="stageNota({{ $row['id'] }}, {{ $criterion['id'] }}, $event.target.value)"
+                                                @else
+                                                    disabled
+                                                    readonly
+                                                @endif
                                                 value="{{ $notaValue }}"
-                                                class="w-20 rounded-md border border-umss-gray-300 bg-white px-1.5 py-1 text-center text-xs font-semibold text-umss-black transition focus:outline-none focus:ring-1 focus:ring-umss-navy"
+                                                class="w-20 rounded-md border border-umss-gray-300 {{ $this->isCourseFinalized() ? 'bg-umss-gray-100 cursor-not-allowed text-umss-gray-700' : 'bg-white text-umss-black' }} px-1.5 py-1 text-center text-xs font-semibold transition focus:outline-none focus:ring-1 focus:ring-umss-navy"
                                             />
                                         </td>
                                     @endforeach

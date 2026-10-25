@@ -36,7 +36,7 @@ class CoursesSeeder extends Seeder
         $admin = User::where('email', 'admin@umss.edu.bo')->first();
         $instructors = User::role(UserRole::INSTRUCTOR->value)->get();
 
-        if ($instructors->isEmpty()) {
+        if ($admin === null || $instructors->isEmpty()) {
             return;
         }
 
@@ -59,8 +59,8 @@ class CoursesSeeder extends Seeder
                     [
                         'nombre' => 'Grupo 1 (Mañana)',
                         'aula' => 'Laboratorio de Informática 1',
-                        'hora_inicio' => '10:00',
-                        'hora_fin' => '11:30',
+                        'hora_inicio' => '09:45',
+                        'hora_fin' => '11:15',
                         'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 25,
                         'status' => GroupStatus::HABILITADO,
@@ -72,9 +72,9 @@ class CoursesSeeder extends Seeder
                         'hora_inicio' => '14:15',
                         'hora_fin' => '15:45',
                         'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
-                        'cupo_maximo' => 20,
+                        'cupo_maximo' => 25,
                         'status' => GroupStatus::HABILITADO,
-                        'participants_count' => 15,
+                        'participants_count' => 16,
                     ],
                 ],
             ],
@@ -94,9 +94,9 @@ class CoursesSeeder extends Seeder
                         'hora_inicio' => '09:45',
                         'hora_fin' => '11:15',
                         'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
-                        'cupo_maximo' => 30,
+                        'cupo_maximo' => 20,
                         'status' => GroupStatus::HABILITADO,
-                        'participants_count' => 22,
+                        'participants_count' => 20,
                     ],
                 ],
             ],
@@ -114,7 +114,7 @@ class CoursesSeeder extends Seeder
                         'nombre' => 'Grupo Único',
                         'aula' => 'Aula 692A - Facultad de Tecnología',
                         'hora_inicio' => '18:45',
-                        'hora_fin' => '20:15',
+                        'hora_fin' => '21:15',
                         'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 35,
                         'status' => GroupStatus::HABILITADO,
@@ -138,9 +138,9 @@ class CoursesSeeder extends Seeder
                         'hora_inicio' => '08:15',
                         'hora_fin' => '09:45',
                         'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
-                        'cupo_maximo' => 20,
+                        'cupo_maximo' => 25,
                         'status' => GroupStatus::HABILITADO,
-                        'participants_count' => 15,
+                        'participants_count' => 16,
                     ],
                 ],
             ],
@@ -158,7 +158,7 @@ class CoursesSeeder extends Seeder
                         'nombre' => 'Grupo Propedéutico',
                         'aula' => 'Laboratorio de Redes y Telecomunicaciones',
                         'hora_inicio' => '17:15',
-                        'hora_fin' => '18:45',
+                        'hora_fin' => '19:45',
                         'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
                         'cupo_maximo' => 25,
                         'status' => GroupStatus::NO_HABILITADO,
@@ -166,12 +166,79 @@ class CoursesSeeder extends Seeder
                     ],
                 ],
             ],
+            [
+                'nombre' => 'Python para Ciencia de Datos e Inteligencia Artificial',
+                'contenido' => 'Manipulación y limpieza de datos con Pandas y NumPy, visualización estadística con Seaborn, modelos de machine learning supervisado con Scikit-Learn y proyectos prácticos aplicados a la industria.',
+                'portada_path' => 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&h=675&q=80',
+                'carga_horaria' => '30',
+                'nivel' => CourseLevel::AVANZADO,
+                'periodo' => '1-2026',
+                'status' => CourseStatus::PUBLICADO,
+                'instructor_id' => $inst2->id,
+                'groups' => [
+                    [
+                        'nombre' => 'Grupo Noche',
+                        'aula' => 'Laboratorio de Posgrado - Informática',
+                        'hora_inicio' => '18:45',
+                        'hora_fin' => '21:15',
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
+                        'cupo_maximo' => 30,
+                        'status' => GroupStatus::HABILITADO,
+                        'participants_count' => 19,
+                    ],
+                ],
+            ],
+            [
+                'nombre' => 'Business Intelligence con Power BI y Excel Avanzado',
+                'contenido' => 'Modelado relacional de datos en Power Pivot, fórmulas DAX fundamentales y avanzadas, diseño de cuadros de mando interactivos e integración con bases de datos SQL empresariales.',
+                'portada_path' => 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&h=675&q=80',
+                'carga_horaria' => '20',
+                'nivel' => CourseLevel::INTERMEDIO,
+                'periodo' => '1-2026',
+                'status' => CourseStatus::EN_CURSO,
+                'instructor_id' => $inst3->id,
+                'groups' => [
+                    [
+                        'nombre' => 'Grupo 1 (Intensivo)',
+                        'aula' => 'Laboratorio de Informática 3',
+                        'hora_inicio' => '14:15',
+                        'hora_fin' => '15:45',
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
+                        'cupo_maximo' => 25,
+                        'status' => GroupStatus::HABILITADO,
+                        'participants_count' => 17,
+                    ],
+                ],
+            ],
+            [
+                'nombre' => 'Desarrollo de Aplicaciones Móviles con Flutter y Dart',
+                'contenido' => 'Construcción de interfaces multiplataforma, gestión de estado con Provider y Riverpod, integración con Cloud Firestore y compilación nativa para Android e iOS.',
+                'portada_path' => 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=1200&h=675&q=80',
+                'carga_horaria' => '30',
+                'nivel' => CourseLevel::AVANZADO,
+                'periodo' => '1-2026',
+                'status' => CourseStatus::FINALIZADO,
+                'instructor_id' => $inst4->id,
+                'groups' => [
+                    [
+                        'nombre' => 'Grupo Graduado',
+                        'aula' => 'Aula Magna de Tecnología',
+                        'hora_inicio' => '15:45',
+                        'hora_fin' => '18:15',
+                        'cupo_minimo' => BusinessRules::MIN_GROUP_CAPACITY,
+                        'cupo_maximo' => 25,
+                        'status' => GroupStatus::FINALIZADO,
+                        'participants_count' => 16,
+                    ],
+                ],
+            ],
         ];
 
-        // Pool de estudiantes generado con fake() — nunca datos personales reales
+        // Pool de estudiantes generado con fake() y semilla determinista para idempotencia
         // (AGENTS.md §5: seeders usan fake() / credenciales genéricas).
+        fake()->seed(1024);
         $poolEstudiantes = [];
-        for ($i = 0; $i < 40; $i++) {
+        for ($i = 0; $i < 90; $i++) {
             $tipo = match ($i % 3) {
                 0 => TipoParticipante::UMSS,
                 1 => TipoParticipante::AUXILIAR,
@@ -191,179 +258,235 @@ class CoursesSeeder extends Seeder
 
         $estudianteCursor = 0;
 
-        foreach ($coursesData as $cIdx => $cData) {
-            $courseHours = (int) $cData['carga_horaria'];
+        Preinscription::withoutEvents(function () use ($coursesData, &$estudianteCursor, $poolEstudiantes, $admin): void {
+            Payment::withoutEvents(function () use ($coursesData, &$estudianteCursor, $poolEstudiantes, $admin): void {
+                Attendance::withoutEvents(function () use ($coursesData, &$estudianteCursor, $poolEstudiantes, $admin): void {
+                    Session::withoutEvents(function () use ($coursesData, &$estudianteCursor, $poolEstudiantes, $admin): void {
+                        foreach ($coursesData as $cIdx => $cData) {
+                            $courseHours = (int) $cData['carga_horaria'];
 
-            $course = Course::firstOrCreate(
-                ['nombre' => $cData['nombre']],
-                [
-                    'contenido' => $cData['contenido'],
-                    'portada_path' => $cData['portada_path'],
-                    'carga_horaria' => $cData['carga_horaria'],
-                    'nivel' => $cData['nivel'],
-                    'periodo' => $cData['periodo'],
-                    'status' => $cData['status'],
-                    'precio_umss' => BusinessRules::calculatePrice($courseHours, TipoParticipante::UMSS->value),
-                    'precio_externo' => BusinessRules::calculatePrice($courseHours, TipoParticipante::EXTERNO->value),
-                    'precio_auxiliar' => BusinessRules::calculatePrice($courseHours, TipoParticipante::AUXILIAR->value),
-                    'instructor_id' => $cData['instructor_id'],
-                ]
-            );
+                            $course = Course::firstOrCreate(
+                                ['nombre' => $cData['nombre']],
+                                [
+                                    'contenido' => $cData['contenido'],
+                                    'portada_path' => $cData['portada_path'],
+                                    'carga_horaria' => $cData['carga_horaria'],
+                                    'nivel' => $cData['nivel'],
+                                    'periodo' => $cData['periodo'],
+                                    'status' => $cData['status'],
+                                    'precio_umss' => BusinessRules::calculatePrice($courseHours, TipoParticipante::UMSS->value),
+                                    'precio_externo' => BusinessRules::calculatePrice($courseHours, TipoParticipante::EXTERNO->value),
+                                    'precio_auxiliar' => BusinessRules::calculatePrice($courseHours, TipoParticipante::AUXILIAR->value),
+                                    'instructor_id' => $cData['instructor_id'],
+                                ]
+                            );
 
-            // Criterios de evaluación para el curso (100% ponderación)
-            $crit2 = EvaluationCriteria::firstOrCreate(
-                ['course_id' => $course->id, 'nombre' => 'Evaluación Práctica'],
-                ['ponderacion' => 20.0]
-            );
-            $crit3 = EvaluationCriteria::firstOrCreate(
-                ['course_id' => $course->id, 'nombre' => 'Proyecto Final / Aplicación'],
-                ['ponderacion' => 30.0]
-            );
+                            // Criterios de evaluación para el curso (100% ponderación)
+                            $crit2 = EvaluationCriteria::firstOrCreate(
+                                ['course_id' => $course->id, 'nombre' => 'Evaluación Práctica'],
+                                ['ponderacion' => 20.0]
+                            );
+                            $crit3 = EvaluationCriteria::firstOrCreate(
+                                ['course_id' => $course->id, 'nombre' => 'Proyecto Final / Aplicación'],
+                                ['ponderacion' => 30.0]
+                            );
 
-            foreach ($cData['groups'] as $gIdx => $gData) {
-                $group = Group::firstOrCreate(
-                    ['course_id' => $course->id, 'nombre' => $gData['nombre']],
-                    [
-                        'aula' => $gData['aula'],
-                        'hora_inicio' => $gData['hora_inicio'],
-                        'hora_fin' => $gData['hora_fin'],
-                        'cupo_minimo' => $gData['cupo_minimo'],
-                        'cupo_maximo' => $gData['cupo_maximo'],
-                        'status' => $gData['status'],
-                    ]
-                );
-
-                // Crear 10 Sesiones académicas para el grupo
-                $startDate = Carbon::create(2026, 7, 6);
-                $sessionCount = 0;
-                $currentDay = $startDate->copy();
-                $sessions = [];
-
-                while ($sessionCount < BusinessRules::SESSIONS_PER_COURSE) {
-                    // Solo días hábiles lunes a viernes
-                    if ($currentDay->isWeekday()) {
-                        $session = Session::firstOrCreate(
-                            ['group_id' => $group->id, 'fecha' => $currentDay->format('Y-m-d')],
-                            [
-                                'hora_inicio' => $group->hora_inicio->format('H:i'),
-                                'hora_fin' => $group->hora_fin->format('H:i'),
-                                'dictada' => $sessionCount < 7, // primeras 7 ya dictadas
-                            ]
-                        );
-                        $sessions[] = $session;
-                        $sessionCount++;
-                    }
-                    $currentDay->addDay();
-                }
-
-                // Inscribir participantes sin repetir CI dentro del mismo curso
-                $targetCount = min($gData['participants_count'], count($poolEstudiantes));
-                for ($i = 0; $i < $targetCount; $i++) {
-                    $est = $poolEstudiantes[$estudianteCursor % count($poolEstudiantes)];
-                    $estudianteCursor++;
-
-                    // Variedad de estados para QA
-                    $status = PreinscriptionStatus::INSCRITO;
-                    $fotocopia = true;
-                    if ($i === $targetCount - 1) {
-                        $status = PreinscriptionStatus::PENDIENTE_PAGO;
-                        $fotocopia = false;
-                    } elseif ($i === $targetCount - 2) {
-                        $status = PreinscriptionStatus::RECHAZADO;
-                        $fotocopia = false;
-                    }
-
-                    $preinscription = Preinscription::firstOrCreate(
-                        ['group_id' => $group->id, 'ci' => $est['ci']],
-                        [
-                            'cod_sis' => $est['cod_sis'],
-                            'nombres' => $est['nom'],
-                            'apellido_paterno' => $est['pat'],
-                            'apellido_materno' => $est['mat'],
-                            'celular' => $est['cel'],
-                            'email' => Str::slug($est['nom'], '.').'.'.Str::slug($est['pat']).'@gmail.com',
-                            'tipo_participante' => $est['tipo'],
-                            'status' => $status,
-                            'fotocopia_ci' => $fotocopia,
-                        ]
-                    );
-
-                    // Pagos según estado
-                    $monto = match ($est['tipo']) {
-                        TipoParticipante::UMSS => $course->precio_umss,
-                        TipoParticipante::EXTERNO => $course->precio_externo,
-                        TipoParticipante::AUXILIAR => $course->precio_auxiliar,
-                    };
-                    if ($status === PreinscriptionStatus::INSCRITO) {
-                        $metodo = ($i % 2 === 0) ? PaymentMethod::EFECTIVO : PaymentMethod::QR;
-                        Payment::firstOrCreate(
-                            ['preinscription_id' => $preinscription->id],
-                            [
-                                'monto' => $monto,
-                                'metodo' => $metodo,
-                                'estado' => PaymentStatus::VERIFICADO,
-                                'numero_comprobante' => 'REC-'.rand(10000, 99999),
-                                'verificado_por' => $admin?->id,
-                                'verificado_en' => now()->subDays(rand(1, 10)),
-                            ]
-                        );
-
-                        // Asistencias en sesiones dictadas
-                        foreach ($sessions as $sIdx => $ses) {
-                            if ($ses->dictada) {
-                                $attStatus = ($i === 2 && $sIdx === 4)
-                                    ? AttendanceStatus::AUSENTE
-                                    : AttendanceStatus::PRESENTE;
-
-                                Attendance::firstOrCreate(
-                                    ['session_id' => $ses->id, 'preinscription_id' => $preinscription->id],
+                            foreach ($cData['groups'] as $gIdx => $gData) {
+                                $group = Group::firstOrCreate(
+                                    ['course_id' => $course->id, 'nombre' => $gData['nombre']],
                                     [
-                                        'status' => $attStatus,
-                                        'distancia_metros' => rand(10, 80),
+                                        'aula' => $gData['aula'],
+                                        'hora_inicio' => $gData['hora_inicio'],
+                                        'hora_fin' => BusinessRules::calculateSessionEndTime($gData['hora_inicio'], $course->carga_horaria)->format('H:i'),
+                                        'cupo_minimo' => $gData['cupo_minimo'],
+                                        'cupo_maximo' => $gData['cupo_maximo'],
+                                        'status' => $gData['status'],
+                                    ]
+                                );
+
+                                $group->update([
+                                    'cupo_maximo' => $gData['cupo_maximo'],
+                                    'cupo_minimo' => $gData['cupo_minimo'],
+                                ]);
+
+                                // Crear 10 Sesiones académicas para el grupo
+                                $startDate = Carbon::create(2026, 7, 6);
+                                $sessionCount = 0;
+                                $currentDay = $startDate->copy();
+                                $sessions = [];
+
+                                while ($sessionCount < BusinessRules::SESSIONS_PER_COURSE) {
+                                    // Solo días hábiles lunes a viernes
+                                    if ($currentDay->isWeekday()) {
+                                        $session = Session::firstOrCreate(
+                                            ['group_id' => $group->id, 'fecha' => $currentDay->format('Y-m-d')],
+                                            [
+                                                'hora_inicio' => $group->hora_inicio->format('H:i'),
+                                                'hora_fin' => $group->hora_fin->format('H:i'),
+                                                'dictada' => $sessionCount < 7, // primeras 7 ya dictadas
+                                            ]
+                                        );
+                                        $sessions[] = $session;
+                                        $sessionCount++;
+                                    }
+                                    $currentDay->addDay();
+                                }
+
+                                // Inscribir participantes sin exceder targetCount
+                                $targetCount = min($gData['participants_count'], count($poolEstudiantes));
+
+                                // Poda de exceso de ejecuciones previas acumuladas para asegurar cupos reales
+                                $existing = $group->preinscriptions()->get();
+                                if ($existing->count() > $targetCount) {
+                                    $excess = $existing->slice($targetCount);
+                                    foreach ($excess as $p) {
+                                        $p->certificate()?->delete();
+                                        $p->grades()->delete();
+                                        $p->attendances()->delete();
+                                        $p->payments()->delete();
+                                        $p->studentRequests()->delete();
+                                        $p->delete();
+                                    }
+                                }
+
+                                if ($group->preinscriptions()->count() >= $targetCount) {
+                                    continue;
+                                }
+
+                                $needed = $targetCount - $group->preinscriptions()->count();
+                                for ($i = 0; $i < $needed; $i++) {
+                                    $est = $poolEstudiantes[$estudianteCursor % count($poolEstudiantes)];
+                                    $estudianteCursor++;
+
+                                    // Variedad de estados para QA (si el grupo busca estar lleno al 100%, todos confirmados)
+                                    $isFullTarget = $gData['participants_count'] >= $gData['cupo_maximo'];
+                                    $status = PreinscriptionStatus::INSCRITO;
+                                    $fotocopia = true;
+
+                                    if (! $isFullTarget) {
+                                        if ($i === $targetCount - 1) {
+                                            $status = PreinscriptionStatus::PENDIENTE_PAGO;
+                                            $fotocopia = false;
+                                        } elseif ($i === $targetCount - 2) {
+                                            $status = PreinscriptionStatus::RECHAZADO;
+                                            $fotocopia = false;
+                                        }
+                                    }
+
+                                    $preinscription = Preinscription::firstOrCreate(
+                                        ['group_id' => $group->id, 'ci' => $est['ci']],
+                                        [
+                                            'cod_sis' => $est['cod_sis'],
+                                            'nombres' => $est['nom'],
+                                            'apellido_paterno' => $est['pat'],
+                                            'apellido_materno' => $est['mat'],
+                                            'celular' => $est['cel'],
+                                            'email' => Str::slug($est['nom'], '.').'.'.Str::slug($est['pat']).'.'.Str::lower(Str::random(4)).'@example.umss.edu.bo',
+                                            'tipo_participante' => $est['tipo'],
+                                            'status' => $status,
+                                            'fotocopia_ci' => $fotocopia,
+                                        ]
+                                    );
+
+                                    // Pagos según estado
+                                    $monto = match ($est['tipo']) {
+                                        TipoParticipante::UMSS => $course->precio_umss,
+                                        TipoParticipante::EXTERNO => $course->precio_externo,
+                                        TipoParticipante::AUXILIAR => $course->precio_auxiliar,
+                                    };
+                                    if ($status === PreinscriptionStatus::INSCRITO) {
+                                        $metodo = ($i % 2 === 0) ? PaymentMethod::EFECTIVO : PaymentMethod::QR;
+                                        Payment::firstOrCreate(
+                                            ['preinscription_id' => $preinscription->id],
+                                            [
+                                                'monto' => $monto,
+                                                'metodo' => $metodo,
+                                                'estado' => PaymentStatus::VERIFICADO,
+                                                'numero_comprobante' => 'REC-'.rand(10000, 99999),
+                                                'verificado_por' => $admin->id,
+                                                'verificado_en' => now()->subDays(rand(1, 10)),
+                                            ]
+                                        );
+
+                                        // Asistencias en sesiones dictadas
+                                        foreach ($sessions as $sIdx => $ses) {
+                                            if ($ses->dictada) {
+                                                $attStatus = ($i === 2 && $sIdx === 4)
+                                                    ? AttendanceStatus::AUSENTE
+                                                    : AttendanceStatus::PRESENTE;
+
+                                                Attendance::firstOrCreate(
+                                                    ['session_id' => $ses->id, 'preinscription_id' => $preinscription->id],
+                                                    [
+                                                        'status' => $attStatus,
+                                                        'distancia_metros' => rand(10, 80),
+                                                    ]
+                                                );
+                                            }
+                                        }
+
+                                        // Calificaciones en criterios (escala 0-100, igual que EvaluationService)
+                                        $grade2 = rand(75, 100);
+                                        $grade3 = rand(73, 100);
+
+                                        Grade::updateOrCreate(
+                                            ['evaluation_criteria_id' => $crit2->id, 'preinscription_id' => $preinscription->id],
+                                            ['nota' => (float) $grade2]
+                                        );
+                                        Grade::updateOrCreate(
+                                            ['evaluation_criteria_id' => $crit3->id, 'preinscription_id' => $preinscription->id],
+                                            ['nota' => (float) $grade3]
+                                        );
+
+                                        // Certificados para cursos finalizados o estudiantes destacados
+                                        $shouldEmitCertificate = ($course->status === CourseStatus::FINALIZADO)
+                                            || ($i < 5 && $course->status === CourseStatus::PUBLICADO);
+
+                                        if ($shouldEmitCertificate) {
+                                            Certificate::firstOrCreate(
+                                                ['preinscription_id' => $preinscription->id, 'course_id' => $course->id],
+                                                [
+                                                    'tipo' => CertificateType::APROBACION,
+                                                    'codigo_unico' => 'CERT-2026-'.strtoupper(Str::random(6)),
+                                                    'pdf_path' => null,
+                                                    'emitido_en' => now()->subDays(2),
+                                                ]
+                                            );
+                                        }
+                                    } elseif ($status === PreinscriptionStatus::RECHAZADO) {
+                                        Payment::firstOrCreate(
+                                            ['preinscription_id' => $preinscription->id],
+                                            [
+                                                'monto' => $monto,
+                                                'metodo' => PaymentMethod::QR,
+                                                'estado' => PaymentStatus::RECHAZADO,
+                                                'motivo_rechazo' => 'Comprobante QR ilegible o no depositado en cuenta UMSS.',
+                                                'numero_comprobante' => 'REC-'.rand(10000, 99999),
+                                            ]
+                                        );
+                                    }
+                                }
+                            }
+
+                            if ($course->status === CourseStatus::FINALIZADO && $course->instructor_id !== null) {
+                                Certificate::firstOrCreate(
+                                    [
+                                        'course_id' => $course->id,
+                                        'instructor_id' => $course->instructor_id,
+                                        'tipo' => CertificateType::INSTRUCTOR,
+                                    ],
+                                    [
+                                        'codigo_unico' => 'CERT-DOC-'.strtoupper(Str::random(6)),
+                                        'grupos_detalle' => 'Grupo Graduado',
+                                        'pdf_path' => null,
+                                        'emitido_en' => now()->subDays(2),
                                     ]
                                 );
                             }
                         }
-
-                        // Calificaciones en criterios (escala 0-100, igual que EvaluationService)
-                        $grade2 = rand(75, 100);
-                        $grade3 = rand(73, 100);
-
-                        Grade::updateOrCreate(
-                            ['evaluation_criteria_id' => $crit2->id, 'preinscription_id' => $preinscription->id],
-                            ['nota' => (float) $grade2]
-                        );
-                        Grade::updateOrCreate(
-                            ['evaluation_criteria_id' => $crit3->id, 'preinscription_id' => $preinscription->id],
-                            ['nota' => (float) $grade3]
-                        );
-
-                        // Certificado para los primeros con notas sobresalientes
-                        if ($i < 5 && $course->status === CourseStatus::PUBLICADO) {
-                            Certificate::firstOrCreate(
-                                ['preinscription_id' => $preinscription->id, 'course_id' => $course->id],
-                                [
-                                    'tipo' => CertificateType::APROBACION,
-                                    'codigo_unico' => 'CERT-2026-'.strtoupper(Str::random(6)),
-                                    'pdf_path' => null,
-                                    'emitido_en' => now()->subDays(2),
-                                ]
-                            );
-                        }
-                    } elseif ($status === PreinscriptionStatus::RECHAZADO) {
-                        Payment::firstOrCreate(
-                            ['preinscription_id' => $preinscription->id],
-                            [
-                                'monto' => $monto,
-                                'metodo' => PaymentMethod::QR,
-                                'estado' => PaymentStatus::RECHAZADO,
-                                'motivo_rechazo' => 'Comprobante QR ilegible o no depositado en cuenta UMSS.',
-                                'numero_comprobante' => 'REC-'.rand(10000, 99999),
-                            ]
-                        );
-                    }
-                }
-            }
-        }
+                    });
+                });
+            });
+        });
     }
 }

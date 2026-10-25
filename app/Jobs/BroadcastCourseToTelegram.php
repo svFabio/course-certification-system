@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
  *
  * The broadcast is deliberately not retried: a retry would publish the same
  * announcement twice in the channel. A failed attempt is logged and the admin
- * can dispatch it again from the campaign action.
+ * can dispatch it again from the diffusion action.
  */
 class BroadcastCourseToTelegram implements ShouldQueue
 {

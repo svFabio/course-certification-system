@@ -121,121 +121,126 @@ class CertificatesRelationManager extends RelationManager
                     ->options(CertificateLifecycleStatus::class),
             ])
             ->actions([
-                Tables\Actions\Action::make('descargar')
-                    ->label('Descargar imprimible')
-                    ->icon('heroicon-o-printer')
-                    ->color('gray')
-                    ->url(fn (Certificate $record, CertificateService $service): string => $service->publicDownloadUrl($record))
-                    ->openUrlInNewTab(),
-                Tables\Actions\Action::make('marcarEntregado')
-                    ->label('Marcar entregado')
-                    ->icon('heroicon-o-hand-raised')
-                    ->color('warning')
-                    ->visible(fn (Certificate $record): bool => ! $record->isInstructorCertificate()
-                        && $record->estado === CertificateLifecycleStatus::GENERADO)
-                    ->requiresConfirmation()
-                    ->modalHeading('Marcar entrega física')
-                    ->modalDescription('Confirma que el certificado impreso y firmado fue entregado al estudiante.')
-                    ->action(function (Certificate $record, CertificateService $service): void {
-                        try {
-                            $service->markAsDelivered($record);
-                        } catch (ValidationException $e) {
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('subirEscaneo')
+                        ->label(fn (Certificate $record): string => $record->hasScannedCopy() ? 'Reemplazar foto/digital' : 'Subir foto/escaneo')
+                        ->icon('heroicon-o-arrow-up-tray')
+                        ->color('primary')
+                        ->visible(fn (Certificate $record): bool => ! $record->isInstructorCertificate())
+                        ->form([
+                            Forms\Components\FileUpload::make('archivo')
+                                ->label('Fotografía o escaneo del certificado firmado')
+                                ->disk('cloudinary')
+                                ->directory('certificates/scanned')
+                                ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
+                                ->maxSize(10240)
+                                ->required()
+                                ->helperText('Foto o documento en PDF, JPG, PNG o WebP. Máximo 10 MB.'),
+                        ])
+                        ->modalHeading(fn (Certificate $record): string => $record->hasScannedCopy()
+                            ? 'Reemplazar certificado firmado'
+                            : 'Subir foto o escaneo de certificado firmado')
+                        ->modalDescription('Suba la fotografía o escaneo del certificado físico con las firmas correspondientes para su verificación pública.')
+                        ->modalSubmitActionLabel('Guardar')
+                        ->action(function (Certificate $record, array $data, CertificateService $service): void {
+                            try {
+                                $service->attachScannedCopy($record, $data['archivo']);
+                            } catch (ValidationException $e) {
+                                Notification::make()
+                                    ->title('No se pudo guardar el archivo')
+                                    ->body(collect($e->errors())->flatten()->implode(' '))
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
                             Notification::make()
-                                ->title('No se pudo marcar la entrega')
-                                ->body(collect($e->errors())->flatten()->implode(' '))
-                                ->danger()
+                                ->title('Certificado digitalizado con éxito. Ya es accesible en la verificación pública.')
+                                ->success()
                                 ->send();
+                        }),
+                    Tables\Actions\Action::make('descargar')
+                        ->label('Descargar imprimible')
+                        ->icon('heroicon-o-printer')
+                        ->color('gray')
+                        ->url(fn (Certificate $record, CertificateService $service): string => $service->publicDownloadUrl($record))
+                        ->openUrlInNewTab(),
+                    Tables\Actions\Action::make('descargarDigital')
+                        ->label('Descargar digital')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->color('success')
+                        ->visible(fn (Certificate $record): bool => $record->hasScannedCopy())
+                        ->action(function (Certificate $record, CertificateService $service): ?Response {
+                            try {
+                                return $service->downloadScanned($record);
+                            } catch (ValidationException $e) {
+                                Notification::make()
+                                    ->title('No se pudo descargar')
+                                    ->body(collect($e->errors())->flatten()->implode(' '))
+                                    ->danger()
+                                    ->send();
 
-                            return;
-                        }
+                                return null;
+                            }
+                        }),
+                    Tables\Actions\Action::make('marcarEntregado')
+                        ->label('Marcar entregado')
+                        ->icon('heroicon-o-hand-raised')
+                        ->color('warning')
+                        ->visible(fn (Certificate $record): bool => ! $record->isInstructorCertificate()
+                            && $record->estado === CertificateLifecycleStatus::GENERADO)
+                        ->requiresConfirmation()
+                        ->modalHeading('Marcar entrega física')
+                        ->modalDescription('Confirma que el certificado impreso y firmado fue entregado al estudiante.')
+                        ->action(function (Certificate $record, CertificateService $service): void {
+                            try {
+                                $service->markAsDelivered($record);
+                            } catch (ValidationException $e) {
+                                Notification::make()
+                                    ->title('No se pudo marcar la entrega')
+                                    ->body(collect($e->errors())->flatten()->implode(' '))
+                                    ->danger()
+                                    ->send();
 
-                        Notification::make()
-                            ->title('Certificado marcado como entregado')
-                            ->success()
-                            ->send();
-                    }),
-                Tables\Actions\Action::make('subirEscaneo')
-                    ->label(fn (Certificate $record): string => $record->hasScannedCopy() ? 'Reemplazar digital' : 'Subir escaneo')
-                    ->icon('heroicon-o-arrow-up-tray')
-                    ->color('primary')
-                    ->visible(fn (Certificate $record): bool => ! $record->isInstructorCertificate())
-                    ->form([
-                        Forms\Components\FileUpload::make('archivo')
-                            ->label('Certificado firmado y escaneado')
-                            ->disk('cloudinary')
-                            ->directory('certificates/scanned')
-                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
-                            ->maxSize(5120)
-                            ->required()
-                            ->helperText('PDF, JPG o PNG. Máximo 5 MB.'),
-                    ])
-                    ->modalHeading(fn (Certificate $record): string => $record->hasScannedCopy()
-                        ? 'Reemplazar certificado digitalizado'
-                        : 'Subir certificado escaneado')
-                    ->modalSubmitActionLabel('Guardar')
-                    ->action(function (Certificate $record, array $data, CertificateService $service): void {
-                        try {
-                            $service->attachScannedCopy($record, $data['archivo']);
-                        } catch (ValidationException $e) {
+                                return;
+                            }
+
                             Notification::make()
-                                ->title('No se pudo guardar el escaneo')
-                                ->body(collect($e->errors())->flatten()->implode(' '))
-                                ->danger()
+                                ->title('Certificado marcado como entregado')
+                                ->success()
                                 ->send();
+                        }),
+                    Tables\Actions\Action::make('reenviarNotificacion')
+                        ->label('Reenviar notificación')
+                        ->icon('heroicon-o-envelope')
+                        ->color('warning')
+                        ->visible(fn (): bool => filled(config('mail.mailers.'.config('mail.default').'.username')))
+                        ->requiresConfirmation()
+                        ->modalHeading('Reenviar notificación')
+                        ->modalDescription('Se enviará nuevamente el correo de disponibilidad del certificado.')
+                        ->action(function (Certificate $record, CertificateService $service): void {
+                            try {
+                                $service->resendReadyNotification($record);
+                            } catch (ValidationException $e) {
+                                Notification::make()
+                                    ->title('No se pudo reenviar')
+                                    ->body(collect($e->errors())->flatten()->implode(' '))
+                                    ->danger()
+                                    ->send();
 
-                            return;
-                        }
+                                return;
+                            }
 
-                        Notification::make()
-                            ->title('Certificado digitalizado')
-                            ->success()
-                            ->send();
-                    }),
-                Tables\Actions\Action::make('descargarDigital')
-                    ->label('Descargar digital')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->color('success')
-                    ->visible(fn (Certificate $record): bool => $record->hasScannedCopy())
-                    ->action(function (Certificate $record, CertificateService $service): ?Response {
-                        try {
-                            return $service->downloadScanned($record);
-                        } catch (ValidationException $e) {
                             Notification::make()
-                                ->title('No se pudo descargar')
-                                ->body(collect($e->errors())->flatten()->implode(' '))
-                                ->danger()
+                                ->title('Notificación reenviada')
+                                ->success()
                                 ->send();
-
-                            return null;
-                        }
-                    }),
-                Tables\Actions\Action::make('reenviarNotificacion')
-                    ->label('Reenviar notificación')
-                    ->icon('heroicon-o-envelope')
-                    ->color('warning')
-                    ->visible(fn (): bool => filled(config('mail.mailers.'.config('mail.default').'.username')))
-                    ->requiresConfirmation()
-                    ->modalHeading('Reenviar notificación')
-                    ->modalDescription('Se enviará nuevamente el correo de disponibilidad del certificado.')
-                    ->action(function (Certificate $record, CertificateService $service): void {
-                        try {
-                            $service->resendReadyNotification($record);
-                        } catch (ValidationException $e) {
-                            Notification::make()
-                                ->title('No se pudo reenviar')
-                                ->body(collect($e->errors())->flatten()->implode(' '))
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
-                        Notification::make()
-                            ->title('Notificación reenviada')
-                            ->success()
-                            ->send();
-                    }),
-                Tables\Actions\ViewAction::make(),
+                        }),
+                    Tables\Actions\ViewAction::make(),
+                ])
+                    ->icon('heroicon-m-ellipsis-vertical')
+                    ->tooltip('Acciones del certificado'),
             ])
             ->bulkActions([
                 //

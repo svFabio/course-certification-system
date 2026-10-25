@@ -31,9 +31,8 @@ fi
 # ─── Run pending migrations ───────────────────────────────────────────────────
 # Run migrations only when booting the web server (avoid race conditions in workers)
 if [ "$1" = "apache2-foreground" ] || [ -z "$1" ]; then
-    echo "[entrypoint.prod] Running migrations and roles seeder"
+    echo "[entrypoint.prod] Running migrations"
     php artisan migrate --force --no-interaction
-    php artisan db:seed --class=RolesAndPermissionsSeeder --force --no-interaction
 fi
 
 # ─── Laravel production optimizations ────────────────────────────────────────
@@ -45,10 +44,13 @@ php artisan filament:cache-components --no-interaction
 # ─── Fix permissions ──────────────────────────────────────────────────────────
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 
-# ─── In-container queue worker for Free Tier ──────────────────────────────────
+# ─── In-container queue worker & background seeder for Free Tier ──────────────
 if [ "$1" = "apache2-foreground" ] || [ -z "$1" ]; then
     echo "[entrypoint.prod] Starting background queue worker on free tier"
     php artisan queue:work --tries=3 --sleep=3 --max-time=3600 > /dev/null 2>&1 &
+
+    echo "[entrypoint.prod] Starting background database seeder"
+    php artisan db:seed --force --no-interaction > /tmp/seeder.log 2>&1 &
 fi
 
 echo "[entrypoint.prod] Ready. Handing off to: $@"
